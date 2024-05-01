@@ -199,7 +199,6 @@ void FCCBridgeNode::get_gps_telemetry() {
 }
 
 void FCCBridgeNode::get_flight_state() {
-
     // Clear Cached values
     this->last_fcc_flight_state = std::nullopt;
 
