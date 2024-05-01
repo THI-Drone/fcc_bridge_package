@@ -122,6 +122,14 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
         default:
             break;
     }
+    this->get_flight_state();
+    interfaces::msg::FlightState fligh_state_msg;
+    fligh_state_msg.time_stamp = this->now();
+    fligh_state_msg.sender_id = this->get_name();
+    fligh_state_msg.flight_mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
+        this->last_fcc_flight_state.value());
+    this->flight_state_publisher->publish(fligh_state_msg);
+    RCLCPP_DEBUG(this->get_logger(), "Published current Flight State");
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
