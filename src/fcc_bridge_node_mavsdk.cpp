@@ -42,28 +42,30 @@ void FCCBridgeNode::setup_mavsdk() {
         this->internal_state = INTERNAL_STATE::ERROR;
         return;
     }
-
-    // Getting uav id to deduct MAVLink System ID
-    const rclcpp::ParameterValue &uav_id_parameter =
-        this->declare_parameter("UAV_ID", rclcpp::ParameterValue());
-    // Checking if parameter was set
-    if (uav_id_parameter.get_type() ==
-        rclcpp::ParameterType::PARAMETER_NOT_SET) {
+    std::string uav_id = "__INVALID__";
+    try {
+        // Getting uav id to deduct MAVLink System ID
+        uav_id = this->declare_parameter<std::string>("UAV_ID");
+    } catch (
+        const rclcpp::exceptions::UninitializedStaticallyTypedParameterException
+            &e) {
+        // Catch if parameter was not set
         RCLCPP_FATAL(this->get_logger(), "UAV_ID parameter was not set!");
         this->internal_state = INTERNAL_STATE::ERROR;
         return;
-    }
-    // Checking type of parameter
-    if (uav_id_parameter.get_type() !=
-        rclcpp::ParameterType::PARAMETER_STRING) {
-        RCLCPP_FATAL(this->get_logger(), "UAV_ID parameter was of wrong type!");
+    } catch (const rclcpp::exceptions::InvalidParameterTypeException &e) {
+        // Catch if parameter is not a string
+        RCLCPP_FATAL(
+            this->get_logger(),
+            "UAV_ID parameter was of wrong type! It has to be a string!");
         this->internal_state = INTERNAL_STATE::ERROR;
         return;
     }
+
     // Checking of for the supplied uav id there is an entry in the SYS_ID_MAP
     const std::map<const std::string,
                    std::pair<const u8, const bool>>::const_iterator
-        uav_id_map_entry = SYS_ID_MAP.find(uav_id_parameter.get<std::string>());
+        uav_id_map_entry = SYS_ID_MAP.find(uav_id);
     if (uav_id_map_entry == SYS_ID_MAP.end()) {
         RCLCPP_FATAL(this->get_logger(), "Got unknown UAV_ID!");
         this->internal_state = INTERNAL_STATE::ERROR;
