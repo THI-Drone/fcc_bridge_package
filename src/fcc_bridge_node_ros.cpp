@@ -52,7 +52,9 @@ void FCCBridgeNode::setup_ros() {
     this->gps_position_publisher =
         this->create_publisher<interfaces::msg::GPSPosition>("uav_gps_position",
                                                              1);
-    this->flight_state_publisher = this->create_publisher<interfaces::msg::FlightState>("uav_flight_state", 1);
+    this->flight_state_publisher =
+        this->create_publisher<interfaces::msg::FlightState>("uav_flight_state",
+                                                             1);
 
     // Setup subscriber
     rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>
@@ -110,6 +112,16 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
     RCLCPP_DEBUG(this->get_logger(),
                  "5Hz telemetry timer callback was triggered");
     this->check_last_mission_control_heatbeat();
+    switch (this->internal_state) {
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::ERROR:
+            RCLCPP_WARN(this->get_logger(),
+                        "5Hz Telemetry callback function was called in an "
+                        "invalid state");
+        default:
+            break;
+    }
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
@@ -127,8 +139,8 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
             break;
     }
     this->get_gps_telemetry();
-    // In this case retrieving the gps telemetry was successful and it can
-    // be safely accessed.
+    // In this case retrieving the gps telemetry was successful meaning that it
+    // can be safely accessed.
     interfaces::msg::GPSPosition gps_msg;
     gps_msg.time_stamp = this->now();
     gps_msg.sender_id = this->get_name();
@@ -139,7 +151,6 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     gps_msg.relative_altitude_m = last_fcc_position->relative_altitude_m;
     this->gps_position_publisher->publish(gps_msg);
     RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
-
 }
 
 void FCCBridgeNode::check_last_mission_control_heatbeat() {
