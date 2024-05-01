@@ -18,7 +18,7 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
     this->setup_ros();
     if (this->internal_state == INTERNAL_STATE::ERROR) {
         RCLCPP_FATAL(this->get_logger(), "Failed to setup ROS! Exiting...");
-        std::exit(EXIT_FAILURE);
+        this->exit_process_on_error();
     }
     this->internal_state = INTERNAL_STATE::ROS_SET_UP;
     RCLCPP_INFO(this->get_logger(), "Transitioning into ROS_SET_UP state");
@@ -27,7 +27,7 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
     this->setup_mavsdk();
     if (this->internal_state == INTERNAL_STATE::ERROR) {
         RCLCPP_FATAL(this->get_logger(), "Failed to setup MAVSDK! Exiting...");
-        std::exit(EXIT_FAILURE);
+        this->exit_process_on_error();
     }
     RCLCPP_INFO(this->get_logger(), "Transitioning into MAVSDK_SET_UP state");
     this->internal_state = INTERNAL_STATE::MAVSDK_SET_UP;

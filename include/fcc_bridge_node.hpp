@@ -213,6 +213,13 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Deactivates the node
      */
     void trigger_rth();
+    /**
+     * @brief Exit the current process.
+     *
+     * Does not return.
+     * Wrapper for test cases to check for error conditions without death tests.
+     */
+    [[noreturn]] void exit_process_on_error();
 
     // Enum conversion functions
     /**

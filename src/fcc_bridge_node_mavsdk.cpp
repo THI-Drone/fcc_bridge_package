@@ -156,7 +156,7 @@ void FCCBridgeNode::verify_mavsdk_connection() {
         case INTERNAL_STATE::ERROR:
             RCLCPP_ERROR(this->get_logger(),
                          "MAVSDK is not set up! Exiting...");
-            std::exit(EXIT_FAILURE);
+            this->exit_process_on_error();
         case INTERNAL_STATE::MAVSDK_SET_UP:
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
@@ -171,7 +171,7 @@ void FCCBridgeNode::verify_mavsdk_connection() {
             RCLCPP_FATAL(this->get_logger(),
                          "An MAVSDK error was encountered! Exiting...");
             this->internal_state = INTERNAL_STATE::ERROR;
-            std::exit(EXIT_FAILURE);
+            this->exit_process_on_error();
     }
 }
 
@@ -214,5 +214,10 @@ void FCCBridgeNode::get_flight_state() {
 void FCCBridgeNode::trigger_rth() {
     RCLCPP_WARN(this->get_logger(), "Triggering RTH");
     this->deactivate();
+}
+
+void FCCBridgeNode::exit_process_on_error() {
+    RCLCPP_WARN(this->get_logger(), "Exiting process with EXIT_FAILURE");
+    std::exit(EXIT_FAILURE);
 }
 }  // namespace fcc_bridge
