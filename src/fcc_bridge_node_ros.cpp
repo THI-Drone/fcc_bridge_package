@@ -116,6 +116,16 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     RCLCPP_DEBUG(this->get_logger(),
                  "10Hz telemetry timer callback was triggered");
     this->check_last_mission_control_heatbeat();
+    switch (this->internal_state) {
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::ERROR:
+            RCLCPP_WARN(this->get_logger(),
+                        "10Hz Telemetry callback function was called in an "
+                        "invalid state");
+        default:
+            break;
+    }
     this->get_gps_telemetry();
     // In this case retrieving the gps telemetry was successful and it can
     // be safely accessed.
