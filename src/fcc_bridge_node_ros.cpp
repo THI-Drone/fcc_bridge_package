@@ -62,7 +62,8 @@ void FCCBridgeNode::setup_ros() {
 
     // Setup subscriber
 
-    // Create subscription options for heartbeat to only receive mission control heartbeats
+    // Create subscription options for heartbeat to only receive mission control
+    // heartbeats
     rclcpp::SubscriptionOptions subscription_options;
     subscription_options.content_filter_options.filter_expression =
         "sender_id = 'mission_control'";
@@ -76,7 +77,7 @@ void FCCBridgeNode::setup_ros() {
             subscription_options);
 
     // Ensure that the filter is enabled. (Some DDS versions do not support it)
-    if(!this->mission_control_heartbeat_subscriber->is_cft_enabled()) {
+    if (!this->mission_control_heartbeat_subscriber->is_cft_enabled()) {
         RCLCPP_FATAL(this->get_logger(), "Content filtering is not enabled!");
         this->internal_state = INTERNAL_STATE::ERROR;
         return;
