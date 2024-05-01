@@ -98,23 +98,20 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     RCLCPP_DEBUG(this->get_logger(),
                  "10Hz telemetry timer callback was triggered");
     this->check_last_mission_control_heatbeat();
-    if (!this->get_gps_telemetry()) {
-        RCLCPP_FATAL(this->get_logger(), "Failed to get GPS_Telemetry");
-        std::exit(EXIT_FAILURE);
-    } else {
-        // In this case retrieving the gps telemetry was successful and it can
-        // be safely accessed.
-        interfaces::msg::GPSPosition gps_msg;
-        gps_msg.time_stamp = this->now();
-        gps_msg.sender_id = this->get_name();
-        gps_msg.fix_type =
-            FCCBridgeNode::fix_type_mavsdk_to_ros(last_fcc_gps_info->fix_type);
-        gps_msg.latitude_deg = last_fcc_position->latitude_deg;
-        gps_msg.longitude_deg = last_fcc_position->longitude_deg;
-        gps_msg.relative_altitude_m = last_fcc_position->relative_altitude_m;
-        this->gps_position_publisher->publish(gps_msg);
-        RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
-    }
+    this->get_gps_telemetry();
+    // In this case retrieving the gps telemetry was successful and it can
+    // be safely accessed.
+    interfaces::msg::GPSPosition gps_msg;
+    gps_msg.time_stamp = this->now();
+    gps_msg.sender_id = this->get_name();
+    gps_msg.fix_type =
+        FCCBridgeNode::fix_type_mavsdk_to_ros(last_fcc_gps_info->fix_type);
+    gps_msg.latitude_deg = last_fcc_position->latitude_deg;
+    gps_msg.longitude_deg = last_fcc_position->longitude_deg;
+    gps_msg.relative_altitude_m = last_fcc_position->relative_altitude_m;
+    this->gps_position_publisher->publish(gps_msg);
+    RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
+}
 }
 
 void FCCBridgeNode::check_last_mission_control_heatbeat() {

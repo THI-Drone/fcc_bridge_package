@@ -101,7 +101,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     // MAVSDK functions
     void setup_mavsdk();
     void verify_connection();
-    bool get_gps_telemetry();
+    void get_gps_telemetry();
     void trigger_rth();
 
     // Enum conversion functions

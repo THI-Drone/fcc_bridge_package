@@ -175,7 +175,7 @@ void FCCBridgeNode::verify_connection() {
     }
 }
 
-bool FCCBridgeNode::get_gps_telemetry() {
+void FCCBridgeNode::get_gps_telemetry() {
     // Clearing cached values
     this->last_fcc_gps_info = std::nullopt;
     this->last_fcc_position = std::nullopt;
@@ -196,8 +196,6 @@ bool FCCBridgeNode::get_gps_telemetry() {
                 this->last_fcc_position->absolute_altitude_m,
                 this->last_fcc_position->relative_altitude_m,
                 this->last_fcc_gps_info->num_satellites);
-
-    return true;
 }
 
 void FCCBridgeNode::trigger_rth() {
