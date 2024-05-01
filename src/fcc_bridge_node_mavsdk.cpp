@@ -200,5 +200,6 @@ void FCCBridgeNode::get_gps_telemetry() {
 
 void FCCBridgeNode::trigger_rth() {
     RCLCPP_WARN(this->get_logger(), "Triggering RTH");
+    this->deactivate();
 }
 }  // namespace fcc_bridge

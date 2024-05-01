@@ -57,8 +57,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
 
         ERROR = 0xFF,
     };
-    // Current internal state of the fcc_node
-    INTERNAL_STATE internal_state;
+    INTERNAL_STATE internal_state;  ///> Current internal state of the fcc_node
 
     // MAVSDK objects
     std::optional<mavsdk::Mavsdk> mavsdk;
@@ -91,25 +90,97 @@ class FCCBridgeNode : public common_lib::CommonNode {
     // bool check_point_in_geofence();
 
     // ROS functions
+    /**
+     * @brief Set up ROS specific functionality
+     *
+     * Sets internal_state to INTERNAL_STATE::ERROR if an error is encountered
+     */
     void setup_ros();
+    /**
+     * @brief Callback function to be triggered when a new heartbeat is received
+     * @param msg The received message
+     *
+     * Should only receive heartbeats from mission control using a filter
+     * expression when creating the subscription.
+     * Triggers an RTH if the heartbeat is invalid or goes into error state if
+     * MAVSDK has run into an issue.
+     */
     void mission_control_heartbeat_subscriber_cb(
         const interfaces::msg::Heartbeat &msg);
+    /**
+     * @brief Callback function for the 5Hz telemetry timer
+     *
+     * Validates heartbeat.
+     */
     void fcc_telemetry_timer_5hz_cb();
+    /**
+     * @brief Callback function for the 5Hz telemetry timer
+     *
+     * Validates heartbeat
+     */
     void fcc_telemetry_timer_10hz_cb();
+    /**
+     * @brief Validated if the last received heartbeat is not too old.
+     *
+     * If it is too old trigger an RTH
+     */
     void check_last_mission_control_heatbeat();
 
     // MAVSDK functions
+    /**
+     * @brief Sets up the MAVSDK components.
+     *
+     * Uses the ros parameter UAV_ID to identify the target UAV.
+     * Set internal_state to INTERNAL_STATE::ERROR if an issue is encountered.
+     */
     void setup_mavsdk();
+    /**
+     * @brief Verifies the MAVSDK connection.
+     *
+     * If there is an issue this function will exit the process.
+     */
     void verify_connection();
+    /**
+     * @brief Gets the current GPSInfo and Position from the FCC
+     *
+     * Stores the result in internal member variables.
+     * Verifies the MAVSDK connection.
+     */
     void get_gps_telemetry();
+    /**
+     * @brief Initiates an RTH
+     *
+     * Deactivates the node
+     */
     void trigger_rth();
 
     // Enum conversion functions
+    /**
+     * @brief Conversion function to turn a MAVSDK Gps FixType into a ROS GPS
+     * FixType
+     *
+     * @param fix_type The MAVSDK FixType to convert
+     * @return The ROS FixType
+     *
+     * @throws RuntimeError If the MAVSDK FixType is unknown
+     */
     static interfaces::msg::GPSPosition::_fix_type_type fix_type_mavsdk_to_ros(
         const mavsdk::Telemetry::FixType &fix_type);
 
    public:
-    FCCBridgeNode();
+    /**
+     * @brief Constructor for an FCCBridgeNode
+     *
+     * @param name The name of the node
+     * @param node_options The node options, default to rclcpp::NodeOptions
+     *
+     * Sets up the ROS components, then the MAVSDK components and then activates
+     * the node to signal it is ready for the SafetyLimits.
+     * Exits the process on error.
+     */
+    FCCBridgeNode(
+        const std::string &name/*,
+        const rclcpp::NodeOptions &node_options = rclcpp::NodeOptions()*/);
 };
 
 }  // namespace fcc_bridge
