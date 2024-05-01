@@ -18,7 +18,7 @@ constexpr int UART_BAUD_RATE = 112500;
 // Simulator IP address
 constexpr char const *SIMULATOR_IP_ADDRESS = "127.0.0.1";
 // Simulator TCP Port number
-constexpr int SIMULATOR_PORT_NUMBER = 4560;
+constexpr int SIMULATOR_PORT_NUMBER = 14540;
 
 // Map to get the MAVLink System id for the selected
 // {TEAM_ID : {SYS_ID, IS_SIMULATOR_TARGET}}
@@ -86,7 +86,7 @@ void FCCBridgeNode::setup_mavsdk() {
     if (std::get<const bool>(uav_id_map_entry->second)) {
         RCLCPP_WARN(this->get_logger(), "Connecting to simulator!");
         // Trying to connect to the simulated MAVLink network
-        connection_result = this->mavsdk->add_tcp_connection(
+        connection_result = this->mavsdk->add_udp_connection(
             SIMULATOR_IP_ADDRESS, SIMULATOR_PORT_NUMBER,
             mavsdk::ForwardingOption::ForwardingOff);
     } else {
