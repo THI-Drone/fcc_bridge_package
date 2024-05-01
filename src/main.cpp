@@ -1,21 +1,11 @@
-#include "main.hpp"
+#include <rclcpp/utilities.hpp>
+#include <rclcpp/executors.hpp>
 
-/**
- * @brief A class that represents a minimal node.
- */
-class MinimalPublisher : public common_lib::CommonNode {
-   public:
-    /**
-     * @brief Constructs a new MinimalPublisher object.
-     *
-     * @param id The unique name for the node.
-     */
-    MinimalPublisher(std::string id) : CommonNode(id) {}
-};
+#include "fcc_bridge_node.hpp"
 
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<MinimalPublisher>(argv[1]));
+    rclcpp::spin(std::make_shared<fcc_bridge::FCCBridgeNode>());
     rclcpp::shutdown();
     return 0;
 }

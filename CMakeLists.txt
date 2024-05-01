@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.8)
 
+include(FetchContent)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(JSON_ImplicitConversions OFF) # deactivate implicit type conversion
 
-project(demo_package)
+project(fcc_bridge)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Werror)
@@ -16,14 +18,24 @@ find_package(nlohmann_json REQUIRED)  # JSON library
 find_package(rclcpp REQUIRED)
 find_package(interfaces REQUIRED)
 find_package(common_package REQUIRED)
+find_package(MAVSDK REQUIRED)
 
 include_directories(include)
 
-add_executable(demo_node src/main.cpp)
-ament_target_dependencies(demo_node rclcpp interfaces common_package nlohmann_json)
+add_executable(fcc_bridge
+        src/main.cpp
+        src/fcc_bridge_node_ros.cpp
+        src/fcc_bridge_node_mavsdk.cpp
+)
+
+target_link_libraries(fcc_bridge
+        MAVSDK::mavsdk
+)
+
+ament_target_dependencies(fcc_bridge rclcpp interfaces common_package nlohmann_json)
 
 install (TARGETS
-  demo_node
+  fcc_bridge
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
