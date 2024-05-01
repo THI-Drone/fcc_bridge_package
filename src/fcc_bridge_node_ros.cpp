@@ -41,6 +41,7 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
 
 void FCCBridgeNode::setup_ros() {
     RCLCPP_DEBUG(this->get_logger(), "Setting up ROS");
+    // Check if the node is in the correct state
     if (this->internal_state != INTERNAL_STATE::STARTING_UP) {
         RCLCPP_ERROR(this->get_logger(),
                      "Repeated try to setup ros components");
@@ -49,25 +50,37 @@ void FCCBridgeNode::setup_ros() {
     }
 
     // Setup publisher
+
+    // Create GPSInfo & Position publisher
     this->gps_position_publisher =
         this->create_publisher<interfaces::msg::GPSPosition>("uav_gps_position",
                                                              1);
+    // Create FlightState publisher
     this->flight_state_publisher =
         this->create_publisher<interfaces::msg::FlightState>("uav_flight_state",
                                                              1);
 
     // Setup subscriber
-    rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>
-        subscription_options;
-    subscription_options.content_filter_options.filter_expression =
-        "sender_id = \"mission_control\"";
 
+    // Create subscription options for heartbeat to only receive mission control heartbeats
+    rclcpp::SubscriptionOptions subscription_options;
+    subscription_options.content_filter_options.filter_expression =
+        "sender_id = 'mission_control'";
+
+    // Create Heartbeat subscription
     this->mission_control_heartbeat_subscriber =
         this->create_subscription<interfaces::msg::Heartbeat>(
             "heartbeat", 1,
             std::bind(&FCCBridgeNode::mission_control_heartbeat_subscriber_cb,
                       this, std::placeholders::_1),
             subscription_options);
+
+    // Ensure that the filter is enabled. (Some DDS versions do not support it)
+    if(!this->mission_control_heartbeat_subscriber->is_cft_enabled()) {
+        RCLCPP_FATAL(this->get_logger(), "Content filtering is not enabled!");
+        this->internal_state = INTERNAL_STATE::ERROR;
+        return;
+    }
 
     // Setup 5Hz timer to get telemetry from the FCC
     this->fcc_telemetry_timer_5hz = this->create_wall_timer(
