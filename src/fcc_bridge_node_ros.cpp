@@ -80,13 +80,29 @@ void FCCBridgeNode::setup_ros() {
 void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     const interfaces::msg::Heartbeat &msg) {
     RCLCPP_DEBUG(this->get_logger(), "Received heartbeat from mission control");
+
+    // Check if the heartbeat tick has increased since last time
     if (msg.tick <= this->last_mission_control_heatbeat.tick) {
         RCLCPP_ERROR(this->get_logger(),
-                     "The received heartbeat is not newer than the last one!");
+                     "The received heartbeat is not newer than the last one! "
+                     "Triggering RTH...");
         this->trigger_rth();
     }
+
+    // Check if mission control is still active
     if (!msg.active) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Mission control node is inactive! Triggering RTH...");
+        this->trigger_rth();
     }
+
+    // Set the cached heartbeat message to the current one
+    this->last_mission_control_heatbeat = msg;
+
+    // Verify that the received heartbeat is not too old
+    this->check_last_mission_control_heatbeat();
+
+    RCLCPP_INFO(this->get_logger(), "Mission control is alive and ok");
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
