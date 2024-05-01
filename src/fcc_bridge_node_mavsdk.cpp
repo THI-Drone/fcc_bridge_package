@@ -198,6 +198,15 @@ void FCCBridgeNode::get_gps_telemetry() {
                 this->last_fcc_gps_info->num_satellites);
 }
 
+void FCCBridgeNode::get_flight_state() {
+
+    // Clear Cached values
+    this->last_fcc_flight_state = std::nullopt;
+
+    // Verify MAVSDK connection
+    this->verify_mavsdk_connection()
+}
+
 void FCCBridgeNode::trigger_rth() {
     RCLCPP_WARN(this->get_logger(), "Triggering RTH");
     this->deactivate();

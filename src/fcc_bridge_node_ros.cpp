@@ -52,6 +52,7 @@ void FCCBridgeNode::setup_ros() {
     this->gps_position_publisher =
         this->create_publisher<interfaces::msg::GPSPosition>("uav_gps_position",
                                                              1);
+    this->flight_state_publisher = this->create_publisher<interfaces::msg::FlightState>("uav_flight_state", 1);
 
     // Setup subscriber
     rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>
