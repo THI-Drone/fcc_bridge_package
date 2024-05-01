@@ -145,7 +145,7 @@ void FCCBridgeNode::setup_mavsdk() {
     RCLCPP_INFO(this->get_logger(), "Successfully set up MAVSDK components");
 }
 
-void FCCBridgeNode::verify_connection() {
+void FCCBridgeNode::verify_mavsdk_connection() {
     RCLCPP_DEBUG(this->get_logger(), "Verifying MAVSDK connection");
     switch (this->internal_state) {
         case INTERNAL_STATE::STARTING_UP:
@@ -176,11 +176,11 @@ void FCCBridgeNode::verify_connection() {
 }
 
 void FCCBridgeNode::get_gps_telemetry() {
-    // Clearing cached values
+    // Clear cached values
     this->last_fcc_gps_info = std::nullopt;
     this->last_fcc_position = std::nullopt;
 
-    this->verify_connection();
+    this->verify_mavsdk_connection();
 
     RCLCPP_DEBUG(this->get_logger(), "Getting GPSInfo from FCC");
     this->last_fcc_gps_info = this->mavsdk_telemtry->gps_info();

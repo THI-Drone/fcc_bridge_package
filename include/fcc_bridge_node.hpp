@@ -22,68 +22,115 @@
 #include "rclcpp/timer.hpp"
 
 // interfaces headers
+#include "interfaces/msg/flight_state.hpp"
 #include "interfaces/msg/gps_position.hpp"
 #include "interfaces/msg/heartbeat.hpp"
 
 // CommonLib headers
 #include "common_package/common_node.hpp"
 
+/**
+ * @brief Holds the fcc_bridge symbols
+ */
 namespace fcc_bridge {
 
-using u8 = uint8_t;
-using u16 = uint16_t;
-using u32 = uint32_t;
-using u64 = uint64_t;
+// Using directives to allow the reuse of standard types.
+using u8 = uint8_t;   /**< Unsigned 8 bit integer */
+using u16 = uint16_t; /**< Unsigned 16 bit integer */
+using u32 = uint32_t; /**< Unsigned 32 bit integer */
+using u64 = uint64_t; /**< Unsigned 64 bit integer */
 
-using s8 = int8_t;
-using s16 = int16_t;
-using s32 = int32_t;
-using s64 = int64_t;
+using s8 = int8_t;   /**< Signed 8 bit integer */
+using s16 = int16_t; /**< Signed 16 bit integer */
+using s32 = int32_t; /**< Signed 32 bit integer */
+using s64 = int64_t; /**< Signed 64 bit integer */
 
+/**
+ * @brief Class that provides the bridge between MAVLink and ROS
+ *
+ * Contains safety checks and contingencies
+ */
 class FCCBridgeNode : public common_lib::CommonNode {
    private:
-    // Possible internal states
+    // Internal state enum and member to track the current state of the FCC
+    // Bridge
     enum INTERNAL_STATE : u8 {
-        STARTING_UP = 0,
-        ROS_SET_UP = 1,
-        MAVSDK_SET_UP = 2,
-        WAITING_FOR_ARM = 3,
-        ARMED = 4,
-        WAITING_FOR_COMMAND = 5,
-        FLYING_ACTION = 6,
-        FLYING_MISSION = 7,
-        RETURN_TO_HOME = 8,
-        LANDED = 9,
+        STARTING_UP = 0, /**< Used initially when the object was just created.
+                            Next is the set up of the ROS components. */
+        ROS_SET_UP =
+            1, /**< Used when the ROS components where successfully set up */
+        MAVSDK_SET_UP =
+            2, /**< Used when the MAVSDK components where successfully set up.
+                  Waiting for safety limits in this state. */
+        WAITING_FOR_ARM =
+            3,     /**< In this state the node waits for the FCC to be armed */
+        ARMED = 4, /**< Waiting for StartMission from mission control */
+        WAITING_FOR_COMMAND = 5, /**< Waiting for a command from the waypoint or
+                                    mission control node. */
+        FLYING_ACTION =
+            6, /**< Currently an action is running, waiting for it to finish */
+        FLYING_MISSION =
+            7, /**< Currently a mission is running, waiting for it to finish */
+        RETURN_TO_HOME = 8, /**< Returning home. In this state no more commands
+                               are accepted. */
+        LANDED = 9, /**< The drone has landed and the node will shutdown */
 
-        ERROR = 0xFF,
-    };
-    INTERNAL_STATE internal_state;  ///> Current internal state of the fcc_node
+        ERROR =
+            0xFF, /**< Error state to signal that an unrecoverable error has
+                     occurred and even an RTH is not possible any more. Shorty
+                     after this state if taken the process will exit. */
+    }; /**< Possible internal states*/
+    INTERNAL_STATE
+    internal_state; /**< Current internal state of the fcc_node */
 
     // MAVSDK objects
-    std::optional<mavsdk::Mavsdk> mavsdk;
-    std::shared_ptr<mavsdk::System> mavsdk_system;
-    std::optional<mavsdk::Telemetry> mavsdk_telemtry;
-    std::optional<mavsdk::Action> mavsdk_action;
-    std::optional<mavsdk::Mission> mavsdk_mission;
+    std::optional<mavsdk::Mavsdk> mavsdk; /**< The base MAVSDK instance */
+    std::shared_ptr<mavsdk::System>
+        mavsdk_system; /**< The MAVSDK system representing the connection to the
+                          FCC */
+    std::optional<mavsdk::Telemetry>
+        mavsdk_telemtry; /**< The MAVSDK telemetry accessor */
+    std::optional<mavsdk::Action>
+        mavsdk_action; /**< The MAVSDK action to trigger simple actions on the
+                          FCC */
+    std::optional<mavsdk::Mission>
+        mavsdk_mission; /**< The MAVSDK mission to do archive more complex tasks
+                         */
 
     // ROS publisher
     rclcpp::Publisher<interfaces::msg::GPSPosition>::SharedPtr
-        gps_position_publisher;
+        gps_position_publisher; /**< Publisher to send out GPSPosition updates
+                                 */
+    rclcpp::Publisher<interfaces::msg::FlightState>::SharedPtr
+        flight_state_publisher; /**< Publisher to send out FlightState updates
+                                 */
 
     // ROS subscriptions
     rclcpp::Subscription<interfaces::msg::Heartbeat>::SharedPtr
-        mission_control_heartbeat_subscriber;
+        mission_control_heartbeat_subscriber; /**< Subscriber for the mission
+                                                 control heartbeats */
 
     // ROS timer
-    rclcpp::TimerBase::SharedPtr fcc_telemetry_timer_5hz;
-    rclcpp::TimerBase::SharedPtr fcc_telemetry_timer_10hz;
+    rclcpp::TimerBase::SharedPtr
+        fcc_telemetry_timer_5hz; /**< Timer for telemetry that is send out at
+                                    5Hz */
+    rclcpp::TimerBase::SharedPtr
+        fcc_telemetry_timer_10hz; /**< Timer for telemetry that is send out at
+                                     10Hz */
 
-    // Cached FCC Telemetry
-    std::optional<mavsdk::Telemetry::GpsInfo> last_fcc_gps_info;
-    std::optional<mavsdk::Telemetry::Position> last_fcc_position;
+    // Cached FCC telemetry
+    std::optional<mavsdk::Telemetry::GpsInfo>
+        last_fcc_gps_info; /**< The last GPSInfo received from the FCC */
+    std::optional<mavsdk::Telemetry::Position>
+        last_fcc_position; /**< The last Position received from the FCC */
+    std::optional<mavsdk::Telemetry::FlightMode>
+        last_fcc_flight_state; /**< The last FlightState received from the FCC
+                                */
 
-    // Last heartbeat from mission control
-    interfaces::msg::Heartbeat last_mission_control_heatbeat;
+    // Cached ROS messages
+    interfaces::msg::Heartbeat
+        last_mission_control_heatbeat; /**< The last received heartbeat from
+                                          mission control */
 
    protected:
     // Safety functions
@@ -139,14 +186,27 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * If there is an issue this function will exit the process.
      */
-    void verify_connection();
+    void verify_mavsdk_connection();
     /**
      * @brief Gets the current GPSInfo and Position from the FCC
      *
-     * Stores the result in internal member variables.
+     * Stores the result in internal member variables @ref
+     * fcc_bridge::FCCBridgeNode::last_fcc_gps_info and @ref
+     * fcc_bridge::FCCBridgeNode::last_fcc_position
+     *
      * Verifies the MAVSDK connection.
      */
     void get_gps_telemetry();
+    /**
+     * @brief Gets the current FlightState from the FCC
+     *
+     * Stores the result in the internal member variable @ref
+     * fcc_bridge::FCCBridgeNode::last_fcc_flight_state
+     *
+     * Verifies the MAVSDK connection.
+     * @note MAVSDK calls this information FlightMode
+     */
+    void get_flight_state();
     /**
      * @brief Initiates an RTH
      *

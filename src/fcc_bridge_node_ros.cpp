@@ -112,6 +112,7 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     gps_msg.relative_altitude_m = last_fcc_position->relative_altitude_m;
     this->gps_position_publisher->publish(gps_msg);
     RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
+
 }
 
 void FCCBridgeNode::check_last_mission_control_heatbeat() {
