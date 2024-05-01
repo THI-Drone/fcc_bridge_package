@@ -226,6 +226,17 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     static interfaces::msg::GPSPosition::_fix_type_type fix_type_mavsdk_to_ros(
         const mavsdk::Telemetry::FixType &fix_type);
+    /**
+     * @brief Conversion functio to turn a MAVSDK FlightMode into a ROS
+     * FlightState
+     *
+     * @param flight_mode The MAVSDK FlightMode to convert
+     * @return The ROS FlightState
+     *
+     * @throws RuntimeError If the MAVSDK FlightMode is unknown
+     */
+    static interfaces::msg::FlightState::_flight_mode_type
+    flight_mode_mavsdk_to_ros(const mavsdk::Telemetry::FlightMode &flight_mode);
 
    public:
     /**
