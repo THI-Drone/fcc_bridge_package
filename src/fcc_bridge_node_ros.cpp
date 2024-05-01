@@ -119,6 +119,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
             RCLCPP_WARN(this->get_logger(),
                         "5Hz Telemetry callback function was called in an "
                         "invalid state");
+            return;
         default:
             break;
     }
@@ -143,6 +144,7 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
             RCLCPP_WARN(this->get_logger(),
                         "10Hz Telemetry callback function was called in an "
                         "invalid state");
+            return;
         default:
             break;
     }
