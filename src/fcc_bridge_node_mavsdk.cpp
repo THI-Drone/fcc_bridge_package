@@ -183,11 +183,14 @@ void FCCBridgeNode::get_gps_telemetry() {
     this->last_fcc_gps_info = std::nullopt;
     this->last_fcc_position = std::nullopt;
 
+    // Verify MAVSDK connection
     this->verify_mavsdk_connection();
 
+    // Get GPSInfo
     RCLCPP_DEBUG(this->get_logger(), "Getting GPSInfo from FCC");
     this->last_fcc_gps_info = this->mavsdk_telemtry->gps_info();
 
+    // Get GPS position
     RCLCPP_DEBUG(this->get_logger(), "Getting position from FCC");
     this->last_fcc_position = this->mavsdk_telemtry->position();
 
@@ -209,6 +212,7 @@ void FCCBridgeNode::get_flight_state() {
     // Verify MAVSDK connection
     this->verify_mavsdk_connection();
 
+    // Get flight state
     RCLCPP_DEBUG(this->get_logger(), "Getting FlightState from FCC");
     this->last_fcc_flight_state = this->mavsdk_telemtry->flight_mode();
 
@@ -222,6 +226,8 @@ void FCCBridgeNode::get_battery_state() {
 
     // Verify MAVSDK connection
     this->verify_mavsdk_connection();
+
+    // Get battery state
     RCLCPP_DEBUG(this->get_logger(), "Getting Battery state from FCC");
     this->last_fcc_battery_state = this->mavsdk_telemtry->battery();
 
@@ -235,6 +241,25 @@ void FCCBridgeNode::get_battery_state() {
                 this->last_fcc_battery_state->current_battery_a,
                 this->last_fcc_battery_state->capacity_consumed_ah,
                 this->last_fcc_battery_state->remaining_percent);
+}
+
+void FCCBridgeNode::get_rc_state() {
+    // Clear cached values
+    this->last_fcc_rc_state = std::nullopt;
+
+    // Verify MAVSDK connection
+    this->verify_mavsdk_connection();
+
+    // Get RC state
+    RCLCPP_DEBUG(this->get_logger(), "Getting RC state from FCC");
+    this->last_fcc_rc_state = this->mavsdk_telemtry->rc_status();
+
+    RCLCPP_INFO(this->get_logger(),
+                "The current FCC RC state: RC was available once: %s\tRC is "
+                "available: %s\t Signal strength: %f%%",
+                this->last_fcc_rc_state->was_available_once ? "true" : "false",
+                this->last_fcc_rc_state->is_available ? "true" : "false",
+                this->last_fcc_rc_state->signal_strength_percent);
 }
 
 void FCCBridgeNode::trigger_rth() {

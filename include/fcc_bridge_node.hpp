@@ -26,6 +26,7 @@
 #include "interfaces/msg/flight_state.hpp"
 #include "interfaces/msg/gps_position.hpp"
 #include "interfaces/msg/heartbeat.hpp"
+#include "interfaces/msg/rc_state.hpp"
 
 // CommonLib headers
 #include "common_package/common_node.hpp"
@@ -107,7 +108,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
                                  */
     rclcpp::Publisher<interfaces::msg::BatteryState>::SharedPtr
         battery_state_publisher; /**<  Publisher to send out Battery state
-                                    updates*/
+                                    updates */
+    rclcpp::Publisher<interfaces::msg::RCState>::SharedPtr
+        rc_state_publisher; /**< Publisher to end out RC state updates */
 
     // ROS subscriptions
     rclcpp::Subscription<interfaces::msg::Heartbeat>::SharedPtr
@@ -225,6 +228,15 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Verifies the MAVSDK connection.
      */
     void get_battery_state();
+    /**
+     * @brief Gets the current remote control from the FCC
+     *
+     * Stores the result in the internal member variable @ref
+     * fcc_bridge::FCCBridgeNode::last_fcc_rc_state
+     *
+     * Verifies the MAVSDK connection.
+     */
+    void get_rc_state();
     /**
      * @brief Initiates an RTH
      *

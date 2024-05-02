@@ -65,6 +65,10 @@ void FCCBridgeNode::setup_ros() {
         this->create_publisher<interfaces::msg::BatteryState>(
             "uav_battery_state", 1);
 
+    // Create RCState publisher
+    this->rc_state_publisher =
+        this->create_publisher<interfaces::msg::RCState>("uav_rc_state", 1);
+
     // Setup subscriber
 
     // Create subscription options for heartbeat to only receive mission control
@@ -170,6 +174,19 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
         this->last_fcc_battery_state->remaining_percent;
     this->battery_state_publisher->publish(battery_state_msg);
     RCLCPP_DEBUG(this->get_logger(), "Published current battery state");
+
+    // Update RC state
+    this->get_rc_state();
+    interfaces::msg::RCState rc_state_msg;
+    rc_state_msg.time_stamp = this->now();
+    rc_state_msg.sender_id = this->get_name();
+    rc_state_msg.was_available_once =
+        this->last_fcc_rc_state->was_available_once;
+    rc_state_msg.is_available = this->last_fcc_rc_state->is_available;
+    rc_state_msg.signal_strength_percent =
+        this->last_fcc_rc_state->signal_strength_percent;
+    this->rc_state_publisher->publish(rc_state_msg);
+    RCLCPP_DEBUG(this->get_logger(), "Published current RC state");
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
