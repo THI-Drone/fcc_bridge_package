@@ -1,4 +1,8 @@
 /*
+ * See here: https://github.com/chrberger/geofence/blob/master/geofence.hpp
+ */
+
+/*
  * MIT License
  *
  * Copyright (c) 2020  Christian Berger
