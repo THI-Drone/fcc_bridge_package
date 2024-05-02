@@ -44,7 +44,7 @@ void FCCBridgeNode::setup_ros() {
     // Check if the node is in the correct state
     if (this->internal_state != INTERNAL_STATE::STARTING_UP) {
         RCLCPP_ERROR(this->get_logger(),
-                     "Repeated try to setup ros components");
+                     "Attempted to setup ROS components more than once");
         this->internal_state = INTERNAL_STATE::ERROR;
         return;
     }
