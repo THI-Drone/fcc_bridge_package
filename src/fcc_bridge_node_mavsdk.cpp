@@ -63,7 +63,7 @@ void FCCBridgeNode::setup_mavsdk() {
         return;
     }
 
-    // Checking of for the supplied uav id there is an entry in the SYS_ID_MAP
+    // Checking if there is an entry in the SYS_ID_MAP for the supplied UAV_ID
     const std::map<const std::string,
                    std::pair<const u8, const bool>>::const_iterator
         uav_id_map_entry = SYS_ID_MAP.find(uav_id);
