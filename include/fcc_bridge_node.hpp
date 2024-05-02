@@ -133,10 +133,12 @@ class FCCBridgeNode : public common_lib::CommonNode {
     std::optional<mavsdk::Telemetry::Battery>
         last_fcc_battery_state; /**< The last received battery state from the
                                    FCC */
+    std::optional<mavsdk::Telemetry::RcStatus>
+        last_fcc_rc_state; /**< The last received rc state from the FCC */
 
     // Cached ROS messages
     interfaces::msg::Heartbeat
-        last_mission_control_heatbeat; /**< The last received heartbeat from
+        last_mission_control_heartbeat; /**< The last received heartbeat from
                                           mission control */
 
    protected:
