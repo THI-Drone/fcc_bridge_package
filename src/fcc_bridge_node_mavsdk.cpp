@@ -21,9 +21,28 @@ constexpr char const *SIMULATOR_IP_ADDRESS = "127.0.0.1";
 // Simulator UDP Port number
 constexpr int SIMULATOR_PORT_NUMBER = 14540;
 
+/**
+ * @brief Struct to hold an entry in @ref fcc_bridge::SYS_ID_MAP
+ */
+struct sys_id_map_entry {
+    const u8 MAVLINK_SYS_ID; /**< The MAVLink System ID to use */
+    const bool
+        IS_SIMULATOR_TARGET; /**< If the selected target is a simulator */
+    /**
+     * @brief Constructor to create an instance of this struct in a well defined
+     * manner
+     * @param MAVLINK_SYS_ID The MAVLink System ID to use
+     * @param IS_SIMULATOR_TARGET If the selected target is a simulator
+     */
+    constexpr sys_id_map_entry(const u8 MAVLINK_SYS_ID,
+                               const bool IS_SIMULATOR_TARGET)
+        : MAVLINK_SYS_ID(MAVLINK_SYS_ID),
+          IS_SIMULATOR_TARGET(IS_SIMULATOR_TARGET) {}
+};
+
 // Map to get the MAVLink System id for the selected
-// {TEAM_ID : {SYS_ID, IS_SIMULATOR_TARGET}}
-const std::map<const std::string, std::pair<const u8, const bool>> SYS_ID_MAP{
+// {TEAM_ID : {MAVLINK_SYS_ID, IS_SIMULATOR_TARGET}}
+const std::map<const std::string, const struct sys_id_map_entry> SYS_ID_MAP{
     {"UAV_TEAM_RED", {21, false}},
     {"UAV_TEAM_GREEN", {22, false}},
     {"UAV_TEAM_BLUE", {23, false}},
@@ -65,7 +84,7 @@ void FCCBridgeNode::setup_mavsdk() {
 
     // Checking if there is an entry in the SYS_ID_MAP for the supplied UAV_ID
     const std::map<const std::string,
-                   std::pair<const u8, const bool>>::const_iterator
+                   const struct sys_id_map_entry>::const_iterator
         uav_id_map_entry = SYS_ID_MAP.find(uav_id);
     if (uav_id_map_entry == SYS_ID_MAP.end()) {
         RCLCPP_FATAL(this->get_logger(), "Got unknown UAV_ID!");
@@ -75,16 +94,16 @@ void FCCBridgeNode::setup_mavsdk() {
 
     // Creating a MAVSDK instance with the provided System ID as an onboard
     // computer
-    this->mavsdk.emplace(mavsdk::Mavsdk::Configuration(
-        std::get<const u8>(uav_id_map_entry->second),
-        MAV_COMP_ID_ONBOARD_COMPUTER, false));
+    this->mavsdk.emplace(
+        mavsdk::Mavsdk::Configuration(uav_id_map_entry->second.MAVLINK_SYS_ID,
+                                      MAV_COMP_ID_ONBOARD_COMPUTER, false));
 
     // The result of the connection attempt to the MAVLink network will be
     // stored here
     mavsdk::ConnectionResult connection_result;
 
     // Checking if the target UAV is a simulation target
-    if (std::get<const bool>(uav_id_map_entry->second)) {
+    if (uav_id_map_entry->second.IS_SIMULATOR_TARGET) {
         RCLCPP_WARN(this->get_logger(), "Connecting to simulator!");
         // Trying to connect to the simulated MAVLink network
         connection_result = this->mavsdk->add_udp_connection(
