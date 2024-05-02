@@ -14,11 +14,11 @@ namespace {
 constexpr char const *UART_DEVICE_PATH = "/dev/serial0";
 
 // Baud rate to use for uart connection
-constexpr int UART_BAUD_RATE = 112500;
+constexpr int UART_BAUD_RATE = 57600;
 
 // Simulator IP address
 constexpr char const *SIMULATOR_IP_ADDRESS = "127.0.0.1";
-// Simulator TCP Port number
+// Simulator UDP Port number
 constexpr int SIMULATOR_PORT_NUMBER = 14540;
 
 // Map to get the MAVLink System id for the selected
