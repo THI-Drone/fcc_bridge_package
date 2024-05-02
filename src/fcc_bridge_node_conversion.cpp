@@ -1,5 +1,5 @@
 //
-// Created by Johan on 01.05.2024.
+// Created by Johan <job8197@thi.de> on 01.05.2024.
 //
 
 #include "fcc_bridge_node.hpp"

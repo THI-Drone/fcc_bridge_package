@@ -2,12 +2,12 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>fcc_bridge</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="phg6386@thi.de">philipp</maintainer>
+  <version>0.1.0</version>
+  <description>Bridge between the FCC and the ROS network. Implements safety checks.</description>
+  <maintainer email="job8197@thi.de">Johan</maintainer>
   <license>MIT</license>
-  <url>https://github.com/THI-Drone/demo_package</url>
-  <author email="pgh6386@thi.de">philipp</author>
+  <url>https://github.com/THI-Drone/fcc_bridge_package</url>
+  <author email="job8197@thi.de">Johan</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>rclcpp</depend>
