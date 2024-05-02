@@ -124,13 +124,6 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
         this->trigger_rth();
     }
 
-    // Check if mission control is still active
-    if (!msg.active) {
-        RCLCPP_ERROR(this->get_logger(),
-                     "Mission control node is inactive! Triggering RTH...");
-        this->trigger_rth();
-    }
-
     // Set the cached heartbeat message to the current one
     this->last_mission_control_heartbeat = msg;
 
