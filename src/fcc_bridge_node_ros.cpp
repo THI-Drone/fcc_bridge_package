@@ -60,6 +60,11 @@ void FCCBridgeNode::setup_ros() {
         this->create_publisher<interfaces::msg::FlightState>("uav_flight_state",
                                                              1);
 
+    // Create BatteryState publisher
+    this->battery_state_publisher =
+        this->create_publisher<interfaces::msg::BatteryState>(
+            "uav_battery_state", 1);
+
     // Setup subscriber
 
     // Create subscription options for heartbeat to only receive mission control
@@ -137,14 +142,34 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
         default:
             break;
     }
+
+    // Update flight state
     this->get_flight_state();
-    interfaces::msg::FlightState fligh_state_msg;
-    fligh_state_msg.time_stamp = this->now();
-    fligh_state_msg.sender_id = this->get_name();
-    fligh_state_msg.flight_mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
+    interfaces::msg::FlightState flight_state_msg;
+    flight_state_msg.time_stamp = this->now();
+    flight_state_msg.sender_id = this->get_name();
+    flight_state_msg.flight_mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
         this->last_fcc_flight_state.value());
-    this->flight_state_publisher->publish(fligh_state_msg);
+    this->flight_state_publisher->publish(flight_state_msg);
     RCLCPP_DEBUG(this->get_logger(), "Published current Flight State");
+
+    // Update battery state
+    this->get_battery_state();
+    interfaces::msg::BatteryState battery_state_msg;
+    battery_state_msg.time_stamp = this->now();
+    battery_state_msg.sender_id = this->get_name();
+    battery_state_msg.id = this->last_fcc_battery_state->id;
+    battery_state_msg.temperature_degc =
+        this->last_fcc_battery_state->temperature_degc;
+    battery_state_msg.voltage_v = this->last_fcc_battery_state->voltage_v;
+    battery_state_msg.current_battery_a =
+        this->last_fcc_battery_state->current_battery_a;
+    battery_state_msg.capacity_consumed_ah =
+        this->last_fcc_battery_state->capacity_consumed_ah;
+    battery_state_msg.remaining_percent =
+        this->last_fcc_battery_state->remaining_percent;
+    this->battery_state_publisher->publish(battery_state_msg);
+    RCLCPP_DEBUG(this->get_logger(), "Published current battery state");
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {

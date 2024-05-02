@@ -5,6 +5,7 @@
 #include "fcc_bridge_node.hpp"
 
 // Libc header
+#include <cinttypes>
 #include <map>
 
 namespace fcc_bridge {
@@ -190,18 +191,19 @@ void FCCBridgeNode::get_gps_telemetry() {
     RCLCPP_DEBUG(this->get_logger(), "Getting position from FCC");
     this->last_fcc_position = this->mavsdk_telemtry->position();
 
-    RCLCPP_INFO(this->get_logger(),
-                "Current position of UAV: Lat: %f°\tLon: %f°\tAbsolute "
-                "attitude: %fm\trelative attitude: %fm\tNo. of satellites: %d",
-                this->last_fcc_position->latitude_deg,
-                this->last_fcc_position->longitude_deg,
-                this->last_fcc_position->absolute_altitude_m,
-                this->last_fcc_position->relative_altitude_m,
-                this->last_fcc_gps_info->num_satellites);
+    RCLCPP_INFO(
+        this->get_logger(),
+        "Current position of UAV: Lat: %f°\tLon: %f°\tAbsolute "
+        "attitude: %fm\trelative attitude: %fm\tNo. of satellites: %" PRId32,
+        this->last_fcc_position->latitude_deg,
+        this->last_fcc_position->longitude_deg,
+        this->last_fcc_position->absolute_altitude_m,
+        this->last_fcc_position->relative_altitude_m,
+        this->last_fcc_gps_info->num_satellites);
 }
 
 void FCCBridgeNode::get_flight_state() {
-    // Clear Cached values
+    // Clear Cached value
     this->last_fcc_flight_state = std::nullopt;
 
     // Verify MAVSDK connection
@@ -209,8 +211,30 @@ void FCCBridgeNode::get_flight_state() {
 
     RCLCPP_DEBUG(this->get_logger(), "Getting FlightState from FCC");
     this->last_fcc_flight_state = this->mavsdk_telemtry->flight_mode();
+
     RCLCPP_INFO(this->get_logger(), "The current flight mode is: %d",
                 static_cast<int>(this->last_fcc_flight_state.value()));
+}
+
+void FCCBridgeNode::get_battery_state() {
+    // Clear cached values
+    this->last_fcc_battery_state = std::nullopt;
+
+    // Verify MAVSDK connection
+    this->verify_mavsdk_connection();
+    RCLCPP_DEBUG(this->get_logger(), "Getting Battery state from FCC");
+    this->last_fcc_battery_state = this->mavsdk_telemtry->battery();
+
+    RCLCPP_INFO(this->get_logger(),
+                "The current FCC battery state: Battery id: %" PRIu32
+                "\tTemperature: %f°C\tVoltage: %fV\tBattery current: "
+                "%fA\tConsumed capacity: %fAh\tRemaining percent: %f%%",
+                this->last_fcc_battery_state->id,
+                this->last_fcc_battery_state->temperature_degc,
+                this->last_fcc_battery_state->voltage_v,
+                this->last_fcc_battery_state->current_battery_a,
+                this->last_fcc_battery_state->capacity_consumed_ah,
+                this->last_fcc_battery_state->remaining_percent);
 }
 
 void FCCBridgeNode::trigger_rth() {

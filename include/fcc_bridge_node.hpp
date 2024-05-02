@@ -22,6 +22,7 @@
 #include "rclcpp/timer.hpp"
 
 // interfaces headers
+#include "interfaces/msg/battery_state.hpp"
 #include "interfaces/msg/flight_state.hpp"
 #include "interfaces/msg/gps_position.hpp"
 #include "interfaces/msg/heartbeat.hpp"
@@ -104,6 +105,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
     rclcpp::Publisher<interfaces::msg::FlightState>::SharedPtr
         flight_state_publisher; /**< Publisher to send out FlightState updates
                                  */
+    rclcpp::Publisher<interfaces::msg::BatteryState>::SharedPtr
+        battery_state_publisher; /**<  Publisher to send out Battery state
+                                    updates*/
 
     // ROS subscriptions
     rclcpp::Subscription<interfaces::msg::Heartbeat>::SharedPtr
@@ -126,6 +130,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
     std::optional<mavsdk::Telemetry::FlightMode>
         last_fcc_flight_state; /**< The last FlightState received from the FCC
                                 */
+    std::optional<mavsdk::Telemetry::Battery>
+        last_fcc_battery_state; /**< The last received battery state from the
+                                   FCC */
 
     // Cached ROS messages
     interfaces::msg::Heartbeat
@@ -207,6 +214,15 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @note MAVSDK calls this information FlightMode
      */
     void get_flight_state();
+    /**
+     * @brief Gets the current Battery state from the FCC
+     *
+     * Stores the result in the internal member variable @ref
+     * fcc_bridge::FCCBridgeNode::last_fcc_battery_state
+     *
+     * Verifies the MAVSDK connection.
+     */
+    void get_battery_state();
     /**
      * @brief Initiates an RTH
      *
