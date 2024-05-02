@@ -13,6 +13,7 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
     : CommonNode(name), internal_state(INTERNAL_STATE::STARTING_UP) {
     // Pre-populate the last mission control heartbeat
     this->last_mission_control_heartbeat.time_stamp = this->now();
+    this->last_mission_control_heartbeat.tick = 0;
 
     // Setup ROS objects such as timer, publishers etc.
     this->setup_ros();
