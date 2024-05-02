@@ -8,6 +8,14 @@
 #include <chrono>
 
 namespace fcc_bridge {
+
+namespace {
+constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_5HZ{
+    200}; /**< The period of the 5Hz telemetry timer */
+constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_10HZ{
+    100}; /**< The period of the 10Hz telemetry timer */
+}  // namespace
+
 FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
                              const rclcpp::NodeOptions &node_options*/)
     : CommonNode(name), internal_state(INTERNAL_STATE::STARTING_UP) {
@@ -95,12 +103,12 @@ void FCCBridgeNode::setup_ros() {
 
     // Setup 5Hz timer to get telemetry from the FCC
     this->fcc_telemetry_timer_5hz = this->create_wall_timer(
-        std::chrono::milliseconds{200},
+        FCC_TELEMETRY_PERIOD_5HZ,
         std::bind(&FCCBridgeNode::fcc_telemetry_timer_5hz_cb, this));
 
     // Setup 10Hz timer to get telemetry from the FCC
-    this->fcc_telemetry_timer_5hz = this->create_wall_timer(
-        std::chrono::milliseconds{100},
+    this->fcc_telemetry_timer_10hz = this->create_wall_timer(
+        FCC_TELEMETRY_PERIOD_10HZ,
         std::bind(&FCCBridgeNode::fcc_telemetry_timer_10hz_cb, this));
 }
 
