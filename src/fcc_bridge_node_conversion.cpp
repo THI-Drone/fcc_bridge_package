@@ -31,49 +31,72 @@ FCCBridgeNode::fix_type_mavsdk_to_ros(
             return interfaces::msg::GPSPosition::RTK_FIXED;
         default:
             throw std::runtime_error(
-                std::string("Got invalid fix type ") +
+                std::string("Got invalid mavsdk::Telemetry::FixType value ") +
                 std::to_string(static_cast<int>(fix_type)));
     }
 }
 
-interfaces::msg::FlightState::_flight_mode_type
+interfaces::msg::FlightState::_mode_type::_mode_type
 FCCBridgeNode::flight_mode_mavsdk_to_ros(
     const mavsdk::Telemetry::FlightMode &flight_mode) {
     switch (flight_mode) {
         case mavsdk::Telemetry::FlightMode::Unknown:
-            return interfaces::msg::FlightState::UNKNOWN;
+            return interfaces::msg::FlightState::_mode_type::UNKNOWN;
         case mavsdk::Telemetry::FlightMode::Ready:
-            return interfaces::msg::FlightState::READY;
+            return interfaces::msg::FlightState::_mode_type::READY;
         case mavsdk::Telemetry::FlightMode::Takeoff:
-            return interfaces::msg::FlightState::TAKEOFF;
+            return interfaces::msg::FlightState::_mode_type::TAKEOFF;
         case mavsdk::Telemetry::FlightMode::Hold:
-            return interfaces::msg::FlightState::HOLD;
+            return interfaces::msg::FlightState::_mode_type::HOLD;
         case mavsdk::Telemetry::FlightMode::Mission:
-            return interfaces::msg::FlightState::MISSION;
+            return interfaces::msg::FlightState::_mode_type::MISSION;
         case mavsdk::Telemetry::FlightMode::ReturnToLaunch:
-            return interfaces::msg::FlightState::RETURN_TO_LAUNCH;
+            return interfaces::msg::FlightState::_mode_type::RETURN_TO_LAUNCH;
         case mavsdk::Telemetry::FlightMode::Land:
-            return interfaces::msg::FlightState::LAND;
+            return interfaces::msg::FlightState::_mode_type::LAND;
         case mavsdk::Telemetry::FlightMode::Offboard:
-            return interfaces::msg::FlightState::OFFBOARD;
+            return interfaces::msg::FlightState::_mode_type::OFFBOARD;
         case mavsdk::Telemetry::FlightMode::FollowMe:
-            return interfaces::msg::FlightState::FOLLOW_ME;
+            return interfaces::msg::FlightState::_mode_type::FOLLOW_ME;
         case mavsdk::Telemetry::FlightMode::Manual:
-            return interfaces::msg::FlightState::MANUAL;
+            return interfaces::msg::FlightState::_mode_type::MANUAL;
         case mavsdk::Telemetry::FlightMode::Altctl:
-            return interfaces::msg::FlightState::ALTITUDE_CONTROL;
+            return interfaces::msg::FlightState::_mode_type::ALTITUDE_CONTROL;
         case mavsdk::Telemetry::FlightMode::Posctl:
-            return interfaces::msg::FlightState::POSITION_CONTROL;
+            return interfaces::msg::FlightState::_mode_type::POSITION_CONTROL;
         case mavsdk::Telemetry::FlightMode::Acro:
-            return interfaces::msg::FlightState::ACRO;
+            return interfaces::msg::FlightState::_mode_type::ACRO;
         case mavsdk::Telemetry::FlightMode::Stabilized:
-            return interfaces::msg::FlightState::STABILIZED;
+            return interfaces::msg::FlightState::_mode_type::STABILIZED;
         case mavsdk::Telemetry::FlightMode::Rattitude:
-            return interfaces::msg::FlightState::RATTITUDE;
+            return interfaces::msg::FlightState::_mode_type::RATTITUDE;
         default:
             throw std::runtime_error(
-                std::string("Got invalid flight mode ") +
+                std::string(
+                    "Got invalid mavsdk::Telemetry::FlightMode value ") +
                 std::to_string(static_cast<int>(flight_mode)));
+    }
+}
+
+interfaces::msg::FlightState::_state_type::_state_type
+FCCBridgeNode::landed_state_mavsdk_to_ros(
+    const mavsdk::Telemetry::LandedState &landed_state) {
+    switch (landed_state) {
+        case mavsdk::Telemetry::LandedState::Unknown:
+            return interfaces::msg::FlightState::_state_type::UNKNOWN;
+        case mavsdk::Telemetry::LandedState::OnGround:
+            return interfaces::msg::FlightState::_state_type::ON_GROUND;
+        case mavsdk::Telemetry::LandedState::InAir:
+            return interfaces::msg::FlightState::_state_type::IN_AIR;
+        case mavsdk::Telemetry::LandedState::TakingOff:
+            return interfaces::msg::FlightState::_state_type::TAKING_OFF;
+        case mavsdk::Telemetry::LandedState::Landing:
+            return interfaces::msg::FlightState::_state_type::LANDING;
+        default:
+            throw std::runtime_error(
+                std::string(
+                    "Got invalid mavsdk::Telemetry::LandedState value ") +
+                std::to_string(static_cast<int>(landed_state)));
     }
 }
 
@@ -124,6 +147,22 @@ const char *FCCBridgeNode::mavsdk_flight_mode_to_str(
                 std::string(
                     "Got invalid mavsdk::Telemetry::FlightMode value ") +
                 std::to_string(static_cast<int>(flight_mode)));
+    }
+}
+
+const char *FCCBridgeNode::mavsdk_landed_state_to_str(
+    const mavsdk::Telemetry::LandedState &landed_state) {
+    switch (landed_state) {
+        ENUM_TO_STR(mavsdk::Telemetry::LandedState, Unknown);
+        ENUM_TO_STR(mavsdk::Telemetry::LandedState, OnGround);
+        ENUM_TO_STR(mavsdk::Telemetry::LandedState, InAir);
+        ENUM_TO_STR(mavsdk::Telemetry::LandedState, TakingOff);
+        ENUM_TO_STR(mavsdk::Telemetry::LandedState, Landing);
+        default:
+            throw std::runtime_error(
+                std::string(
+                    "Got invalid mavsdk::Telemetry::LandedState value ") +
+                std::to_string(static_cast<int>(landed_state)));
     }
 }
 

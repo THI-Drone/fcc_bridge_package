@@ -228,23 +228,32 @@ void FCCBridgeNode::get_gps_telemetry() {
         this->last_fcc_position->longitude_deg,
         static_cast<double>(this->last_fcc_position->absolute_altitude_m),
         static_cast<double>(this->last_fcc_position->relative_altitude_m),
-        this->last_fcc_gps_info->num_satellites);
+        this->last_fcc_gps_info->num_satellites);  // TODO: Print out fix type
 }
 
 void FCCBridgeNode::get_flight_state() {
-    // Clear Cached value
-    this->last_fcc_flight_state = std::nullopt;
+    // Clear Cached values
+    this->last_fcc_flight_mode = std::nullopt;
+    this->last_fcc_landed_state = std::nullopt;
 
     // Verify MAVSDK connection
     this->verify_mavsdk_connection();
 
-    // Get flight state
-    RCLCPP_DEBUG(this->get_logger(), "Getting FlightState from FCC");
-    this->last_fcc_flight_state = this->mavsdk_telemtry->flight_mode();
+    // Get flight mode
+    RCLCPP_DEBUG(this->get_logger(), "Getting FlightMode from FCC");
+    this->last_fcc_flight_mode = this->mavsdk_telemtry->flight_mode();
 
     RCLCPP_INFO(this->get_logger(), "The current flight mode is: %s",
                 FCCBridgeNode::mavsdk_flight_mode_to_str(
-                    this->last_fcc_flight_state.value()));
+                    this->last_fcc_flight_mode.value()));
+
+    // Get landed state
+    RCLCPP_DEBUG(this->get_logger(), "Getting LandedState from FCC");
+    this->last_fcc_landed_state = this->mavsdk_telemtry->landed_state();
+
+    RCLCPP_INFO(
+        this->get_logger(), "The current landed state is: %s",
+        this->mavsdk_landed_state_to_str(this->last_fcc_landed_state.value()));
 }
 
 void FCCBridgeNode::get_battery_state() {

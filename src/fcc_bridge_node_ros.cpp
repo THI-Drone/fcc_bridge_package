@@ -308,8 +308,10 @@ void FCCBridgeNode::send_flight_state() {
     interfaces::msg::FlightState flight_state_msg;
     flight_state_msg.time_stamp = this->now();
     flight_state_msg.sender_id = this->get_name();
-    flight_state_msg.flight_mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
-        this->last_fcc_flight_state.value());
+    flight_state_msg.mode.mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
+        this->last_fcc_flight_mode.value());
+    flight_state_msg.state.state = FCCBridgeNode::landed_state_mavsdk_to_ros(
+        this->last_fcc_landed_state.value());
 
     // Publish the message
     this->flight_state_publisher->publish(flight_state_msg);

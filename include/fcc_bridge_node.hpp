@@ -180,7 +180,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
     std::optional<mavsdk::Telemetry::Position>
         last_fcc_position; /**< The last Position received from the FCC */
     std::optional<mavsdk::Telemetry::FlightMode>
-        last_fcc_flight_state; /**< The last FlightState received from the FCC
+        last_fcc_flight_mode; /**< The last FlightMode received from the FCC
+                               */
+    std::optional<mavsdk::Telemetry::LandedState>
+        last_fcc_landed_state; /**< The last LandedState recieved from the FCC
                                 */
     std::optional<mavsdk::Telemetry::Battery>
         last_fcc_battery_state; /**< The last received battery state from the
@@ -471,15 +474,27 @@ class FCCBridgeNode : public common_lib::CommonNode {
         const mavsdk::Telemetry::FixType &fix_type);
     /**
      * @brief Conversion function to turn a MAVSDK FlightMode into a ROS
-     * FlightState
+     * FlightMode
      *
      * @param flight_mode The MAVSDK FlightMode to convert
-     * @return The ROS FlightState
+     * @return The ROS FlightMode
      *
      * @throws std::runtime_error If the MAVSDK FlightMode is unknown
      */
-    static interfaces::msg::FlightState::_flight_mode_type
+    static interfaces::msg::FlightState::_mode_type::_mode_type
     flight_mode_mavsdk_to_ros(const mavsdk::Telemetry::FlightMode &flight_mode);
+    /**
+     * @brief Conversion function to turn a MAVSDK LandedState into a ROS
+     * LandedState
+     *
+     * @param flight_mode The MAVSDK LandedState to convert
+     * @return The ROS LandedState
+     *
+     * @throws std::runtime_error If the MAVSDK LandedState is unknown
+     */
+    static interfaces::msg::FlightState::_state_type::_state_type
+    landed_state_mavsdk_to_ros(
+        const mavsdk::Telemetry::LandedState &landed_state);
     /**
      * @brief Conversion function to get the string representation of a @ref
      * mavsdk::ConnectionResult
@@ -488,7 +503,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @return The string representation of the result
      *
-     * @throws std::runtime_error If the value is unknown;
+     * @throws std::runtime_error If the value is unknown
      */
     static char const *mavsdk_connection_result_to_str(
         const mavsdk::ConnectionResult &result);
@@ -500,10 +515,22 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @return The string representation of the flight mode
      *
-     * @throws std::runtime_error If the value is unknown;
+     * @throws std::runtime_error If the value is unknown
      */
     static char const *mavsdk_flight_mode_to_str(
         const mavsdk::Telemetry::FlightMode &flight_mode);
+    /**
+     * @brief Conversion function to get the string representation of a @ref
+     * mavsdk::Telemetry::LandedState
+     *
+     * @param landed_state The landed state to convert
+     *
+     * @return The string representation of the flight mode
+     *
+     * @throws std::runtime_error If the value is unknown
+     */
+    static char const *mavsdk_landed_state_to_str(
+        const mavsdk::Telemetry::LandedState &landed_state);
     /**
      * @brief Conversion function to get the string representation of a @ref
      * mavsdk::Mission::Result
