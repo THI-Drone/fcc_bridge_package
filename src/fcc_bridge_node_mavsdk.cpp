@@ -251,11 +251,12 @@ void FCCBridgeNode::get_battery_state() {
     RCLCPP_DEBUG(this->get_logger(), "Getting Battery state from FCC");
     this->last_fcc_battery_state = this->mavsdk_telemtry->battery();
 
-    RCLCPP_INFO(this->get_logger(),
-                "The current FCC battery state: Battery id: %" PRIu32
-                "\tTemperature: %f°C\tVoltage: %fV\tBattery current: "
-                "%fA\tConsumed capacity: %fAh\tRemaining percent: %f%%",
-                this->last_fcc_battery_state->id,
+    RCLCPP_INFO(
+        this->get_logger(),
+        "The current FCC battery state: Battery id: %" PRIu32
+        "\tTemperature: %f°C\tVoltage: %fV\tBattery current: "
+        "%fA\tConsumed capacity: %fAh\tRemaining percent: %f%%",
+        this->last_fcc_battery_state->id,
         static_cast<double>(this->last_fcc_battery_state->temperature_degc),
         static_cast<double>(this->last_fcc_battery_state->voltage_v),
         static_cast<double>(this->last_fcc_battery_state->current_battery_a),
@@ -274,11 +275,12 @@ void FCCBridgeNode::get_rc_state() {
     RCLCPP_DEBUG(this->get_logger(), "Getting RC state from FCC");
     this->last_fcc_rc_state = this->mavsdk_telemtry->rc_status();
 
-    RCLCPP_INFO(this->get_logger(),
-                "The current FCC RC state: RC was available once: %s\tRC is "
-                "available: %s\t Signal strength: %f%%",
-                this->last_fcc_rc_state->was_available_once ? "true" : "false",
-                this->last_fcc_rc_state->is_available ? "true" : "false",
+    RCLCPP_INFO(
+        this->get_logger(),
+        "The current FCC RC state: RC was available once: %s\tRC is "
+        "available: %s\t Signal strength: %f%%",
+        this->last_fcc_rc_state->was_available_once ? "true" : "false",
+        this->last_fcc_rc_state->is_available ? "true" : "false",
         static_cast<double>(this->last_fcc_rc_state->signal_strength_percent));
 }
 
