@@ -211,7 +211,7 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
     this->set_internal_state(INTERNAL_STATE::ROS_SET_UP);
     RCLCPP_INFO(this->get_logger(), "Transitioning into ROS_SET_UP state");
 
-    // Setup MAVSDk objects such as system, telemetry etc.
+    // Setup MAVSDK objects such as system, telemetry etc.
     this->setup_mavsdk();
     if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
         RCLCPP_FATAL(this->get_logger(), "Failed to setup MAVSDK! Exiting...");
