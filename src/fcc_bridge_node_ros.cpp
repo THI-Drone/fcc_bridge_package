@@ -25,21 +25,21 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
 
     // Setup ROS objects such as timer, publishers etc.
     this->setup_ros();
-    if (this->internal_state == INTERNAL_STATE::ERROR) {
+    if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
         RCLCPP_FATAL(this->get_logger(), "Failed to setup ROS! Exiting...");
         this->exit_process_on_error();
     }
-    this->internal_state = INTERNAL_STATE::ROS_SET_UP;
+    this->set_internal_state(INTERNAL_STATE::ROS_SET_UP);
     RCLCPP_INFO(this->get_logger(), "Transitioning into ROS_SET_UP state");
 
     // Setup MAVSDk objects such as system, telemetry etc.
     this->setup_mavsdk();
-    if (this->internal_state == INTERNAL_STATE::ERROR) {
+    if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
         RCLCPP_FATAL(this->get_logger(), "Failed to setup MAVSDK! Exiting...");
         this->exit_process_on_error();
     }
     RCLCPP_INFO(this->get_logger(), "Transitioning into MAVSDK_SET_UP state");
-    this->internal_state = INTERNAL_STATE::MAVSDK_SET_UP;
+    this->set_internal_state(INTERNAL_STATE::MAVSDK_SET_UP);
 
     // Activating node to signal that it is ready for the safety limits
     this->activate();
@@ -48,13 +48,52 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
                 this->get_name());
 }
 
+void FCCBridgeNode::set_internal_state(
+    const fcc_bridge::FCCBridgeNode::INTERNAL_STATE new_state) {
+    // Placeholder for the name of the enum entry name of new state
+    const char *state_name = nullptr;
+
+    // Helper define to cut down on boilerplate code
+#define HELPER(enum_entry)           \
+    case INTERNAL_STATE::enum_entry: \
+        state_name = #enum_entry;    \
+        break
+
+    // Set state_name to enum entry name of new_state
+    switch (new_state) {
+        HELPER(STARTING_UP);
+        HELPER(ROS_SET_UP);
+        HELPER(MAVSDK_SET_UP);
+        HELPER(WAITING_FOR_ARM);
+        HELPER(ARMED);
+        HELPER(WAITING_FOR_COMMAND);
+        HELPER(FLYING_ACTION);
+        HELPER(FLYING_MISSION);
+        HELPER(RETURN_TO_HOME);
+        HELPER(LANDED);
+        HELPER(ERROR);
+        default:
+            throw std::runtime_error("Got unexpected state!");
+    }
+
+        // Undefine HELPER as it is no longer needed
+#undef HELPER
+
+    RCLCPP_INFO(this->get_logger(),
+                "Switching to new internal_state: INTERNAL_STATE::%s",
+                state_name);
+
+    // Actually set the state.
+    this->internal_state = new_state;
+}
+
 void FCCBridgeNode::setup_ros() {
     RCLCPP_DEBUG(this->get_logger(), "Setting up ROS");
     // Check if the node is in the correct state
-    if (this->internal_state != INTERNAL_STATE::STARTING_UP) {
+    if (this->get_internal_state() != INTERNAL_STATE::STARTING_UP) {
         RCLCPP_ERROR(this->get_logger(),
                      "Attempted to setup ROS components more than once");
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
 
@@ -97,7 +136,7 @@ void FCCBridgeNode::setup_ros() {
     // Ensure that the filter is enabled. (Some DDS versions do not support it)
     if (!this->mission_control_heartbeat_subscriber->is_cft_enabled()) {
         RCLCPP_FATAL(this->get_logger(), "Content filtering is not enabled!");
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
 
@@ -139,7 +178,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
     RCLCPP_DEBUG(this->get_logger(),
                  "5Hz telemetry timer callback was triggered");
     this->check_last_mission_control_heatbeat();
-    switch (this->internal_state) {
+    switch (this->get_internal_state()) {
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
         case INTERNAL_STATE::ERROR:
@@ -197,7 +236,7 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     RCLCPP_DEBUG(this->get_logger(),
                  "10Hz telemetry timer callback was triggered");
     this->check_last_mission_control_heatbeat();
-    switch (this->internal_state) {
+    switch (this->get_internal_state()) {
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
         case INTERNAL_STATE::ERROR:

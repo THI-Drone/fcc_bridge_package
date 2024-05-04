@@ -84,7 +84,28 @@ class FCCBridgeNode : public common_lib::CommonNode {
     };            /**< Possible internal states */
     INTERNAL_STATE
     internal_state; /**< Current internal state of the fcc_node */
+   protected:
+    /**
+     * @brief Set the internal state of this node
+     *
+     * @param new_state The new state to take on.
+     *
+     * @throws std::runtime_error if new_state if not part of @ref
+     * fcc_bridge_FCCBridgeNode::INTERNAL_STATE
+     */
+    void set_internal_state(const INTERNAL_STATE new_state);
+    /**
+     * @brief Gets the current internal state of this node
+     *
+     * @return The current internal state
+     *
+     * @warning Do not assume this function will stay constexpr!
+     */
+    constexpr INTERNAL_STATE get_internal_state() const {
+        return this->internal_state;
+    }
 
+   private:
     // MAVSDK objects
     std::optional<mavsdk::Mavsdk> mavsdk; /**< The base MAVSDK instance */
     std::shared_ptr<mavsdk::System>

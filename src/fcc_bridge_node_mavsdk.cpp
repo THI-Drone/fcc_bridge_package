@@ -56,10 +56,10 @@ void FCCBridgeNode::setup_mavsdk() {
     RCLCPP_DEBUG(this->get_logger(), "Setting up MAVSDK");
 
     // Internal state check
-    if (this->internal_state != INTERNAL_STATE::ROS_SET_UP) {
+    if (this->get_internal_state() != INTERNAL_STATE::ROS_SET_UP) {
         RCLCPP_ERROR(this->get_logger(),
                      "Repeated try to setup MAVSDK components");
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
     std::string uav_id = "__INVALID__";
@@ -71,14 +71,14 @@ void FCCBridgeNode::setup_mavsdk() {
             &e) {
         // Catch if parameter was not set
         RCLCPP_FATAL(this->get_logger(), "UAV_ID parameter was not set!");
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     } catch (const rclcpp::exceptions::InvalidParameterTypeException &e) {
         // Catch if parameter is not a string
         RCLCPP_FATAL(
             this->get_logger(),
             "UAV_ID parameter was of wrong type! It has to be a string!");
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
 
@@ -88,7 +88,7 @@ void FCCBridgeNode::setup_mavsdk() {
         uav_id_map_entry = SYS_ID_MAP.find(uav_id);
     if (uav_id_map_entry == SYS_ID_MAP.end()) {
         RCLCPP_FATAL(this->get_logger(), "Got unknown UAV_ID!");
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
 
@@ -123,7 +123,7 @@ void FCCBridgeNode::setup_mavsdk() {
                      "Failed to establish MAVSDK connection");
         RCLCPP_DEBUG(this->get_logger(), "Error code: %d",
                      static_cast<int>(connection_result));
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
 
@@ -135,7 +135,7 @@ void FCCBridgeNode::setup_mavsdk() {
         RCLCPP_FATAL(this->get_logger(),
                      "Could not discover an autopilot within %f seconds",
                      AUTOPILOT_DISCOVERY_TIMEOUT_S);
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
     this->mavsdk_system = potential_system.value();
@@ -143,7 +143,7 @@ void FCCBridgeNode::setup_mavsdk() {
     // Verifying that the system is connected
     if (!this->mavsdk_system->is_connected()) {
         RCLCPP_FATAL(this->get_logger(), "Connection to system has failed!");
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
 
@@ -151,7 +151,7 @@ void FCCBridgeNode::setup_mavsdk() {
     if (!this->mavsdk_system->has_autopilot()) {
         RCLCPP_FATAL(this->get_logger(),
                      "The MAVSDK system does not seem to have an autopilot!");
-        this->internal_state = INTERNAL_STATE::ERROR;
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
 
@@ -169,11 +169,11 @@ void FCCBridgeNode::setup_mavsdk() {
 
 void FCCBridgeNode::verify_mavsdk_connection() {
     RCLCPP_DEBUG(this->get_logger(), "Verifying MAVSDK connection");
-    switch (this->internal_state) {
+    switch (this->get_internal_state()) {
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
         case INTERNAL_STATE::LANDED:
-            this->internal_state = INTERNAL_STATE::ERROR;
+            this->set_internal_state(INTERNAL_STATE::ERROR);
             [[fallthrough]];
         case INTERNAL_STATE::ERROR:
             RCLCPP_ERROR(this->get_logger(),
@@ -192,7 +192,7 @@ void FCCBridgeNode::verify_mavsdk_connection() {
             }
             RCLCPP_FATAL(this->get_logger(),
                          "An MAVSDK error was encountered! Exiting...");
-            this->internal_state = INTERNAL_STATE::ERROR;
+            this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
     }
 }
