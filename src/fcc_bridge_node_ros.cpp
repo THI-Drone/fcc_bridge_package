@@ -10,10 +10,27 @@
 namespace fcc_bridge {
 
 namespace {
+
+// Timer periods
 constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_5HZ{
     200}; /**< The period of the 5Hz telemetry timer */
 constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_10HZ{
     100}; /**< The period of the 10Hz telemetry timer */
+
+// Topic names
+constexpr char const *const GPS_POSITION_TOPIC_NAME =
+    "uav_gps_position"; /**< Topic name for the GPS telemetry */
+constexpr char const *const FLIGHT_STATE_TOPIC_NAME =
+    "uav_flight_state"; /**< Topic name for the UAV flight state telemetry */
+constexpr char const *const BATTERY_STATE_TOPIC_NAME =
+    "uav_battery_state"; /**< Topic name for the UAV battery state telemetry */
+constexpr char const *const RC_STATE_TOPIC_NAME =
+    "uav_rc_state"; /**< Topic name for the RC state telemetry */
+constexpr char const *const EULER_ANGLE_TOPIC_NAME =
+    "uav_euler_angle"; /**< Topic name for the UAV euler angle telemetry */
+constexpr char const *const HEARTBEAT_TOPIC_NAME =
+    "heartbeat"; /**< Topic name for the heartbeat */
+
 }  // namespace
 
 void FCCBridgeNode::set_internal_state(
@@ -69,21 +86,25 @@ void FCCBridgeNode::setup_ros() {
 
     // Create GPSInfo & Position publisher
     this->gps_position_publisher =
-        this->create_publisher<interfaces::msg::GPSPosition>("uav_gps_position",
-                                                             1);
+        this->create_publisher<interfaces::msg::GPSPosition>(
+            GPS_POSITION_TOPIC_NAME, 1);
     // Create FlightState publisher
     this->flight_state_publisher =
-        this->create_publisher<interfaces::msg::FlightState>("uav_flight_state",
-                                                             1);
+        this->create_publisher<interfaces::msg::FlightState>(
+            FLIGHT_STATE_TOPIC_NAME, 1);
 
     // Create BatteryState publisher
     this->battery_state_publisher =
         this->create_publisher<interfaces::msg::BatteryState>(
-            "uav_battery_state", 1);
+            BATTERY_STATE_TOPIC_NAME, 1);
 
     // Create RCState publisher
-    this->rc_state_publisher =
-        this->create_publisher<interfaces::msg::RCState>("uav_rc_state", 1);
+    this->rc_state_publisher = this->create_publisher<interfaces::msg::RCState>(
+        RC_STATE_TOPIC_NAME, 1);
+
+    // Create euler angle publisher
+    this->euler_angle_publisher = this->create_publisher<interfaces::msg::Pose>(
+        EULER_ANGLE_TOPIC_NAME, 1);
 
     // Setup subscriber
 
@@ -96,7 +117,7 @@ void FCCBridgeNode::setup_ros() {
     // Create Heartbeat subscription
     this->mission_control_heartbeat_subscriber =
         this->create_subscription<interfaces::msg::Heartbeat>(
-            "heartbeat", 1,
+            HEARTBEAT_TOPIC_NAME, 1,
             std::bind(&FCCBridgeNode::mission_control_heartbeat_subscriber_cb,
                       this, std::placeholders::_1),
             subscription_options);
@@ -187,6 +208,9 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     // Send out GPS Telemetry
     this->send_gps_telemetry();
 
+    // Send out euler angle
+    this->send_euler_angle();
+
     RCLCPP_DEBUG(this->get_logger(),
                  "10Hz telemetry timer callback successful");
 }
@@ -243,6 +267,8 @@ void FCCBridgeNode::send_gps_telemetry() {
     gps_msg.latitude_deg = last_fcc_position->latitude_deg;
     gps_msg.longitude_deg = last_fcc_position->longitude_deg;
     gps_msg.relative_altitude_m = last_fcc_position->relative_altitude_m;
+
+    // Publish the message
     this->gps_position_publisher->publish(gps_msg);
 
     RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
@@ -262,6 +288,8 @@ void FCCBridgeNode::send_flight_state() {
     flight_state_msg.sender_id = this->get_name();
     flight_state_msg.flight_mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
         this->last_fcc_flight_state.value());
+
+    // Publish the message
     this->flight_state_publisher->publish(flight_state_msg);
 
     RCLCPP_DEBUG(this->get_logger(), "Published current flight state");
@@ -289,6 +317,8 @@ void FCCBridgeNode::send_battery_state() {
         this->last_fcc_battery_state->capacity_consumed_ah;
     battery_state_msg.remaining_percent =
         this->last_fcc_battery_state->remaining_percent;
+
+    // Publish the message
     this->battery_state_publisher->publish(battery_state_msg);
 
     RCLCPP_DEBUG(this->get_logger(), "Published current battery state");
@@ -311,9 +341,33 @@ void FCCBridgeNode::send_rc_state() {
     rc_state_msg.is_available = this->last_fcc_rc_state->is_available;
     rc_state_msg.signal_strength_percent =
         this->last_fcc_rc_state->signal_strength_percent;
+
+    // Publish the message
     this->rc_state_publisher->publish(rc_state_msg);
 
     RCLCPP_DEBUG(this->get_logger(), "Published current RC state");
+}
+
+void FCCBridgeNode::send_euler_angle() {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Getting updated euler angle and publishing the update");
+
+    // Update euler angle
+    this->get_euler_angle();
+
+    // In this case retrieving the euler angle was successful meaning that it
+    // can be safely accessed.
+    interfaces::msg::Pose euler_angle_msg;
+    euler_angle_msg.time_stamp = this->now();
+    euler_angle_msg.sender_id = this->get_name();
+    euler_angle_msg.roll_deg = this->last_fcc_euler_angle->roll_deg;
+    euler_angle_msg.pitch_deg = this->last_fcc_euler_angle->pitch_deg;
+    euler_angle_msg.yaw_deg = this->last_fcc_euler_angle->yaw_deg;
+
+    // Publish the message
+    this->euler_angle_publisher->publish(euler_angle_msg);
+
+    RCLCPP_DEBUG(this->get_logger(), "Published current euler angle");
 }
 
 }  // namespace fcc_bridge

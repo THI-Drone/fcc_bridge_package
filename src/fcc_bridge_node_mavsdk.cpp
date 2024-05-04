@@ -281,6 +281,26 @@ void FCCBridgeNode::get_rc_state() {
                 this->last_fcc_rc_state->signal_strength_percent);
 }
 
+void FCCBridgeNode::get_euler_angle() {
+    // Clear cached values
+    this->last_fcc_euler_angle = std::nullopt;
+
+    // Verify MAVSDK connection
+    this->verify_mavsdk_connection();
+
+    // Get euler angle
+    RCLCPP_DEBUG(this->get_logger(), "Getting euler angle from FCC");
+    this->last_fcc_euler_angle = this->mavsdk_telemtry->attitude_euler();
+
+    RCLCPP_INFO(this->get_logger(),
+                "The current FCC euler angle: Roll %f° (Positive means banking "
+                "to the right)\tPitch: %f° (Positive means Nose up)\tYaw: "
+                "%f°(Clockwise from above)",
+                this->last_fcc_euler_angle->roll_deg,
+                this->last_fcc_euler_angle->pitch_deg,
+                this->last_fcc_euler_angle->yaw_deg);
+}
+
 void FCCBridgeNode::trigger_rth() {
     RCLCPP_WARN(this->get_logger(), "Triggering RTH");
     this->deactivate();

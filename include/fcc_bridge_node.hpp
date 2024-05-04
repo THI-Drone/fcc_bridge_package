@@ -26,6 +26,7 @@
 #include "interfaces/msg/flight_state.hpp"
 #include "interfaces/msg/gps_position.hpp"
 #include "interfaces/msg/heartbeat.hpp"
+#include "interfaces/msg/pose.hpp"
 #include "interfaces/msg/rc_state.hpp"
 
 // CommonLib headers
@@ -147,6 +148,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
                                     updates */
     rclcpp::Publisher<interfaces::msg::RCState>::SharedPtr
         rc_state_publisher; /**< Publisher to end out RC state updates */
+    rclcpp::Publisher<interfaces::msg::Pose>::SharedPtr
+        euler_angle_publisher; /**< Publisher to send out euler angle updates*/
 
     // ROS subscriptions
     rclcpp::Subscription<interfaces::msg::Heartbeat>::SharedPtr
@@ -177,6 +180,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
                                    FCC */
     std::optional<mavsdk::Telemetry::RcStatus>
         last_fcc_rc_state; /**< The last received rc state from the FCC */
+    std::optional<mavsdk::Telemetry::EulerAngle>
+        last_fcc_euler_angle; /**< The last received euler angle from the FCC */
 
     /*************************************************************************/
     /*                          Cached ROS messages                          */
@@ -204,8 +209,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Callback function to be triggered when a new heartbeat is received
      * @param msg The received message
      *
-     * Should only receive heartbeats from mission control using a filter
+     * @note Should only receive heartbeats from mission control using a filter
      * expression when creating the subscription.
+     *
      * Triggers an RTH if the heartbeat is invalid or goes into error state if
      * MAVSDK has run into an issue.
      */
@@ -260,6 +266,14 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * calling functions responsibility
      */
     void send_rc_state();
+    /**
+     * @brief Gets the euler angle from the FCC and publishes it on the ROS
+     * network
+     *
+     * @warning Does not check the validity of the last heartbeat. That the
+     * calling functions responsibility
+     */
+    void send_euler_angle();
 
     /*************************************************************************/
     /*                       MAVSDK specific functions                       */
@@ -316,6 +330,15 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Verifies the MAVSDK connection.
      */
     void get_rc_state();
+    /**
+     * @brief Gets the current euler angle from the FCC
+     *
+     * Stores the result in the internal member variable @ref
+     * fcc_bridge::FCCBridgeNode::last_fcc_euler_angle
+     *
+     * Verifies the MAVSDK connection
+     */
+    void get_euler_angle();
     /**
      * @brief Initiates an RTH
      *
