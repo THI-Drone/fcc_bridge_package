@@ -229,6 +229,13 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * calling functions responsibility
      */
     void send_battery_state();
+    /**
+     * @brief Gets the RC state from the FCC and publishes it on the ROS network
+     *
+     * @warning Does not check the validity of the last heartbeat. That the
+     * calling functions responsibility
+     */
+    void send_rc_state();
 
     // MAVSDK functions
     /**

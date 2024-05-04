@@ -164,18 +164,8 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
     // Send out battery state
     this->send_battery_state();
 
-    // Update RC state
-    this->get_rc_state();
-    interfaces::msg::RCState rc_state_msg;
-    rc_state_msg.time_stamp = this->now();
-    rc_state_msg.sender_id = this->get_name();
-    rc_state_msg.was_available_once =
-        this->last_fcc_rc_state->was_available_once;
-    rc_state_msg.is_available = this->last_fcc_rc_state->is_available;
-    rc_state_msg.signal_strength_percent =
-        this->last_fcc_rc_state->signal_strength_percent;
-    this->rc_state_publisher->publish(rc_state_msg);
-    RCLCPP_DEBUG(this->get_logger(), "Published current RC state");
+    // Send out RC state
+    this->send_rc_state();
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
@@ -302,6 +292,28 @@ void FCCBridgeNode::send_battery_state() {
     this->battery_state_publisher->publish(battery_state_msg);
 
     RCLCPP_DEBUG(this->get_logger(), "Published current battery state");
+}
+
+void FCCBridgeNode::send_rc_state() {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Getting updated RC state and publishing the update");
+
+    // Update RC state
+    this->get_rc_state();
+
+    // In this case retrieving the RC state was successful meaning that it
+    // can be safely accessed.
+    interfaces::msg::RCState rc_state_msg;
+    rc_state_msg.time_stamp = this->now();
+    rc_state_msg.sender_id = this->get_name();
+    rc_state_msg.was_available_once =
+        this->last_fcc_rc_state->was_available_once;
+    rc_state_msg.is_available = this->last_fcc_rc_state->is_available;
+    rc_state_msg.signal_strength_percent =
+        this->last_fcc_rc_state->signal_strength_percent;
+    this->rc_state_publisher->publish(rc_state_msg);
+
+    RCLCPP_DEBUG(this->get_logger(), "Published current RC state");
 }
 
 }  // namespace fcc_bridge
