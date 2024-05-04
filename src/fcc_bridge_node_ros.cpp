@@ -184,8 +184,21 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
                         "5Hz Telemetry callback function was called in an "
                         "invalid state");
             return;
-        default:
+
+        // Remaining cases that are allowed:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_ACTION:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+        case INTERNAL_STATE::LANDED:
             break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
     }
 
     // Send out flight state
@@ -216,8 +229,21 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
                         "10Hz Telemetry callback function was called in an "
                         "invalid state");
             return;
-        default:
+
+        // Remaining cases that are allowed
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_ACTION:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+        case INTERNAL_STATE::LANDED:
             break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
     }
 
     // Send out GPS Telemetry

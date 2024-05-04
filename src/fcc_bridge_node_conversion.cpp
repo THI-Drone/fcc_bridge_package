@@ -4,10 +4,13 @@
 
 #include "fcc_bridge_node.hpp"
 
+// Helper define to create a switch case to turn an enum meber to a string
 #define ENUM_TO_STR(parent_namespace, member) \
     case parent_namespace::member:            \
         return #parent_namespace "::" #member
+
 namespace fcc_bridge {
+
 interfaces::msg::GPSPosition::_fix_type_type
 FCCBridgeNode::fix_type_mavsdk_to_ros(
     const mavsdk::Telemetry::FixType &fix_type) {
@@ -91,10 +94,11 @@ const char *FCCBridgeNode::mavsdk_connection_result_to_str(
         ENUM_TO_STR(mavsdk::ConnectionResult, ConnectionsExhausted);
         ENUM_TO_STR(mavsdk::ConnectionResult, ConnectionUrlInvalid);
         ENUM_TO_STR(mavsdk::ConnectionResult, BaudrateUnknown);
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid mavsdk::ConnectionResult value ") +
+                std::to_string(static_cast<int>(result)));
     }
-    throw std::runtime_error(
-        std::string("Got invalid mavsdk::ConnectionResult value ") +
-        std::to_string(static_cast<int>(result)));
 }
 
 const char *FCCBridgeNode::mavsdk_flight_mode_to_str(
@@ -115,10 +119,12 @@ const char *FCCBridgeNode::mavsdk_flight_mode_to_str(
         ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Acro);
         ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Stabilized);
         ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Rattitude);
+        default:
+            throw std::runtime_error(
+                std::string(
+                    "Got invalid mavsdk::Telemetry::FlightMode value ") +
+                std::to_string(static_cast<int>(flight_mode)));
     }
-    throw std::runtime_error(
-        std::string("Got invalid mavsdk::Telemetry::FlightMode value ") +
-        std::to_string(static_cast<int>(flight_mode)));
 }
 
 const char *FCCBridgeNode::mavsdk_mission_result_to_str(
@@ -140,9 +146,10 @@ const char *FCCBridgeNode::mavsdk_mission_result_to_str(
         ENUM_TO_STR(mavsdk::Mission::Result, Denied);
         ENUM_TO_STR(mavsdk::Mission::Result, ProtocolError);
         ENUM_TO_STR(mavsdk::Mission::Result, IntMessagesNotSupported);
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid mavsdk::Mission::Result value: ") +
+                std::to_string(static_cast<int>(result)));
     }
-    throw std::runtime_error(
-        std::string("Got invalid mavsdk::Mission::Result value: ") +
-        std::to_string(static_cast<int>(result)));
 }
 }  // namespace fcc_bridge

@@ -179,6 +179,7 @@ void FCCBridgeNode::verify_mavsdk_connection() {
         case INTERNAL_STATE::ERROR:
             RCLCPP_ERROR(this->get_logger(),
                          "MAVSDK is not set up! Exiting...");
+            // Does not return
             this->exit_process_on_error();
         case INTERNAL_STATE::MAVSDK_SET_UP:
         case INTERNAL_STATE::WAITING_FOR_ARM:
@@ -194,7 +195,12 @@ void FCCBridgeNode::verify_mavsdk_connection() {
             RCLCPP_FATAL(this->get_logger(),
                          "An MAVSDK error was encountered! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
+            // Does not return
             this->exit_process_on_error();
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
     }
 }
 
