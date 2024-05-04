@@ -27,6 +27,7 @@
 #include "interfaces/msg/gps_position.hpp"
 #include "interfaces/msg/heartbeat.hpp"
 #include "interfaces/msg/mission_progress.hpp"
+#include "interfaces/msg/mission_start.hpp"
 #include "interfaces/msg/pose.hpp"
 #include "interfaces/msg/rc_state.hpp"
 #include "interfaces/msg/uav_health.hpp"
@@ -77,7 +78,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
                   Waiting for safety limits in this state. */
         WAITING_FOR_ARM =
             3,     /**< In this state the node waits for the FCC to be armed */
-        ARMED = 4, /**< Waiting for StartMission from mission control */
+        ARMED = 4, /**< Waiting for TakeOff from mission control */
         WAITING_FOR_COMMAND = 5, /**< Waiting for a command from the waypoint or
                                     mission control node. */
         FLYING_ACTION =
@@ -157,6 +158,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
                                        updates */
     rclcpp::Publisher<interfaces::msg::UAVHealth>::SharedPtr
         uav_health_publisher; /**< Publisher to send out uav health updates */
+    rclcpp::Publisher<interfaces::msg::MissionStart>::SharedPtr
+        mission_start_publisher; /**< Publisher to send out the mission start
+                                    message */
 
     // ROS subscriptions
     rclcpp::Subscription<interfaces::msg::Heartbeat>::SharedPtr
@@ -242,6 +246,13 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * ERROR
      */
     void check_uav_health();
+    /**
+     * @brief Checks if the current flight state is adequate for the current
+     * internal state
+     *
+     * TODO: Currently just an empty function
+     */
+    void check_flight_state();
 
     // bool check_point_in_geofence();
 

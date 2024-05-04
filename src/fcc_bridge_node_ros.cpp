@@ -35,6 +35,9 @@ constexpr char const *const UAV_HEALTH_TOPIC_NAME =
     "uav_health"; /**< Topic name for the uav health telemetry */
 constexpr char const *const HEARTBEAT_TOPIC_NAME =
     "heartbeat"; /**< Topic name for the heartbeat */
+constexpr char const *const MISSION_START_TOPIC_NAME =
+    "mission_start"; /**< Topic name for the mission start signal send out when
+                        the FCC gets armed */
 
 }  // namespace
 
@@ -120,6 +123,11 @@ void FCCBridgeNode::setup_ros() {
     this->uav_health_publisher =
         this->create_publisher<interfaces::msg::UAVHealth>(
             UAV_HEALTH_TOPIC_NAME, 1);
+
+    // Create mission start publisher
+    this->mission_start_publisher =
+        this->create_publisher<interfaces::msg::MissionStart>(
+            MISSION_START_TOPIC_NAME, 1);
 
     // Setup subscriber
 
@@ -302,6 +310,24 @@ void FCCBridgeNode::send_flight_state() {
 
     // Update flight state
     this->get_flight_state();
+
+    // Verify the Flight State depending on the internal state
+    this->check_flight_state();
+
+    // If we are in the WAITING_FOR_ARM state and the drone is READY send
+    // MissionStart and wait for takeoff
+    if (this->get_internal_state() == INTERNAL_STATE::WAITING_FOR_ARM &&
+        this->last_fcc_flight_mode.value() ==
+            mavsdk::Telemetry::FlightMode::Ready) {
+        RCLCPP_INFO(this->get_logger(),
+                    "Drone is armed and ready for take off. Switching to ARMED "
+                    "state and sending MissionStart message");
+        this->set_internal_state(INTERNAL_STATE::ARMED);
+        interfaces::msg::MissionStart mission_start_msg;
+        mission_start_msg.sender_id = this->get_name();
+        this->mission_start_publisher->publish(mission_start_msg);
+        RCLCPP_DEBUG(this->get_logger(), "MissionStart message send");
+    }
 
     // In this case retrieving the flight state was successful meaning that it
     // can be safely accessed.

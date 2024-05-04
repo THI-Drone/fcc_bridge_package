@@ -128,4 +128,6 @@ void FCCBridgeNode::check_uav_health() {
     RCLCPP_INFO(this->get_logger(), "UAV health is O.K.");
 }
 
+void FCCBridgeNode::check_flight_state() {}
+
 }  // namespace fcc_bridge
