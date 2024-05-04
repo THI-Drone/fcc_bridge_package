@@ -161,23 +161,8 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
     // Send out flight state
     this->send_flight_state();
 
-    // Update battery state
-    this->get_battery_state();
-    interfaces::msg::BatteryState battery_state_msg;
-    battery_state_msg.time_stamp = this->now();
-    battery_state_msg.sender_id = this->get_name();
-    battery_state_msg.id = this->last_fcc_battery_state->id;
-    battery_state_msg.temperature_degc =
-        this->last_fcc_battery_state->temperature_degc;
-    battery_state_msg.voltage_v = this->last_fcc_battery_state->voltage_v;
-    battery_state_msg.current_battery_a =
-        this->last_fcc_battery_state->current_battery_a;
-    battery_state_msg.capacity_consumed_ah =
-        this->last_fcc_battery_state->capacity_consumed_ah;
-    battery_state_msg.remaining_percent =
-        this->last_fcc_battery_state->remaining_percent;
-    this->battery_state_publisher->publish(battery_state_msg);
-    RCLCPP_DEBUG(this->get_logger(), "Published current battery state");
+    // Send out battery state
+    this->send_battery_state();
 
     // Update RC state
     this->get_rc_state();
@@ -290,6 +275,33 @@ void FCCBridgeNode::send_flight_state() {
     this->flight_state_publisher->publish(flight_state_msg);
 
     RCLCPP_DEBUG(this->get_logger(), "Published current flight state");
+}
+
+void FCCBridgeNode::send_battery_state() {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Getting updated battery state and publishing the update");
+
+    // Update battery state
+    this->get_battery_state();
+
+    // In this case retrieving the battery state was successful meaning that it
+    // can be safely accessed.
+    interfaces::msg::BatteryState battery_state_msg;
+    battery_state_msg.time_stamp = this->now();
+    battery_state_msg.sender_id = this->get_name();
+    battery_state_msg.id = this->last_fcc_battery_state->id;
+    battery_state_msg.temperature_degc =
+        this->last_fcc_battery_state->temperature_degc;
+    battery_state_msg.voltage_v = this->last_fcc_battery_state->voltage_v;
+    battery_state_msg.current_battery_a =
+        this->last_fcc_battery_state->current_battery_a;
+    battery_state_msg.capacity_consumed_ah =
+        this->last_fcc_battery_state->capacity_consumed_ah;
+    battery_state_msg.remaining_percent =
+        this->last_fcc_battery_state->remaining_percent;
+    this->battery_state_publisher->publish(battery_state_msg);
+
+    RCLCPP_DEBUG(this->get_logger(), "Published current battery state");
 }
 
 }  // namespace fcc_bridge
