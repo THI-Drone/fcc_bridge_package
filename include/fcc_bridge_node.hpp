@@ -225,11 +225,34 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Exits if no GPS is installed.
      *
+     * TODO: Geofence check
+     *
      * @throws std::runtime_error If @ref
      * fcc_bridge::FCCBridgeNode::internal_state is STARTING_UP, ROS_SET_UP, or
      * ERROR
      */
     void check_gps_state();
+    /**
+     * @brief Checks if the current flight state is adequate for the current
+     * internal state
+     *
+     * TODO: Currently just an empty function
+     */
+    void check_flight_state();
+    /**
+     * @brief Checks if the current battery state is adequate for the current
+     * internal state
+     *
+     * TODO: Currently just an empty function
+     */
+    void check_battery_state();
+    /**
+     * @brief Checks if the current RC state is adequate for the current
+     * internal state
+     *
+     * TODO: Currently just an empty function
+     */
+    void check_rc_state();
     /**
      * @brief Checks if the current UAV health is adequate for the current
      * internal state
@@ -246,13 +269,6 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * ERROR
      */
     void check_uav_health();
-    /**
-     * @brief Checks if the current flight state is adequate for the current
-     * internal state
-     *
-     * TODO: Currently just an empty function
-     */
-    void check_flight_state();
 
     // bool check_point_in_geofence();
 

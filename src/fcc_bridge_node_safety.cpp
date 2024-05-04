@@ -66,6 +66,10 @@ void FCCBridgeNode::check_gps_state() {
     RCLCPP_INFO(this->get_logger(), "GPS state is O.K.");
 }
 
+void FCCBridgeNode::check_flight_state() {}
+
+void FCCBridgeNode::check_battery_state() {}
+
 void FCCBridgeNode::check_uav_health() {
     RCLCPP_DEBUG(this->get_logger(), "Checking UAV health state");
 
@@ -127,7 +131,5 @@ void FCCBridgeNode::check_uav_health() {
 
     RCLCPP_INFO(this->get_logger(), "UAV health is O.K.");
 }
-
-void FCCBridgeNode::check_flight_state() {}
 
 }  // namespace fcc_bridge

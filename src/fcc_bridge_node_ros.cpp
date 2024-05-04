@@ -352,6 +352,9 @@ void FCCBridgeNode::send_battery_state() {
     // Update battery state
     this->get_battery_state();
 
+    // Verify the Battery State depending on the internal state
+    this->check_battery_state();
+
     // In this case retrieving the battery state was successful meaning that it
     // can be safely accessed.
     interfaces::msg::BatteryState battery_state_msg;
@@ -380,6 +383,9 @@ void FCCBridgeNode::send_rc_state() {
 
     // Update RC state
     this->get_rc_state();
+
+    // Verify the RC State depending on the internal state
+    this->check_rc_state();
 
     // In this case retrieving the RC state was successful meaning that it
     // can be safely accessed.
