@@ -158,15 +158,8 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
             break;
     }
 
-    // Update flight state
-    this->get_flight_state();
-    interfaces::msg::FlightState flight_state_msg;
-    flight_state_msg.time_stamp = this->now();
-    flight_state_msg.sender_id = this->get_name();
-    flight_state_msg.flight_mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
-        this->last_fcc_flight_state.value());
-    this->flight_state_publisher->publish(flight_state_msg);
-    RCLCPP_DEBUG(this->get_logger(), "Published current Flight State");
+    // Send out flight state
+    this->send_flight_state();
 
     // Update battery state
     this->get_battery_state();
@@ -278,6 +271,25 @@ void FCCBridgeNode::send_gps_telemetry() {
     this->gps_position_publisher->publish(gps_msg);
 
     RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
+}
+
+void FCCBridgeNode::send_flight_state() {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Getting updated flight state and publishing the update");
+
+    // Update flight state
+    this->get_flight_state();
+
+    // In this case retrieving the flight state was successful meaning that it
+    // can be safely accessed.
+    interfaces::msg::FlightState flight_state_msg;
+    flight_state_msg.time_stamp = this->now();
+    flight_state_msg.sender_id = this->get_name();
+    flight_state_msg.flight_mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
+        this->last_fcc_flight_state.value());
+    this->flight_state_publisher->publish(flight_state_msg);
+
+    RCLCPP_DEBUG(this->get_logger(), "Published current flight state");
 }
 
 }  // namespace fcc_bridge

@@ -213,6 +213,16 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * calling functions responsibility
      */
     void send_gps_telemetry();
+    /**
+     * @brief Gets the flight state from the FCC and publishes it on the ROS
+     * network
+     *
+     * @warning Does not check the validity of the last heartbeat. That the
+     * calling functions responsibility
+     */
+    void send_flight_state();
+
+
 
     // MAVSDK functions
     /**
