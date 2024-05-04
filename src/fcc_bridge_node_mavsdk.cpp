@@ -220,8 +220,8 @@ void FCCBridgeNode::get_gps_telemetry() {
         "attitude: %fm\trelative attitude: %fm\tNo. of satellites: %" PRId32,
         this->last_fcc_position->latitude_deg,
         this->last_fcc_position->longitude_deg,
-        this->last_fcc_position->absolute_altitude_m,
-        this->last_fcc_position->relative_altitude_m,
+        static_cast<double>(this->last_fcc_position->absolute_altitude_m),
+        static_cast<double>(this->last_fcc_position->relative_altitude_m),
         this->last_fcc_gps_info->num_satellites);
 }
 
@@ -256,11 +256,11 @@ void FCCBridgeNode::get_battery_state() {
                 "\tTemperature: %f°C\tVoltage: %fV\tBattery current: "
                 "%fA\tConsumed capacity: %fAh\tRemaining percent: %f%%",
                 this->last_fcc_battery_state->id,
-                this->last_fcc_battery_state->temperature_degc,
-                this->last_fcc_battery_state->voltage_v,
-                this->last_fcc_battery_state->current_battery_a,
-                this->last_fcc_battery_state->capacity_consumed_ah,
-                this->last_fcc_battery_state->remaining_percent);
+        static_cast<double>(this->last_fcc_battery_state->temperature_degc),
+        static_cast<double>(this->last_fcc_battery_state->voltage_v),
+        static_cast<double>(this->last_fcc_battery_state->current_battery_a),
+        static_cast<double>(this->last_fcc_battery_state->capacity_consumed_ah),
+        static_cast<double>(this->last_fcc_battery_state->remaining_percent));
 }
 
 void FCCBridgeNode::get_rc_state() {
@@ -279,7 +279,7 @@ void FCCBridgeNode::get_rc_state() {
                 "available: %s\t Signal strength: %f%%",
                 this->last_fcc_rc_state->was_available_once ? "true" : "false",
                 this->last_fcc_rc_state->is_available ? "true" : "false",
-                this->last_fcc_rc_state->signal_strength_percent);
+        static_cast<double>(this->last_fcc_rc_state->signal_strength_percent));
 }
 
 void FCCBridgeNode::get_euler_angle() {
@@ -297,9 +297,9 @@ void FCCBridgeNode::get_euler_angle() {
                 "The current FCC euler angle: Roll %f° (Positive means banking "
                 "to the right)\tPitch: %f° (Positive means Nose up)\tYaw: "
                 "%f°(Clockwise from above)",
-                this->last_fcc_euler_angle->roll_deg,
-                this->last_fcc_euler_angle->pitch_deg,
-                this->last_fcc_euler_angle->yaw_deg);
+                static_cast<double>(this->last_fcc_euler_angle->roll_deg),
+                static_cast<double>(this->last_fcc_euler_angle->pitch_deg),
+                static_cast<double>(this->last_fcc_euler_angle->yaw_deg));
 }
 
 void FCCBridgeNode::get_mission_progress() {

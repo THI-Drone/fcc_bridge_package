@@ -9,7 +9,7 @@ set(JSON_ImplicitConversions OFF) # deactivate implicit type conversion
 project(fcc_bridge)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+  add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wdouble-promotion -Wformat=2)
 endif()
 
 # find dependencies
