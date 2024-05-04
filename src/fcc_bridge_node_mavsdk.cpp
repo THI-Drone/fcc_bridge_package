@@ -62,7 +62,7 @@ void FCCBridgeNode::setup_mavsdk() {
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
-    std::string uav_id = "__INVALID__";
+    std::string uav_id;
     try {
         // Getting uav id to deduct MAVLink System ID
         uav_id = this->declare_parameter<std::string>("UAV_ID");
