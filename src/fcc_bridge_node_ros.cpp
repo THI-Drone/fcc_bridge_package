@@ -16,38 +16,6 @@ constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_10HZ{
     100}; /**< The period of the 10Hz telemetry timer */
 }  // namespace
 
-FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
-                             const rclcpp::NodeOptions &node_options*/)
-    : CommonNode(name), internal_state(INTERNAL_STATE::STARTING_UP) {
-    // Pre-populate the last mission control heartbeat
-    this->last_mission_control_heartbeat.time_stamp = this->now();
-    this->last_mission_control_heartbeat.tick = 0;
-
-    // Setup ROS objects such as timer, publishers etc.
-    this->setup_ros();
-    if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
-        RCLCPP_FATAL(this->get_logger(), "Failed to setup ROS! Exiting...");
-        this->exit_process_on_error();
-    }
-    this->set_internal_state(INTERNAL_STATE::ROS_SET_UP);
-    RCLCPP_INFO(this->get_logger(), "Transitioning into ROS_SET_UP state");
-
-    // Setup MAVSDk objects such as system, telemetry etc.
-    this->setup_mavsdk();
-    if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
-        RCLCPP_FATAL(this->get_logger(), "Failed to setup MAVSDK! Exiting...");
-        this->exit_process_on_error();
-    }
-    RCLCPP_INFO(this->get_logger(), "Transitioning into MAVSDK_SET_UP state");
-    this->set_internal_state(INTERNAL_STATE::MAVSDK_SET_UP);
-
-    // Activating node to signal that it is ready for the safety limits
-    this->activate();
-
-    RCLCPP_INFO(this->get_logger(), "Successfully created %s instance",
-                this->get_name());
-}
-
 void FCCBridgeNode::set_internal_state(
     const fcc_bridge::FCCBridgeNode::INTERNAL_STATE new_state) {
     // Placeholder for the name of the enum entry name of new state
@@ -265,4 +233,37 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
 void FCCBridgeNode::check_last_mission_control_heartbeat() {
     // TODO: Check if last heartbeat is not too old.
 }
+
+FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
+                              const rclcpp::NodeOptions &node_options*/)
+    : CommonNode(name), internal_state(INTERNAL_STATE::STARTING_UP) {
+    // Pre-populate the last mission control heartbeat
+    this->last_mission_control_heartbeat.time_stamp = this->now();
+    this->last_mission_control_heartbeat.tick = 0;
+
+    // Setup ROS objects such as timer, publishers etc.
+    this->setup_ros();
+    if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
+        RCLCPP_FATAL(this->get_logger(), "Failed to setup ROS! Exiting...");
+        this->exit_process_on_error();
+    }
+    this->set_internal_state(INTERNAL_STATE::ROS_SET_UP);
+    RCLCPP_INFO(this->get_logger(), "Transitioning into ROS_SET_UP state");
+
+    // Setup MAVSDk objects such as system, telemetry etc.
+    this->setup_mavsdk();
+    if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
+        RCLCPP_FATAL(this->get_logger(), "Failed to setup MAVSDK! Exiting...");
+        this->exit_process_on_error();
+    }
+    RCLCPP_INFO(this->get_logger(), "Transitioning into MAVSDK_SET_UP state");
+    this->set_internal_state(INTERNAL_STATE::MAVSDK_SET_UP);
+
+    // Activating node to signal that it is ready for the safety limits
+    this->activate();
+
+    RCLCPP_INFO(this->get_logger(), "Successfully created %s instance",
+                this->get_name());
+}
+
 }  // namespace fcc_bridge
