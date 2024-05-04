@@ -169,7 +169,7 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     this->last_mission_control_heartbeat = msg;
 
     // Verify that the received heartbeat is not too old
-    this->check_last_mission_control_heatbeat();
+    this->check_last_mission_control_heartbeat();
 
     RCLCPP_INFO(this->get_logger(), "Mission control is alive and ok");
 }
@@ -177,7 +177,7 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
 void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
     RCLCPP_DEBUG(this->get_logger(),
                  "5Hz telemetry timer callback was triggered");
-    this->check_last_mission_control_heatbeat();
+    this->check_last_mission_control_heartbeat();
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
@@ -235,7 +235,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
 void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     RCLCPP_DEBUG(this->get_logger(),
                  "10Hz telemetry timer callback was triggered");
-    this->check_last_mission_control_heatbeat();
+    this->check_last_mission_control_heartbeat();
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
@@ -262,7 +262,7 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
 }
 
-void FCCBridgeNode::check_last_mission_control_heatbeat() {
+void FCCBridgeNode::check_last_mission_control_heartbeat() {
     // TODO: Check if last heartbeat is not too old.
 }
 }  // namespace fcc_bridge

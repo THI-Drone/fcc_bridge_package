@@ -204,7 +204,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * If it is too old trigger an RTH
      */
-    void check_last_mission_control_heatbeat();
+    void check_last_mission_control_heartbeat();
 
     // MAVSDK functions
     /**
