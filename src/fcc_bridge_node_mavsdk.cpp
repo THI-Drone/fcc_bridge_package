@@ -121,8 +121,9 @@ void FCCBridgeNode::setup_mavsdk() {
     if (connection_result != mavsdk::ConnectionResult::Success) {
         RCLCPP_FATAL(this->get_logger(),
                      "Failed to establish MAVSDK connection");
-        RCLCPP_DEBUG(this->get_logger(), "Error code: %d",
-                     static_cast<int>(connection_result));
+        RCLCPP_DEBUG(
+            this->get_logger(), "Error code: %s",
+            FCCBridgeNode::mavsdk_connection_result_to_str(connection_result));
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }

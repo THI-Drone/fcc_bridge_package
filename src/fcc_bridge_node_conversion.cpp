@@ -74,6 +74,29 @@ FCCBridgeNode::flight_mode_mavsdk_to_ros(
     }
 }
 
+const char *FCCBridgeNode::mavsdk_connection_result_to_str(
+    const mavsdk::ConnectionResult &result) {
+    switch (result) {
+        ENUM_TO_STR(mavsdk::ConnectionResult, Success);
+        ENUM_TO_STR(mavsdk::ConnectionResult, Timeout);
+        ENUM_TO_STR(mavsdk::ConnectionResult, SocketError);
+        ENUM_TO_STR(mavsdk::ConnectionResult, BindError);
+        ENUM_TO_STR(mavsdk::ConnectionResult, SocketConnectionError);
+        ENUM_TO_STR(mavsdk::ConnectionResult, ConnectionError);
+        ENUM_TO_STR(mavsdk::ConnectionResult, NotImplemented);
+        ENUM_TO_STR(mavsdk::ConnectionResult, SystemNotConnected);
+        ENUM_TO_STR(mavsdk::ConnectionResult, SystemBusy);
+        ENUM_TO_STR(mavsdk::ConnectionResult, CommandDenied);
+        ENUM_TO_STR(mavsdk::ConnectionResult, DestinationIpUnknown);
+        ENUM_TO_STR(mavsdk::ConnectionResult, ConnectionsExhausted);
+        ENUM_TO_STR(mavsdk::ConnectionResult, ConnectionUrlInvalid);
+        ENUM_TO_STR(mavsdk::ConnectionResult, BaudrateUnknown);
+    }
+    throw std::runtime_error(
+        std::string("Got invalid mavsdk::ConnectionResult value ") +
+        std::to_string(static_cast<int>(result)));
+}
+
 const char *FCCBridgeNode::mavsdk_mission_result_to_str(
     const mavsdk::Mission::Result &result) {
     switch (result) {

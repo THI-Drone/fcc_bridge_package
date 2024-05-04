@@ -397,7 +397,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @param fix_type The MAVSDK FixType to convert
      * @return The ROS FixType
      *
-     * @throws runtime_error If the MAVSDK FixType is unknown
+     * @throws std::runtime_error If the MAVSDK FixType is unknown
      */
     static interfaces::msg::GPSPosition::_fix_type_type fix_type_mavsdk_to_ros(
         const mavsdk::Telemetry::FixType &fix_type);
@@ -408,10 +408,22 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @param flight_mode The MAVSDK FlightMode to convert
      * @return The ROS FlightState
      *
-     * @throws runtime_error If the MAVSDK FlightMode is unknown
+     * @throws std::runtime_error If the MAVSDK FlightMode is unknown
      */
     static interfaces::msg::FlightState::_flight_mode_type
     flight_mode_mavsdk_to_ros(const mavsdk::Telemetry::FlightMode &flight_mode);
+    /**
+     * @brief Conversion function to get the string representation of a @ref
+     * mavsdk::ConnectionResult
+     *
+     * @param result The result code to convert
+     *
+     * @return The string representation of the result
+     *
+     * @throws std::runtime_error If the value is unknown;
+     */
+    static char const *mavsdk_connection_result_to_str(
+        const mavsdk::ConnectionResult &result);
     /**
      * @brief Conversion function to get the string representation of a @ref
      * mavsdk::Mission::Result
@@ -419,7 +431,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @param result The result code to convert
      * @return The string representation of the result
      *
-     * @throws runtime_error If the Result is unknown
+     * @throws std::runtime_error If the value is unknown
      */
     static char const *mavsdk_mission_result_to_str(
         const mavsdk::Mission::Result &result);
