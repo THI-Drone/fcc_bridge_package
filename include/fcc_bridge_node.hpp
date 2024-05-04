@@ -36,6 +36,10 @@
  */
 namespace fcc_bridge {
 
+/**************************************************************************/
+/*                       Fixed with integer defines                       */
+/**************************************************************************/
+
 // Using directives to allow the reuse of standard types.
 using u8 = uint8_t;   /**< Unsigned 8 bit integer */
 using u16 = uint16_t; /**< Unsigned 16 bit integer */
@@ -54,6 +58,10 @@ using s64 = int64_t; /**< Signed 64 bit integer */
  */
 class FCCBridgeNode : public common_lib::CommonNode {
    private:
+    /************************************************************************/
+    /*                        Internal state members                        */
+    /************************************************************************/
+
     // Internal state enum and member to track the current state of the FCC
     // Bridge
     enum INTERNAL_STATE : u8 {
@@ -106,7 +114,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
     }
 
    private:
-    // MAVSDK objects
+    /*************************************************************************/
+    /*                        MAVSDK specific members                        */
+    /*************************************************************************/
+
     std::optional<mavsdk::Mavsdk> mavsdk; /**< The base MAVSDK instance */
     std::shared_ptr<mavsdk::System>
         mavsdk_system; /**< The MAVSDK system representing the connection to the
@@ -119,6 +130,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
     std::optional<mavsdk::Mission>
         mavsdk_mission; /**< The MAVSDK mission to do archive more complex tasks
                          */
+
+    /************************************************************************/
+    /*                         ROS specific members                         */
+    /************************************************************************/
 
     // ROS publisher
     rclcpp::Publisher<interfaces::msg::GPSPosition>::SharedPtr
@@ -146,7 +161,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
         fcc_telemetry_timer_10hz; /**< Timer for telemetry that is send out at
                                      10Hz */
 
-    // Cached FCC telemetry
+    /**************************************************************************/
+    /*                          Cached FCC telemetry                          */
+    /**************************************************************************/
+
     std::optional<mavsdk::Telemetry::GpsInfo>
         last_fcc_gps_info; /**< The last GPSInfo received from the FCC */
     std::optional<mavsdk::Telemetry::Position>
@@ -160,7 +178,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
     std::optional<mavsdk::Telemetry::RcStatus>
         last_fcc_rc_state; /**< The last received rc state from the FCC */
 
-    // Cached ROS messages
+    /*************************************************************************/
+    /*                          Cached ROS messages                          */
+    /*************************************************************************/
+
     interfaces::msg::Heartbeat
         last_mission_control_heartbeat; /**< The last received heartbeat from
                                           mission control */
@@ -169,7 +190,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
     // Safety functions
     // bool check_point_in_geofence();
 
-    // ROS functions
+    /**************************************************************************/
+    /*                         ROS specific functions                         */
+    /**************************************************************************/
+
     /**
      * @brief Set up ROS specific functionality
      *
@@ -237,7 +261,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     void send_rc_state();
 
-    // MAVSDK functions
+    /*************************************************************************/
+    /*                       MAVSDK specific functions                       */
+    /*************************************************************************/
+
     /**
      * @brief Sets up the MAVSDK components.
      *
@@ -303,7 +330,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     [[noreturn]] void exit_process_on_error();
 
-    // Enum conversion functions
+    /**************************************************************************/
+    /*               MAVSDK <=> ROS "enum" conversion functions               */
+    /**************************************************************************/
+
     /**
      * @brief Conversion function to turn a MAVSDK Gps FixType into a ROS GPS
      * FixType
