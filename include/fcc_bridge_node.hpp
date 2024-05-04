@@ -205,6 +205,14 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * If it is too old trigger an RTH
      */
     void check_last_mission_control_heartbeat();
+    /**
+     * @brief Gets the GPS telemetry from the FCC and publishes it on the ROS
+     * network
+     *
+     * @warning Does not check the validity of the last heartbeat. That the
+     * calling functions responsibility
+     */
+    void send_gps_telemetry();
 
     // MAVSDK functions
     /**

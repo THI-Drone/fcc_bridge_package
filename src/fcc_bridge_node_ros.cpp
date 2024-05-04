@@ -215,19 +215,12 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
         default:
             break;
     }
-    this->get_gps_telemetry();
-    // In this case retrieving the gps telemetry was successful meaning that it
-    // can be safely accessed.
-    interfaces::msg::GPSPosition gps_msg;
-    gps_msg.time_stamp = this->now();
-    gps_msg.sender_id = this->get_name();
-    gps_msg.fix_type =
-        FCCBridgeNode::fix_type_mavsdk_to_ros(last_fcc_gps_info->fix_type);
-    gps_msg.latitude_deg = last_fcc_position->latitude_deg;
-    gps_msg.longitude_deg = last_fcc_position->longitude_deg;
-    gps_msg.relative_altitude_m = last_fcc_position->relative_altitude_m;
-    this->gps_position_publisher->publish(gps_msg);
-    RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
+
+    // Send out GPS Telemetry
+    this->send_gps_telemetry();
+
+    RCLCPP_DEBUG(this->get_logger(),
+                 "10Hz telemetry timer callback successful");
 }
 
 void FCCBridgeNode::check_last_mission_control_heartbeat() {
@@ -264,6 +257,27 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
 
     RCLCPP_INFO(this->get_logger(), "Successfully created %s instance",
                 this->get_name());
+}
+
+void FCCBridgeNode::send_gps_telemetry() {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Getting updated GPS telemetry and publishing the update");
+
+    this->get_gps_telemetry();
+
+    // In this case retrieving the gps telemetry was successful meaning that it
+    // can be safely accessed.
+    interfaces::msg::GPSPosition gps_msg;
+    gps_msg.time_stamp = this->now();
+    gps_msg.sender_id = this->get_name();
+    gps_msg.fix_type =
+        FCCBridgeNode::fix_type_mavsdk_to_ros(last_fcc_gps_info->fix_type);
+    gps_msg.latitude_deg = last_fcc_position->latitude_deg;
+    gps_msg.longitude_deg = last_fcc_position->longitude_deg;
+    gps_msg.relative_altitude_m = last_fcc_position->relative_altitude_m;
+    this->gps_position_publisher->publish(gps_msg);
+
+    RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
 }
 
 }  // namespace fcc_bridge
