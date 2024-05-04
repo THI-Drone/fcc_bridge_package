@@ -204,7 +204,42 @@ class FCCBridgeNode : public common_lib::CommonNode {
                                           mission control */
 
    protected:
-    // Safety functions
+    /**************************************************************************/
+    /*                            Safety functions                            */
+    /**************************************************************************/
+
+    /**
+     * @brief Checks if the current GPS Fix type is adequate for the current
+     * internal state
+     *
+     * Verifies the GPS fix if the drone is armed and has not yet landed. If no
+     * 2DFix is available abort and exit.
+     * TODO: Is a 2D fix necessary or can we always assume a 3D fix
+     *
+     * Exits if no GPS is installed.
+     *
+     * @throws std::runtime_error If @ref
+     * fcc_bridge::FCCBridgeNode::internal_state is STARTING_UP, ROS_SET_UP, or
+     * ERROR
+     */
+    void check_gps_state();
+    /**
+     * @brief Checks if the current UAV health is adequate for the current
+     * internal state
+     *
+     * @note Will set @ref fcc_bridge::FCCBridgeNode::internal_state to @ref
+     * fcc_bridge::FCCBridgeNode::INTERNAL_STATE::ERROR if
+     * 1. is_gyrometer_calibration_ok && is_accelerometer_calibration_ok &&
+     * is_magnetometer_calibration_ok is false or...
+     * 2. If the UAV is airborne && is_local_position_ok &&
+     * is_global_position_ok && is_home_position_ok is false
+     *
+     * @throws std::runtime_error If @ref
+     * fcc_bridge::FCCBridgeNode::internal_state is STARTING_UP, ROS_SET_UP, or
+     * ERROR
+     */
+    void check_uav_health();
+
     // bool check_point_in_geofence();
 
     /**************************************************************************/
@@ -251,6 +286,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Gets the GPS telemetry from the FCC and publishes it on the ROS
      * network
      *
+     * Verifies the GPS state using @ref
+     * fcc_bridge::FCCBridgeNode::check_gps_state
+     *
      * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
      */
@@ -258,6 +296,11 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /**
      * @brief Gets the flight state from the FCC and publishes it on the ROS
      * network
+     *
+     * Sets @ref fcc_bridge::FCCBridgeNode::internal_state to @ref
+     * fcc_bridge::FCCBridgeNode::INTERNAL_STATE::ARMED if the fcc_bridge is
+     * waiting for the UAV to be armed and the flight state indicates that the
+     * UAV is armed.
      *
      * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
@@ -300,12 +343,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /**
      * @brief Gets the UAV health form the FCC and publishes on the ROS network
      *
-     * @note Will set @ref fcc_bridge::FCCBridgeNode::internal_state to @ref
-     * fcc_bridge::FCCBridgeNode::INTERNAL_STATE::ERROR if
-     * 1. is_gyrometer_calibration_ok && is_accelerometer_calibration_ok &&
-     * is_magnetometer_calibration_ok is false
-     * 2. If the UAV is airborne && is_local_position_ok &&
-     * is_global_position_ok && is_home_position_ok is false
+     * Verifies the GPS state using @ref
+     * fcc_bridge::FCCBridgeNode::check_uav_health
      *
      * @warning Does not check he validity of the last heartbeat. That is the
      * calling functions responsibility

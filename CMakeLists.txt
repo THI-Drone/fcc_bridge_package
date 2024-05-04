@@ -27,6 +27,7 @@ add_executable(fcc_bridge
         src/fcc_bridge_node_ros.cpp
         src/fcc_bridge_node_mavsdk.cpp
         src/fcc_bridge_node_conversion.cpp
+        src/fcc_bridge_node_safety.cpp
 )
 
 target_link_libraries(fcc_bridge
