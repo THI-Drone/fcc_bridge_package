@@ -26,6 +26,7 @@
 #include "interfaces/msg/flight_state.hpp"
 #include "interfaces/msg/gps_position.hpp"
 #include "interfaces/msg/heartbeat.hpp"
+#include "interfaces/msg/mission_progress.hpp"
 #include "interfaces/msg/pose.hpp"
 #include "interfaces/msg/rc_state.hpp"
 
@@ -147,9 +148,12 @@ class FCCBridgeNode : public common_lib::CommonNode {
         battery_state_publisher; /**<  Publisher to send out Battery state
                                     updates */
     rclcpp::Publisher<interfaces::msg::RCState>::SharedPtr
-        rc_state_publisher; /**< Publisher to end out RC state updates */
+        rc_state_publisher; /**< Publisher to send out RC state updates */
     rclcpp::Publisher<interfaces::msg::Pose>::SharedPtr
         euler_angle_publisher; /**< Publisher to send out euler angle updates*/
+    rclcpp::Publisher<interfaces::msg::MissionProgress>::SharedPtr
+        mission_progress_publisher; /**< Publisher send out mission progress
+                                       updates */
 
     // ROS subscriptions
     rclcpp::Subscription<interfaces::msg::Heartbeat>::SharedPtr
@@ -182,6 +186,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
         last_fcc_rc_state; /**< The last received rc state from the FCC */
     std::optional<mavsdk::Telemetry::EulerAngle>
         last_fcc_euler_angle; /**< The last received euler angle from the FCC */
+    std::optional<std::pair<mavsdk::Mission::Result, bool>>
+        last_mission_progress; /**< The last received mission progress */
 
     /*************************************************************************/
     /*                          Cached ROS messages                          */
@@ -239,7 +245,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Gets the GPS telemetry from the FCC and publishes it on the ROS
      * network
      *
-     * @warning Does not check the validity of the last heartbeat. That the
+     * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
      */
     void send_gps_telemetry();
@@ -247,7 +253,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Gets the flight state from the FCC and publishes it on the ROS
      * network
      *
-     * @warning Does not check the validity of the last heartbeat. That the
+     * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
      */
     void send_flight_state();
@@ -255,14 +261,14 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Gets the battery state from the FCC and publishes it on the ROS
      * network
      *
-     * @warning Does not check the validity of the last heartbeat. That the
+     * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
      */
     void send_battery_state();
     /**
      * @brief Gets the RC state from the FCC and publishes it on the ROS network
      *
-     * @warning Does not check the validity of the last heartbeat. That the
+     * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
      */
     void send_rc_state();
@@ -270,10 +276,21 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Gets the euler angle from the FCC and publishes it on the ROS
      * network
      *
-     * @warning Does not check the validity of the last heartbeat. That the
+     * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
      */
     void send_euler_angle();
+    /**
+     * @brief gets the mission progress from the FCC and publishes it on the ROS
+     * network
+     *
+     * @warning Does not check he validity of the last heartbeat. That is the
+     * calling functions responsibility
+     *
+     * @warning Will trigger an RTH if there is any issue with the mission
+     * including no currently running mission
+     */
+    void send_mission_progress();
 
     /*************************************************************************/
     /*                       MAVSDK specific functions                       */
@@ -340,9 +357,25 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     void get_euler_angle();
     /**
+     * @brief Gets the current mission progress from the FCC
+     *
+     * Stores the result in the internal member variable @ref
+     * fcc_bridge::FCCBridgeNode::last_fcc_euler_angle
+     *
+     * Verifies the MAVSDK connection
+     */
+    void get_mission_progress();
+    /**
      * @brief Initiates an RTH
      *
      * Deactivates the node
+     *
+     * @note Guarantees that @ref fcc_bridge::FCCBridgeNode::internal_state is
+     * set to @ref fcc_bridge::FCCBridgeNode::INTERNAL_STATE::RETURN_TO_HOME if
+     * this function returns.
+     *
+     * @warning This function returns. It is the callers responsibility to
+     * cancel his own operation.
      */
     void trigger_rth();
     /**
@@ -364,7 +397,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @param fix_type The MAVSDK FixType to convert
      * @return The ROS FixType
      *
-     * @throws RuntimeError If the MAVSDK FixType is unknown
+     * @throws runtime_error If the MAVSDK FixType is unknown
      */
     static interfaces::msg::GPSPosition::_fix_type_type fix_type_mavsdk_to_ros(
         const mavsdk::Telemetry::FixType &fix_type);
@@ -375,10 +408,21 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @param flight_mode The MAVSDK FlightMode to convert
      * @return The ROS FlightState
      *
-     * @throws RuntimeError If the MAVSDK FlightMode is unknown
+     * @throws runtime_error If the MAVSDK FlightMode is unknown
      */
     static interfaces::msg::FlightState::_flight_mode_type
     flight_mode_mavsdk_to_ros(const mavsdk::Telemetry::FlightMode &flight_mode);
+    /**
+     * @brief Conversion function to get the string representation of a @ref
+     * mavsdk::Mission::Result
+     *
+     * @param result The result code to convert
+     * @return The string representation of the result
+     *
+     * @throws runtime_error If the Result is unknown
+     */
+    static char const *mavsdk_mission_result_to_str(
+        const mavsdk::Mission::Result &result);
 
    public:
     /**

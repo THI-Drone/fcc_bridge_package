@@ -28,6 +28,9 @@ constexpr char const *const RC_STATE_TOPIC_NAME =
     "uav_rc_state"; /**< Topic name for the RC state telemetry */
 constexpr char const *const EULER_ANGLE_TOPIC_NAME =
     "uav_euler_angle"; /**< Topic name for the UAV euler angle telemetry */
+constexpr char const *const MISSION_PROGRESS_TOPIC_NAME =
+    "uav_mission_progress"; /**< Topic name for the mission progress telemetry
+                             */
 constexpr char const *const HEARTBEAT_TOPIC_NAME =
     "heartbeat"; /**< Topic name for the heartbeat */
 
@@ -106,6 +109,11 @@ void FCCBridgeNode::setup_ros() {
     this->euler_angle_publisher = this->create_publisher<interfaces::msg::Pose>(
         EULER_ANGLE_TOPIC_NAME, 1);
 
+    // Create mission progress publisher
+    this->mission_progress_publisher =
+        this->create_publisher<interfaces::msg::MissionProgress>(
+            MISSION_PROGRESS_TOPIC_NAME, 1);
+
     // Setup subscriber
 
     // Create subscription options for heartbeat to only receive mission control
@@ -152,6 +160,7 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
                      "The received heartbeat is not newer than the last one! "
                      "Triggering RTH...");
         this->trigger_rth();
+        return;
     }
 
     // Set the cached heartbeat message to the current one
@@ -187,6 +196,12 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
 
     // Send out RC state
     this->send_rc_state();
+
+    // Check if there is currently a mission running
+    if (this->get_internal_state() == INTERNAL_STATE::FLYING_MISSION) {
+        // Send out mission progress
+        this->send_mission_progress();
+    }
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
@@ -336,6 +351,43 @@ void FCCBridgeNode::send_euler_angle() {
     this->euler_angle_publisher->publish(euler_angle_msg);
 
     RCLCPP_DEBUG(this->get_logger(), "Published current euler angle");
+}
+
+void FCCBridgeNode::send_mission_progress() {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Getting updated mission progress and publishing the update");
+
+    // Update mission progress
+    this->get_mission_progress();
+
+    // Verify of getting the mission progress was successful
+    if (this->last_mission_progress->first !=
+        mavsdk::Mission::Result::Success) {
+        // Trigger an RTH on any error
+        RCLCPP_ERROR(this->get_logger(),
+                     "Failed to get mission progress! Triggering RTH...");
+        this->trigger_rth();
+        return;
+    }
+
+    // In this case retrieving the mission progress was successful meaning that
+    // it can be safely accessed.
+    interfaces::msg::MissionProgress mission_progress_msg;
+    mission_progress_msg.time_stamp = this->now();
+    mission_progress_msg.sender_id = this->get_name();
+    // Check if the mission is finished
+    if (this->last_mission_progress->second) {
+        // Switch to the waiting for command state
+        this->set_internal_state(INTERNAL_STATE::WAITING_FOR_COMMAND);
+        mission_progress_msg.progress = 1.0;
+    } else {
+        mission_progress_msg.progress = 0.0;
+    }
+
+    // Publish the message
+    this->mission_progress_publisher->publish(mission_progress_msg);
+
+    RCLCPP_DEBUG(this->get_logger(), "Published current mission progress");
 }
 
 FCCBridgeNode::FCCBridgeNode(const std::string &name/*,

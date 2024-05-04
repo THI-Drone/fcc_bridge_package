@@ -301,8 +301,29 @@ void FCCBridgeNode::get_euler_angle() {
                 this->last_fcc_euler_angle->yaw_deg);
 }
 
+void FCCBridgeNode::get_mission_progress() {
+    // Clear cached values
+    this->last_mission_progress = std::nullopt;
+
+    // Verify the MAVSDK connection
+    this->verify_mavsdk_connection();
+
+    // Get mission progress
+    RCLCPP_DEBUG(this->get_logger(), "Getting mission progress");
+    this->last_mission_progress = this->mavsdk_mission->is_mission_finished();
+
+    RCLCPP_INFO(this->get_logger(),
+                "The current mission is finished: %s\t Result code: %s",
+                this->last_mission_progress->second ? "true" : "false",
+                FCCBridgeNode::mavsdk_mission_result_to_str(
+                    this->last_mission_progress->first));
+}
+
 void FCCBridgeNode::trigger_rth() {
     RCLCPP_WARN(this->get_logger(), "Triggering RTH");
+
+    this->set_internal_state(INTERNAL_STATE::RETURN_TO_HOME);
+
     this->deactivate();
 }
 

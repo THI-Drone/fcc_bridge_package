@@ -4,6 +4,9 @@
 
 #include "fcc_bridge_node.hpp"
 
+#define ENUM_TO_STR(parent_namespace, member) \
+    case parent_namespace::member:            \
+        return #parent_namespace "::" #member
 namespace fcc_bridge {
 interfaces::msg::GPSPosition::_fix_type_type
 FCCBridgeNode::fix_type_mavsdk_to_ros(
@@ -69,5 +72,30 @@ FCCBridgeNode::flight_mode_mavsdk_to_ros(
                 std::string("Got invalid flight mode ") +
                 std::to_string(static_cast<int>(flight_mode)));
     }
+}
+
+const char *FCCBridgeNode::mavsdk_mission_result_to_str(
+    const mavsdk::Mission::Result &result) {
+    switch (result) {
+        ENUM_TO_STR(mavsdk::Mission::Result, Unknown);
+        ENUM_TO_STR(mavsdk::Mission::Result, Success);
+        ENUM_TO_STR(mavsdk::Mission::Result, Error);
+        ENUM_TO_STR(mavsdk::Mission::Result, TooManyMissionItems);
+        ENUM_TO_STR(mavsdk::Mission::Result, Busy);
+        ENUM_TO_STR(mavsdk::Mission::Result, Timeout);
+        ENUM_TO_STR(mavsdk::Mission::Result, InvalidArgument);
+        ENUM_TO_STR(mavsdk::Mission::Result, Unsupported);
+        ENUM_TO_STR(mavsdk::Mission::Result, NoMissionAvailable);
+        ENUM_TO_STR(mavsdk::Mission::Result, UnsupportedMissionCmd);
+        ENUM_TO_STR(mavsdk::Mission::Result, TransferCancelled);
+        ENUM_TO_STR(mavsdk::Mission::Result, NoSystem);
+        ENUM_TO_STR(mavsdk::Mission::Result, Next);
+        ENUM_TO_STR(mavsdk::Mission::Result, Denied);
+        ENUM_TO_STR(mavsdk::Mission::Result, ProtocolError);
+        ENUM_TO_STR(mavsdk::Mission::Result, IntMessagesNotSupported);
+    }
+    throw std::runtime_error(
+        std::string("Got invalid mavsdk::Mission::Result value: ") +
+        std::to_string(static_cast<int>(result)));
 }
 }  // namespace fcc_bridge
