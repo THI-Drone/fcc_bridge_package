@@ -29,6 +29,7 @@
 #include "interfaces/msg/mission_progress.hpp"
 #include "interfaces/msg/pose.hpp"
 #include "interfaces/msg/rc_state.hpp"
+#include "interfaces/msg/uav_health.hpp"
 
 // CommonLib headers
 #include "common_package/common_node.hpp"
@@ -152,8 +153,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
     rclcpp::Publisher<interfaces::msg::Pose>::SharedPtr
         euler_angle_publisher; /**< Publisher to send out euler angle updates*/
     rclcpp::Publisher<interfaces::msg::MissionProgress>::SharedPtr
-        mission_progress_publisher; /**< Publisher send out mission progress
+        mission_progress_publisher; /**< Publisher to send out mission progress
                                        updates */
+    rclcpp::Publisher<interfaces::msg::UAVHealth>::SharedPtr
+        uav_health_publisher; /**< Publisher to send out uav health updates */
 
     // ROS subscriptions
     rclcpp::Subscription<interfaces::msg::Heartbeat>::SharedPtr
@@ -187,7 +190,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
     std::optional<mavsdk::Telemetry::EulerAngle>
         last_fcc_euler_angle; /**< The last received euler angle from the FCC */
     std::optional<std::pair<mavsdk::Mission::Result, bool>>
-        last_mission_progress; /**< The last received mission progress */
+        last_mission_progress; /**< The last received mission progress from the
+                                  FCC*/
+    std::optional<mavsdk::Telemetry::Health>
+        last_fcc_health; /**< The last received UAV health from the FCC*/
 
     /*************************************************************************/
     /*                          Cached ROS messages                          */
@@ -281,7 +287,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     void send_euler_angle();
     /**
-     * @brief gets the mission progress from the FCC and publishes it on the ROS
+     * @brief Gets the mission progress from the FCC and publishes it on the ROS
      * network
      *
      * @warning Does not check he validity of the last heartbeat. That is the
@@ -291,6 +297,20 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * including no currently running mission
      */
     void send_mission_progress();
+    /**
+     * @brief Gets the UAV health form the FCC and publishes on the ROS network
+     *
+     * @note Will set @ref fcc_bridge::FCCBridgeNode::internal_state to @ref
+     * fcc_bridge::FCCBridgeNode::INTERNAL_STATE::ERROR if
+     * 1. is_gyrometer_calibration_ok && is_accelerometer_calibration_ok &&
+     * is_magnetometer_calibration_ok is false
+     * 2. If the UAV is airborne && is_local_position_ok &&
+     * is_global_position_ok && is_home_position_ok is false
+     *
+     * @warning Does not check he validity of the last heartbeat. That is the
+     * calling functions responsibility
+     */
+    void send_uav_health();
 
     /*************************************************************************/
     /*                       MAVSDK specific functions                       */
@@ -365,6 +385,15 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Verifies the MAVSDK connection
      */
     void get_mission_progress();
+    /**
+     * @brief Gets the current UAV health from the FCC
+     *
+     * Stores the result in the internal member variable @ref
+     * fcc_bridge::FCCBridgeNode::last_fcc_health
+     *
+     * Verifies the MAVSDK connection
+     */
+    void get_uav_health();
     /**
      * @brief Initiates an RTH
      *
@@ -447,6 +476,15 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     static char const *mavsdk_mission_result_to_str(
         const mavsdk::Mission::Result &result);
+    /**
+     * @brief Conversion function to get the string representation of the
+     * current value of @ref fcc_bridge::FCCBridgeNode::internal_state
+     *
+     * @return The string representation of the internal state
+     *
+     * @throws std::runtime_error If the value is unknown
+     */
+    char const *internal_state_to_str() const;
 
    public:
     /**

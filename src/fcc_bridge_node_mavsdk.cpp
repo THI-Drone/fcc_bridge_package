@@ -329,6 +329,35 @@ void FCCBridgeNode::get_mission_progress() {
                     this->last_mission_progress->first));
 }
 
+void FCCBridgeNode::get_uav_health() {
+    // Clear cached values
+    this->last_fcc_health = std::nullopt;
+
+    // Verify the MAVSDK connection
+    this->verify_mavsdk_connection();
+
+    // Get the UAV health
+    RCLCPP_DEBUG(this->get_logger(), "Getting UAV health");
+    this->last_fcc_health = this->mavsdk_telemtry->health();
+
+    static auto bool_to_str = [](const bool b) -> const char * {
+        return b ? "true" : "false";
+    };
+
+    RCLCPP_INFO(
+        this->get_logger(),
+        "Current UAV health: Gyrometer calibrated: %s\tAccelerometer "
+        "calibrated: %s\tMagnetometer calibrated: %s\tLocal position ok: "
+        "%s\tGlobal position ok: %s\tHome position ok: %s\tArmable: %s",
+        bool_to_str(this->last_fcc_health->is_gyrometer_calibration_ok),
+        bool_to_str(this->last_fcc_health->is_accelerometer_calibration_ok),
+        bool_to_str(this->last_fcc_health->is_magnetometer_calibration_ok),
+        bool_to_str(this->last_fcc_health->is_local_position_ok),
+        bool_to_str(this->last_fcc_health->is_global_position_ok),
+        bool_to_str(this->last_fcc_health->is_home_position_ok),
+        bool_to_str(this->last_fcc_health->is_armable));
+}
+
 void FCCBridgeNode::trigger_rth() {
     RCLCPP_WARN(this->get_logger(), "Triggering RTH");
 

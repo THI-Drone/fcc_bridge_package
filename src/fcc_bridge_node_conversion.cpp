@@ -152,4 +152,25 @@ const char *FCCBridgeNode::mavsdk_mission_result_to_str(
                 std::to_string(static_cast<int>(result)));
     }
 }
+
+const char *FCCBridgeNode::internal_state_to_str() const {
+    switch (this->get_internal_state()) {
+        ENUM_TO_STR(INTERNAL_STATE, STARTING_UP);
+        ENUM_TO_STR(INTERNAL_STATE, ROS_SET_UP);
+        ENUM_TO_STR(INTERNAL_STATE, MAVSDK_SET_UP);
+        ENUM_TO_STR(INTERNAL_STATE, WAITING_FOR_ARM);
+        ENUM_TO_STR(INTERNAL_STATE, ARMED);
+        ENUM_TO_STR(INTERNAL_STATE, WAITING_FOR_COMMAND);
+        ENUM_TO_STR(INTERNAL_STATE, FLYING_ACTION);
+        ENUM_TO_STR(INTERNAL_STATE, FLYING_MISSION);
+        ENUM_TO_STR(INTERNAL_STATE, RETURN_TO_HOME);
+        ENUM_TO_STR(INTERNAL_STATE, LANDED);
+        ENUM_TO_STR(INTERNAL_STATE, ERROR);
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid INTERNAL_STATE value: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+}
+
 }  // namespace fcc_bridge

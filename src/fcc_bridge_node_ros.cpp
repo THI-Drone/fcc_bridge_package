@@ -31,6 +31,8 @@ constexpr char const *const EULER_ANGLE_TOPIC_NAME =
 constexpr char const *const MISSION_PROGRESS_TOPIC_NAME =
     "uav_mission_progress"; /**< Topic name for the mission progress telemetry
                              */
+constexpr char const *const UAV_HEALTH_TOPIC_NAME =
+    "uav_health"; /**< Topic name for the uav health telemetry */
 constexpr char const *const HEARTBEAT_TOPIC_NAME =
     "heartbeat"; /**< Topic name for the heartbeat */
 
@@ -113,6 +115,11 @@ void FCCBridgeNode::setup_ros() {
     this->mission_progress_publisher =
         this->create_publisher<interfaces::msg::MissionProgress>(
             MISSION_PROGRESS_TOPIC_NAME, 1);
+
+    // Create UAV health publisher
+    this->uav_health_publisher =
+        this->create_publisher<interfaces::msg::UAVHealth>(
+            UAV_HEALTH_TOPIC_NAME, 1);
 
     // Setup subscriber
 
@@ -215,6 +222,9 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
         // Send out mission progress
         this->send_mission_progress();
     }
+
+    // Send out UAV health
+    this->send_uav_health();
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
@@ -414,6 +424,88 @@ void FCCBridgeNode::send_mission_progress() {
     this->mission_progress_publisher->publish(mission_progress_msg);
 
     RCLCPP_DEBUG(this->get_logger(), "Published current mission progress");
+}
+
+void FCCBridgeNode::send_uav_health() {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Getting updated uav health and publishing the update");
+
+    // Update UAV health
+    this->get_uav_health();
+
+    switch (this->get_internal_state()) {
+            // This function should never be called in these states
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::ERROR:
+            throw std::runtime_error(std::string(__func__) +
+                                     " was called in an invalid state: " +
+                                     this->internal_state_to_str());
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_ACTION:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            // Verify that UAV position and home position are ok
+            if (!this->last_fcc_health->is_local_position_ok ||
+                !this->last_fcc_health->is_global_position_ok ||
+                !this->last_fcc_health->is_home_position_ok) {
+                // This is unrecoverable, at this point the manual operator
+                // needs to take over!
+                RCLCPP_FATAL(this->get_logger(),
+                             "FCC cannot determine its own position any more "
+                             "or has lost its home position! Exiting...");
+                this->set_internal_state(INTERNAL_STATE::ERROR);
+                this->exit_process_on_error();
+            }
+            [[fallthrough]];
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::LANDED:
+            // Verify that the base state of the drone is ok
+            if (!this->last_fcc_health->is_gyrometer_calibration_ok ||
+                !this->last_fcc_health->is_accelerometer_calibration_ok ||
+                !this->last_fcc_health->is_magnetometer_calibration_ok) {
+                // This is unrecoverable, if the UAV is still on the ground
+                // nothing has happened, otherwise manual control is required!
+                RCLCPP_FATAL(this->get_logger(),
+                             "UAV sensors are not calibrated! Exiting...");
+                this->set_internal_state(INTERNAL_STATE::ERROR);
+                this->exit_process_on_error();
+            }
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    RCLCPP_INFO(this->get_logger(), "UAV config is ok in the current state %s",
+                this->internal_state_to_str());
+
+    // In this case retrieving the UAV health was successful meaning that it
+    // can be safely accessed.
+    interfaces::msg::UAVHealth uav_health_msg;
+    uav_health_msg.time_stamp = this->now();
+    uav_health_msg.sender_id = this->get_name();
+    uav_health_msg.is_gyrometer_calibration_ok =
+        this->last_fcc_health->is_gyrometer_calibration_ok;
+    uav_health_msg.is_accelerometer_calibration_ok =
+        this->last_fcc_health->is_accelerometer_calibration_ok;
+    uav_health_msg.is_magnetometer_calibration_ok =
+        this->last_fcc_health->is_magnetometer_calibration_ok;
+    uav_health_msg.is_local_position_ok =
+        this->last_fcc_health->is_local_position_ok;
+    uav_health_msg.is_global_position_ok =
+        this->last_fcc_health->is_global_position_ok;
+    uav_health_msg.is_home_position_ok =
+        this->last_fcc_health->is_home_position_ok;
+    uav_health_msg.is_armable = this->last_fcc_health->is_armable;
+
+    // Publish the message
+    this->uav_health_publisher->publish(uav_health_msg);
+
+    RCLCPP_DEBUG(this->get_logger(), "Published current UAV health");
 }
 
 FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
