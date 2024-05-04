@@ -426,6 +426,18 @@ class FCCBridgeNode : public common_lib::CommonNode {
         const mavsdk::ConnectionResult &result);
     /**
      * @brief Conversion function to get the string representation of a @ref
+     * mavsdk::Telemetry::FlightMode
+     *
+     * @param result The flight mode to convert
+     *
+     * @return The string representation of the flight mode
+     *
+     * @throws std::runtime_error If the value is unknown;
+     */
+    static char const *mavsdk_flight_mode_to_str(
+        const mavsdk::Telemetry::FlightMode &flight_mode);
+    /**
+     * @brief Conversion function to get the string representation of a @ref
      * mavsdk::Mission::Result
      *
      * @param result The result code to convert

@@ -236,8 +236,9 @@ void FCCBridgeNode::get_flight_state() {
     RCLCPP_DEBUG(this->get_logger(), "Getting FlightState from FCC");
     this->last_fcc_flight_state = this->mavsdk_telemtry->flight_mode();
 
-    RCLCPP_INFO(this->get_logger(), "The current flight mode is: %d",
-                static_cast<int>(this->last_fcc_flight_state.value()));
+    RCLCPP_INFO(this->get_logger(), "The current flight mode is: %s",
+                FCCBridgeNode::mavsdk_flight_mode_to_str(
+                    this->last_fcc_flight_state.value()));
 }
 
 void FCCBridgeNode::get_battery_state() {

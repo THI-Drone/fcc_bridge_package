@@ -97,6 +97,30 @@ const char *FCCBridgeNode::mavsdk_connection_result_to_str(
         std::to_string(static_cast<int>(result)));
 }
 
+const char *FCCBridgeNode::mavsdk_flight_mode_to_str(
+    const mavsdk::Telemetry::FlightMode &flight_mode) {
+    switch (flight_mode) {
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Unknown);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Ready);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Takeoff);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Hold);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Mission);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, ReturnToLaunch);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Land);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Offboard);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, FollowMe);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Manual);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Altctl);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Posctl);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Acro);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Stabilized);
+        ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Rattitude);
+    }
+    throw std::runtime_error(
+        std::string("Got invalid mavsdk::Telemetry::FlightMode value ") +
+        std::to_string(static_cast<int>(flight_mode)));
+}
+
 const char *FCCBridgeNode::mavsdk_mission_result_to_str(
     const mavsdk::Mission::Result &result) {
     switch (result) {
