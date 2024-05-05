@@ -63,12 +63,26 @@ void FCCBridgeNode::check_gps_state() {
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
 
+    // Check that the current coordinate is inside the geofence.
+    if (!this->check_point_in_geofence(this->last_fcc_position.value())) {
+        // The current point is outside the geofence. If we are in
+    }
+
     RCLCPP_INFO(this->get_logger(), "GPS state is O.K.");
 }
 
-void FCCBridgeNode::check_flight_state() {}
+void FCCBridgeNode::check_flight_state() {
+    RCLCPP_WARN_ONCE(this->get_logger(), "Flight State check not implemented!");
+}
 
-void FCCBridgeNode::check_battery_state() {}
+void FCCBridgeNode::check_battery_state() {
+    RCLCPP_WARN_ONCE(this->get_logger(),
+                     "Battery State check not implemented!");
+}
+
+void FCCBridgeNode::check_rc_state() {
+    RCLCPP_WARN_ONCE(this->get_logger(), "RC State check not implemented!");
+}
 
 void FCCBridgeNode::check_uav_health() {
     RCLCPP_DEBUG(this->get_logger(), "Checking UAV health state");
@@ -130,6 +144,59 @@ void FCCBridgeNode::check_uav_health() {
     }
 
     RCLCPP_INFO(this->get_logger(), "UAV health is O.K.");
+}
+
+bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
+                                            const double longitude_deg,
+                                            const float relative_altitude_m) {
+    RCLCPP_WARN_ONCE(this->get_logger(),
+                     "Geofence check fully not implemented!");
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Checking whether point (lat: %f°\tlon: %f°\trel alt: %fm) is "
+                 "inside the geofence",
+                 latitude_deg, longitude_deg,
+                 static_cast<double>(relative_altitude_m));
+    switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_ACTION:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+        case INTERNAL_STATE::LANDED:
+            // In these states a geofence should have been configured. This is a
+            // sanity check that it was actually configured
+            if (this->safety_limits.has_value()) {
+                // Every thing ok proceed to the actual geofence check
+                break;
+            }
+            [[fallthrough]];
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+            // In these states there is no geofence configured
+            RCLCPP_ERROR(this->get_logger(),
+                         "Tried to check if point is inside geofence, while no "
+                         "geofence was configured");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            return false;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    return true;  // TODO: implement actual geofence check
+}
+
+bool FCCBridgeNode::check_speed(const float speed_mps) {
+    (void)speed_mps;
+    RCLCPP_WARN_ONCE(this->get_logger(), "Speed check not implemented!");
+    return true;
 }
 
 }  // namespace fcc_bridge

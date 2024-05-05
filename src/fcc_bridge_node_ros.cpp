@@ -17,7 +17,7 @@ constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_5HZ{
 constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_10HZ{
     100}; /**< The period of the 10Hz telemetry timer */
 
-// Topic names
+// Publisher topic names
 constexpr char const *const GPS_POSITION_TOPIC_NAME =
     "uav_gps_position"; /**< Topic name for the GPS telemetry */
 constexpr char const *const FLIGHT_STATE_TOPIC_NAME =
@@ -27,17 +27,27 @@ constexpr char const *const BATTERY_STATE_TOPIC_NAME =
 constexpr char const *const RC_STATE_TOPIC_NAME =
     "uav_rc_state"; /**< Topic name for the RC state telemetry */
 constexpr char const *const EULER_ANGLE_TOPIC_NAME =
-    "uav_euler_angle"; /**< Topic name for the UAV euler angle telemetry */
+    "uav_pose"; /**< Topic name for the UAV euler angle telemetry */
 constexpr char const *const MISSION_PROGRESS_TOPIC_NAME =
     "uav_mission_progress"; /**< Topic name for the mission progress telemetry
                              */
 constexpr char const *const UAV_HEALTH_TOPIC_NAME =
     "uav_health"; /**< Topic name for the uav health telemetry */
-constexpr char const *const HEARTBEAT_TOPIC_NAME =
-    "heartbeat"; /**< Topic name for the heartbeat */
 constexpr char const *const MISSION_START_TOPIC_NAME =
     "mission_start"; /**< Topic name for the mission start signal send out when
                         the FCC gets armed */
+
+// Subscriber topic names
+constexpr char const *const HEARTBEAT_TOPIC_NAME =
+    "heartbeat"; /**< Topic name for the heartbeat */
+constexpr char const *const UAV_COMMAND_TOPIC_NAME =
+    "uav_command"; /**< Topic name for uav commands */
+
+constexpr std::chrono::seconds MAX_UAV_COMMAND_AGE{
+    1}; /**< Maximum age of a received UAV command */
+
+constexpr float WAYPOINT_ACCEPTANCE_RADIUS_M =
+    .5; /**< Acceptance radius for waypoints */
 
 }  // namespace
 
@@ -152,6 +162,13 @@ void FCCBridgeNode::setup_ros() {
         return;
     }
 
+    // Create UAV command subscriber
+    this->uav_command_subscriber =
+        this->create_subscription<interfaces::msg::UAVCommand>(
+            UAV_COMMAND_TOPIC_NAME, 10,
+            std::bind(&FCCBridgeNode::uav_command_subscriber_cb, this,
+                      std::placeholders::_1));
+
     // Setup 5Hz timer to get telemetry from the FCC
     this->fcc_telemetry_timer_5hz = this->create_wall_timer(
         FCC_TELEMETRY_PERIOD_5HZ,
@@ -185,6 +202,216 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     this->check_last_mission_control_heartbeat();
 
     RCLCPP_INFO(this->get_logger(), "Mission control is alive and ok");
+}
+
+void FCCBridgeNode::uav_command_subscriber_cb(
+    const interfaces::msg::UAVCommand &msg) {
+    RCLCPP_DEBUG(this->get_logger(), "Received a new UAVCommand message");
+
+    // Ensure that the message is not too old
+    if (this->now() - msg.time_stamp > rclcpp::Duration(MAX_UAV_COMMAND_AGE)) {
+        RCLCPP_ERROR(
+            this->get_logger(),
+            "Received a UAVCommand that is too old! Triggering RTH...");
+        this->trigger_rth();
+        return;
+    }
+
+    // TODO: Do check of sender
+
+    switch (msg.type) {
+        case interfaces::msg::UAVCommand::TAKE_OFF:
+            this->initiate_takeoff(msg.waypoint, msg.speed_m_s);
+            break;
+        case interfaces::msg::UAVCommand::FLY_TO_WAYPOINT:
+            this->start_flying_to_waypoint(msg.waypoint);
+            break;
+        case interfaces::msg::UAVCommand::LAND:
+            break;
+        case interfaces::msg::UAVCommand::RTH:
+            break;
+        default:
+            RCLCPP_ERROR(this->get_logger(), "Got unknown UAVCommand type %d",
+                         msg.type);
+            switch (this->get_internal_state()) {
+                case INTERNAL_STATE::ERROR:
+                    // This should never happen as the process should have
+                    // exited before
+                    throw std::runtime_error(
+                        "Received unknown command while in ERROR state");
+                case INTERNAL_STATE::STARTING_UP:
+                case INTERNAL_STATE::ROS_SET_UP:
+                case INTERNAL_STATE::MAVSDK_SET_UP:
+                case INTERNAL_STATE::WAITING_FOR_ARM:
+                case INTERNAL_STATE::ARMED:
+                case INTERNAL_STATE::LANDED:
+                    // In these cases the UAV is not airborne so the process
+                    // will exit
+                    RCLCPP_FATAL(this->get_logger(),
+                                 "Drone is still on ground. Exiting...");
+                    this->set_internal_state(INTERNAL_STATE::ERROR);
+                    this->exit_process_on_error();
+                case INTERNAL_STATE::WAITING_FOR_COMMAND:
+                case INTERNAL_STATE::FLYING_ACTION:
+                case INTERNAL_STATE::FLYING_MISSION:
+                case INTERNAL_STATE::RETURN_TO_HOME:
+                    RCLCPP_ERROR(this->get_logger(), "Triggering RTH...");
+                    this->trigger_rth();
+                    return;
+                default:
+                    throw std::runtime_error(
+                        std::string("Got invalid value for internal_state: ") +
+                        std::to_string(
+                            static_cast<int>(this->get_internal_state())));
+            }
+    }
+}
+
+void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
+                                     const float speed_mps) {
+    RCLCPP_INFO(this->get_logger(), "Received a command to takeoff");
+
+    // Verify that the uav is in the right state
+    switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen as the process should have exited before
+            throw std::runtime_error(
+                "Received command to take of while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::LANDED:
+            // The UAV is still or again on the ground so the only thing left is
+            // to kill the process
+            RCLCPP_FATAL(
+                this->get_logger(),
+                "Received a takeoff command in an invalid state! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_ACTION:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            // If the UAV is airborne and another takeoff command is received
+            // something must have gone wrong so an RTH is triggered
+            RCLCPP_ERROR(this->get_logger(),
+                         "Received a takeoff command while airborne! "
+                         "Triggering RTH...");
+            this->trigger_rth();
+            return;
+        case INTERNAL_STATE::ARMED:
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    // Check that the speed is valid
+    if (!this->check_speed(speed_mps)) {
+        if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
+            // This means an unrecoverable error has occurred such as missing
+            // safety limits
+            RCLCPP_FATAL(
+                this->get_logger(),
+                "There has been an unrecoverable error checking if the target "
+                "speed for takeoff was inside the safety limits! Exiting...");
+        } else {
+            // In this case the target takeoff speed is outside the limits
+            // deemed safe. Because the UAV is on the ground this results in a
+            // process exit.
+            RCLCPP_FATAL(
+                this->get_logger(),
+                "The target takeoff speed is outside the speed "
+                "safety limits (%f is not in (%f;%f]). The UAV should "
+                "not be airborne! Exiting...",
+                static_cast<double>(speed_mps),
+                static_cast<double>(safety_limits::MIN_SPEED_LIMIT_MPS),
+                static_cast<double>(this->safety_limits->max_speed_mps));
+        }
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        // Exit the process
+        this->exit_process_on_error();
+    }
+
+    // Check that the waypoint is valid
+    if (waypoint.relative_altitude_m ==
+        interfaces::msg::Waypoint::INVALID_ALTITUDE) {
+        RCLCPP_FATAL(
+            this->get_logger(),
+            "Got an invalid waypoint for a takeoff command! Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    }
+
+    // Verify that the waypoint is inside the geofence
+    if (!this->check_point_in_geofence(waypoint)) {
+        // Something went wrong with the check
+        if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
+            // This means an unrecoverable error has occurred such as missing
+            // safety limits
+            RCLCPP_FATAL(
+                this->get_logger(),
+                "There has been an unrecoverable error checking if the target "
+                "waypoint for takeoff was inside the geofence! Exiting...");
+        } else {
+            // The waypoint is outside the geofence. The UAV is still on the
+            // ground so the process will exit.
+            RCLCPP_FATAL(
+                this->get_logger(),
+                "Got an waypoint with lat: %f°\tlon: %f°\trel. alt. %fm "
+                "for a takeoff that is outside the geofence! Exiting...",
+                waypoint.latitude_deg, waypoint.longitude_deg,
+                waypoint.relative_altitude_m);
+        }
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        // Exit the process
+        this->exit_process_on_error();
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Clear for takeoff");
+
+    // Mission item that describes the takeoff action
+    mavsdk::Mission::MissionItem takeoff_mission_item;
+
+    // Set all the relevant values
+    takeoff_mission_item.latitude_deg = waypoint.latitude_deg;
+    takeoff_mission_item.longitude_deg = waypoint.longitude_deg;
+    takeoff_mission_item.relative_altitude_m = waypoint.relative_altitude_m;
+    takeoff_mission_item.speed_m_s = speed_mps;
+    takeoff_mission_item.is_fly_through = false;
+    takeoff_mission_item.acceptance_radius_m = WAYPOINT_ACCEPTANCE_RADIUS_M;
+    takeoff_mission_item.vehicle_action =
+        mavsdk::Mission::MissionItem::VehicleAction::Takeoff;
+
+    // Mission plan that stores the mission items. In this case only one
+    mavsdk::Mission::MissionPlan takeoff_mission_plan;
+
+    // Insert takeoff action into mission plan
+    takeoff_mission_plan.mission_items.push_back(takeoff_mission_item);
+
+    // Execute mission
+    if (!this->execute_mission_plan(takeoff_mission_plan)) {
+        RCLCPP_FATAL(
+            this->get_logger(),
+            "There was an error triggering the takeoff mission! Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    }
+
+    // Set state to waiting for mission
+    this->set_internal_state(INTERNAL_STATE::FLYING_MISSION);
+
+    RCLCPP_INFO(
+        this->get_logger(),
+        "Successfully triggered takeoff. Waiting for mission to complete.");
+}
+
+void FCCBridgeNode::start_flying_to_waypoint(
+    const interfaces::msg::Waypoint &waypoint) {
+    (void)waypoint;
+    RCLCPP_WARN_ONCE(this->get_logger(), "Flying to waypoint not implemented!");
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
@@ -320,7 +547,7 @@ void FCCBridgeNode::send_flight_state() {
         this->last_fcc_flight_mode.value() ==
             mavsdk::Telemetry::FlightMode::Ready) {
         RCLCPP_INFO(this->get_logger(),
-                    "Drone is armed and ready for take off. Switching to ARMED "
+                    "Drone is armed and ready for takeoff. Switching to ARMED "
                     "state and sending MissionStart message");
         this->set_internal_state(INTERNAL_STATE::ARMED);
         interfaces::msg::MissionStart mission_start_msg;

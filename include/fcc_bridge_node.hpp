@@ -30,6 +30,7 @@
 #include "interfaces/msg/mission_start.hpp"
 #include "interfaces/msg/pose.hpp"
 #include "interfaces/msg/rc_state.hpp"
+#include "interfaces/msg/uav_command.hpp"
 #include "interfaces/msg/uav_health.hpp"
 
 // CommonLib headers
@@ -166,6 +167,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
     rclcpp::Subscription<interfaces::msg::Heartbeat>::SharedPtr
         mission_control_heartbeat_subscriber; /**< Subscriber for the mission
                                                  control heartbeats */
+    rclcpp::Subscription<interfaces::msg::UAVCommand>::SharedPtr
+        uav_command_subscriber; /**< Subscriber for uav command messages */
 
     // ROS timer
     rclcpp::TimerBase::SharedPtr
@@ -187,7 +190,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
         last_fcc_flight_mode; /**< The last FlightMode received from the FCC
                                */
     std::optional<mavsdk::Telemetry::LandedState>
-        last_fcc_landed_state; /**< The last LandedState recieved from the FCC
+        last_fcc_landed_state; /**< The last LandedState received from the FCC
                                 */
     std::optional<mavsdk::Telemetry::Battery>
         last_fcc_battery_state; /**< The last received battery state from the
@@ -209,6 +212,26 @@ class FCCBridgeNode : public common_lib::CommonNode {
     interfaces::msg::Heartbeat
         last_mission_control_heartbeat; /**< The last received heartbeat from
                                           mission control */
+
+    /**************************************************************************/
+    /*                             Safety members                             */
+    /**************************************************************************/
+
+    // Safety limits
+    struct safety_limits {
+        // TODO: Implement
+        constexpr static float MIN_SPEED_LIMIT_MPS =
+            0; /**< The minimum speed allow when flying to a waypoint. Exclusive
+                */
+        constexpr static float HARD_MAX_SPEED_LIMIT_MPS =
+            5; /**< The hard speed limit which will cap the soft speed limit.
+                  Inclusive */
+        float max_speed_mps;
+    }; /**< struct to hold all currently active safety limits */
+
+    std::optional<struct safety_limits>
+        safety_limits; /**< Safety limits to be enforced such as geofence and
+                          max speed */
 
    protected:
     /**************************************************************************/
@@ -269,8 +292,81 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * ERROR
      */
     void check_uav_health();
-
-    // bool check_point_in_geofence();
+    /**
+     * @brief Checks whether a given point is inside the geofence stored inside
+     * this node
+     *
+     * @param latitude_deg The latitude of the point in degrees
+     * @param longitude_deg The longitude of the point in degrees
+     * @param relative_altitude_m The relative altitude above the take off point
+     * of the point in meters
+     *
+     * @returns geofence was configured && point is inside geofence
+     *
+     * @throws std::runtime_error If @ref
+     * fcc_bridge::FCCBridgeNode::internal_state is ERROR
+     *
+     * @note Sets @ref fcc_bridge::FCCBridgeNode::internal_state to ERROR if no
+     * geofence was configured
+     */
+    bool check_point_in_geofence(const double latitude_deg,
+                                 const double longitude_deg,
+                                 const float relative_altitude_m);
+    /**
+     * @brief Checks whether a given point is inside the geofence stored inside
+     * this node
+     *
+     * @param waypoint The waypoint to check
+     *
+     * @returns geofence was configured && point is inside geofence
+     *
+     * @throws std::runtime_error If @ref
+     * fcc_bridge::FCCBridgeNode::internal_state is ERROR
+     *
+     * @note Sets @ref fcc_bridge::FCCBridgeNode::internal_state to ERROR if no
+     * geofence was configured
+     */
+    inline bool check_point_in_geofence(
+        const interfaces::msg::Waypoint &waypoint) {
+        return this->check_point_in_geofence(waypoint.latitude_deg,
+                                             waypoint.longitude_deg,
+                                             waypoint.relative_altitude_m);
+    }
+    /**
+     * @brief Checks whether a given point is inside the geofence stored inside
+     * this node
+     *
+     * @param position The position to check
+     *
+     * @returns geofence was configured && point is inside geofence
+     *
+     * @throws std::runtime_error If @ref
+     * fcc_bridge::FCCBridgeNode::internal_state is ERROR
+     *
+     * @note Sets @ref fcc_bridge::FCCBridgeNode::internal_state to ERROR if no
+     * geofence was configured
+     */
+    inline bool check_point_in_geofence(
+        const mavsdk::Telemetry::Position &position) {
+        return this->check_point_in_geofence(position.latitude_deg,
+                                             position.longitude_deg,
+                                             position.relative_altitude_m);
+    }
+    /**
+     * @brief Checks whether the given speed is inside the valid range
+     * (0;MAX_SPEED]
+     *
+     * @param speed_mps The speed to check
+     *
+     * @returns MAX_SPEED was configured && point is inside geofence
+     *
+     * @throws std::runtime_error If @ref
+     * fcc_bridge::FCCBridgeNode::internal_state is ERROR
+     *
+     * @note Sets @ref fcc_bridge::FCCBridgeNode::internal_state to ERROR if no
+     * MAX_SPEED was configured
+     */
+    bool check_speed(const float speed_mps);
 
     /**************************************************************************/
     /*                         ROS specific functions                         */
@@ -294,6 +390,42 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     void mission_control_heartbeat_subscriber_cb(
         const interfaces::msg::Heartbeat &msg);
+    /**
+     * @brief Callback function to be triggered when a new UAVCommand message is
+     * received
+     *
+     * @param msg The received message
+     *
+     * Will trigger all the necessary safety checks to ensure only safe commands
+     * are actually executed
+     *
+     * Triggers an RTH if the command is deemed invalid such as when
+     * 1. The time stamp in the message is older than one second.
+     * 2.
+     *
+     * @throws std::runtime_error If @ref
+     * fcc_bridge::FCCBridgeNode::internal_state is @ref
+     * fcc_bridge::FCCBridgeNode::INTERNAL_STATE::ERROR
+     */
+    void uav_command_subscriber_cb(const interfaces::msg::UAVCommand &msg);
+    /**
+     * @brief This function starts a mission that will perform a take off and
+     * fly to the specified waypoint
+     *
+     * @note Verifies the that waypoint is inside the geofence
+     * TODO: Waypoint check
+     * TODO: how to signal back if waypoint is ok???
+     */
+    void initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
+                          const float speed_mps);
+    /**
+     * @brief This function starts a mission that will fly to the passed
+     * waypoint
+     *
+     * @note Verifies the that waypoint is inside the geofence
+     * TODO: Waypoint check
+     */
+    void start_flying_to_waypoint(const interfaces::msg::Waypoint &waypoint);
     /**
      * @brief Callback function for the 5Hz telemetry timer
      *
@@ -463,6 +595,16 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Verifies the MAVSDK connection
      */
     void get_uav_health();
+    /**
+     * @brief Executes the passed mission plan asynchronously
+     *
+     * @param plan The plan to execute
+     *
+     * Verifies the MAVSDK connection
+     *
+     * @warning Does not perform any safety checks on the plan!
+     */
+    bool execute_mission_plan(const mavsdk::Mission::MissionPlan &plan);
     /**
      * @brief Initiates an RTH
      *

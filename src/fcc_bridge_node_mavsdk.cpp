@@ -367,6 +367,53 @@ void FCCBridgeNode::get_uav_health() {
         bool_to_str(this->last_fcc_health->is_armable));
 }
 
+bool FCCBridgeNode::execute_mission_plan(
+    const mavsdk::Mission::MissionPlan &plan) {
+    RCLCPP_DEBUG(this->get_logger(), "Got new mission plan to execute");
+
+    // Verify MAVSDK connection
+    this->verify_mavsdk_connection();
+
+    // Ensure there is no RTH after the mission ends
+    const mavsdk::Mission::Result no_rth_after_mission_result =
+        this->mavsdk_mission->set_return_to_launch_after_mission(false);
+
+    if (no_rth_after_mission_result != mavsdk::Mission::Result::Success) {
+        RCLCPP_ERROR(
+            this->get_logger(),
+            "Failed to disable automatic RTH after mission end with result: %s",
+            FCCBridgeNode::mavsdk_mission_result_to_str(
+                no_rth_after_mission_result));
+        return false;
+    }
+
+    // Upload the mission plan to the FCC
+    const mavsdk::Mission::Result upload_result =
+        this->mavsdk_mission->upload_mission(plan);
+
+    if (upload_result != mavsdk::Mission::Result::Success) {
+        RCLCPP_ERROR(
+            this->get_logger(),
+            "Failed to upload mission plan to FCC with result: %s",
+            FCCBridgeNode::mavsdk_mission_result_to_str(upload_result));
+        return false;
+    }
+
+    const mavsdk::Mission::Result mission_start_result =
+        this->mavsdk_mission->start_mission();
+
+    if (mission_start_result != mavsdk::Mission::Result::Success) {
+        RCLCPP_ERROR(
+            this->get_logger(), "Failed to start mission with result: %s",
+            FCCBridgeNode::mavsdk_mission_result_to_str(mission_start_result));
+        return false;
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Successfully executed mission plan");
+
+    return true;
+}
+
 void FCCBridgeNode::trigger_rth() {
     RCLCPP_WARN(this->get_logger(), "Triggering RTH");
 
