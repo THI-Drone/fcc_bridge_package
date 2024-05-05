@@ -62,11 +62,11 @@ using s64 = int64_t; /**< Signed 64 bit integer */
  * Contains safety checks and contingencies
  */
 class FCCBridgeNode : public common_lib::CommonNode {
-   private:
     /************************************************************************/
     /*                        Internal state members                        */
     /************************************************************************/
 
+   private:
     // Internal state enum and member to track the current state of the FCC
     // Bridge
     enum INTERNAL_STATE : u8 {
@@ -97,6 +97,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     };            /**< Possible internal states */
     INTERNAL_STATE
     internal_state; /**< Current internal state of the fcc_node */
+
    protected:
     /**
      * @brief Set the internal state of this node
@@ -140,6 +141,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                         ROS specific members                         */
     /************************************************************************/
 
+   private:
     // ROS publisher
     rclcpp::Publisher<interfaces::msg::GPSPosition>::SharedPtr
         gps_position_publisher; /**< Publisher to send out GPSPosition updates
@@ -182,6 +184,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                          Cached FCC telemetry                          */
     /**************************************************************************/
 
+   private:
     std::optional<mavsdk::Telemetry::GpsInfo>
         last_fcc_gps_info; /**< The last GPSInfo received from the FCC */
     std::optional<mavsdk::Telemetry::Position>
@@ -217,6 +220,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                             Safety members                             */
     /**************************************************************************/
 
+   private:
     // Safety limits
     struct safety_limits {
         // TODO: Implement
@@ -233,11 +237,27 @@ class FCCBridgeNode : public common_lib::CommonNode {
         safety_limits; /**< Safety limits to be enforced such as geofence and
                           max speed */
 
-   protected:
     /**************************************************************************/
     /*                            Safety functions                            */
     /**************************************************************************/
 
+   private:
+    /**
+     * @brief Callback function to be triggered when an asynchronous RTH mavsdk
+     * action finished
+     *
+     * @param result The result of the RTH
+     *
+     * @note Will exit the process if the result code does not indicate success
+     *
+     * Sets FCCBridgeNode::internal_state to
+     * FCCBridgeNode::INTERNAL_STATE::LANDED if result indicated success
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
+     */
+    void mavsdk_rth_cb(const mavsdk::Action::Result &result);
+
+   protected:
     /**
      * @brief Checks if the current GPS Fix type is adequate for the current
      * internal state
@@ -372,6 +392,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                         ROS specific functions                         */
     /**************************************************************************/
 
+   protected:
     /**
      * @brief Set up ROS specific functionality
      *
@@ -518,6 +539,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                       MAVSDK specific functions                       */
     /*************************************************************************/
 
+   protected:
     /**
      * @brief Sets up the MAVSDK components.
      *
@@ -631,6 +653,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*               MAVSDK <=> ROS "enum" conversion functions               */
     /**************************************************************************/
 
+   public:
     /**
      * @brief Conversion function to turn a MAVSDK Gps FixType into a ROS GPS
      * FixType
@@ -713,6 +736,17 @@ class FCCBridgeNode : public common_lib::CommonNode {
     static char const *mavsdk_mission_result_to_str(
         const mavsdk::Mission::Result &result);
     /**
+     * @brief Conversion function to get the string representation of a @ref
+     * mavsdk::Action::Result
+     *
+     * @param result The result code to convert
+     * @return The string representation of the result
+     *
+     * @throws std::runtime_error If the value is unknown
+     */
+    static char const *mavsdk_action_result_to_str(
+        const mavsdk::Action::Result &result);
+    /**
      * @brief Conversion function to get the string representation of the
      * current value of @ref fcc_bridge::FCCBridgeNode::internal_state
      *
@@ -721,6 +755,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @throws std::runtime_error If the value is unknown
      */
     char const *internal_state_to_str() const;
+
+    /**************************************************************************/
+    /*                              Constructors                              */
+    /**************************************************************************/
 
    public:
     /**

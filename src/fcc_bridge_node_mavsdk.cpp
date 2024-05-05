@@ -415,11 +415,55 @@ bool FCCBridgeNode::execute_mission_plan(
 }
 
 void FCCBridgeNode::trigger_rth() {
+    switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen as the process should have exited before
+            throw std::runtime_error(
+                "Received command to take of while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::LANDED:
+            // In this case the UAV is on the ground
+            RCLCPP_ERROR(this->get_logger(),
+                         "Attempted RTH while on ground! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            RCLCPP_WARN(this->get_logger(),
+                        "Trying to trigger RTH while already returning home");
+            return;
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_ACTION:
+        case INTERNAL_STATE::FLYING_MISSION:
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
     RCLCPP_WARN(this->get_logger(), "Triggering RTH");
+
+    // Verify MAVSDK
+    this->verify_mavsdk_connection();
 
     this->set_internal_state(INTERNAL_STATE::RETURN_TO_HOME);
 
+    // Deactivate the node to signal mission control that something went wrong
     this->deactivate();
+
+    // Delete all subscribers
+    this->mission_control_heartbeat_subscriber.reset();
+    this->uav_command_subscriber.reset();
+
+    // Trigger return to home
+    this->mavsdk_action->return_to_launch_async(
+        std::bind(&FCCBridgeNode::mavsdk_rth_cb, this, std::placeholders::_1));
+
+    RCLCPP_DEBUG(this->get_logger(), "Triggered RTH");
 }
 
 void FCCBridgeNode::exit_process_on_error() {

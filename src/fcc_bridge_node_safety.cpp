@@ -6,6 +6,21 @@
 
 namespace fcc_bridge {
 
+void FCCBridgeNode::mavsdk_rth_cb(const mavsdk::Action::Result &result) {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Return to launch action callback triggered");
+
+    if (result != mavsdk::Action::Result::Success) {
+        // In this case something went wrong. Nothing left but to exit.
+        RCLCPP_FATAL(this->get_logger(), "Return to launch failed! Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Return to home successful!");
+    this->set_internal_state(INTERNAL_STATE::LANDED);
+}
+
 void FCCBridgeNode::check_gps_state() {
     RCLCPP_DEBUG(this->get_logger(), "Checking GPS state");
 

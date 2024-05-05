@@ -192,6 +192,31 @@ const char *FCCBridgeNode::mavsdk_mission_result_to_str(
     }
 }
 
+const char *FCCBridgeNode::mavsdk_action_result_to_str(
+    const mavsdk::Action::Result &result) {
+    switch (result) {
+        ENUM_TO_STR(mavsdk::Action::Result, Unknown);
+        ENUM_TO_STR(mavsdk::Action::Result, Success);
+        ENUM_TO_STR(mavsdk::Action::Result, NoSystem);
+        ENUM_TO_STR(mavsdk::Action::Result, ConnectionError);
+        ENUM_TO_STR(mavsdk::Action::Result, Busy);
+        ENUM_TO_STR(mavsdk::Action::Result, CommandDenied);
+        ENUM_TO_STR(mavsdk::Action::Result, CommandDeniedLandedStateUnknown);
+        ENUM_TO_STR(mavsdk::Action::Result, CommandDeniedNotLanded);
+        ENUM_TO_STR(mavsdk::Action::Result, Timeout);
+        ENUM_TO_STR(mavsdk::Action::Result, VtolTransitionSupportUnknown);
+        ENUM_TO_STR(mavsdk::Action::Result, NoVtolTransitionSupport);
+        ENUM_TO_STR(mavsdk::Action::Result, ParameterError);
+        ENUM_TO_STR(mavsdk::Action::Result, Unsupported);
+        ENUM_TO_STR(mavsdk::Action::Result, Failed);
+        ENUM_TO_STR(mavsdk::Action::Result, InvalidArgument);
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid mavsdk::Action::Result value: ") +
+                std::to_string(static_cast<int>(result)));
+    }
+}
+
 const char *FCCBridgeNode::internal_state_to_str() const {
     switch (this->get_internal_state()) {
         ENUM_TO_STR(INTERNAL_STATE, STARTING_UP);
