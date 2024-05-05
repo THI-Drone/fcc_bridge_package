@@ -185,8 +185,8 @@ void FCCBridgeNode::verify_mavsdk_connection() {
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_ACTION:
         case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
             if (this->mavsdk_system->is_connected()) {
                 RCLCPP_INFO(this->get_logger(), "MAVSDK state is good");
@@ -415,6 +415,9 @@ bool FCCBridgeNode::execute_mission_plan(
 }
 
 void FCCBridgeNode::trigger_rth() {
+    // In case a mission is already running this store the result of canceling
+    // the mission. Unused otherwise
+    mavsdk::Mission::Result mission_clear_result;
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::ERROR:
             // This should never happen as the process should have exited before
@@ -435,9 +438,22 @@ void FCCBridgeNode::trigger_rth() {
             RCLCPP_WARN(this->get_logger(),
                         "Trying to trigger RTH while already returning home");
             return;
-        case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_ACTION:
         case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+            // This means a mission is currently on going. Trying to clear the
+            // mission.
+            mission_clear_result = this->mavsdk_mission->clear_mission();
+            if (mission_clear_result != mavsdk::Mission::Result::Success) {
+                RCLCPP_FATAL(this->get_logger(),
+                             "Could not clear exiting mission with result: %s! "
+                             "Exiting...",
+                             FCCBridgeNode::mavsdk_mission_result_to_str(
+                                 mission_clear_result));
+                this->set_internal_state(INTERNAL_STATE::ERROR);
+                this->exit_process_on_error();
+            }
+            break;
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
             break;
         default:
             throw std::runtime_error(

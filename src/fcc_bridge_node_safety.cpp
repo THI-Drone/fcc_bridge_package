@@ -41,8 +41,8 @@ void FCCBridgeNode::check_gps_state() {
                                      this->internal_state_to_str());
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_ACTION:
         case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
             // Verify that there is at least a 2D fix. (The No GPS antenna case
             // will be handled in the fallthrough cases)
@@ -119,8 +119,8 @@ void FCCBridgeNode::check_uav_health() {
                                      this->internal_state_to_str());
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_ACTION:
         case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
             // Verify that UAV position and home position are ok
             if (!this->last_fcc_health->is_local_position_ok ||
@@ -179,8 +179,8 @@ bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_ACTION:
         case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
         case INTERNAL_STATE::LANDED:
             // In these states a geofence should have been configured. This is a

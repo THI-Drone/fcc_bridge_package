@@ -28,41 +28,11 @@ constexpr std::chrono::seconds MAX_UAV_COMMAND_AGE{
 
 void FCCBridgeNode::set_internal_state(
     const fcc_bridge::FCCBridgeNode::INTERNAL_STATE new_state) {
-    // Placeholder for the name of the enum entry name of new state
-    const char *state_name = nullptr;
-
-    // Helper define to cut down on boilerplate code
-#define HELPER(enum_entry)           \
-    case INTERNAL_STATE::enum_entry: \
-        state_name = #enum_entry;    \
-        break
-
-    // Set state_name to enum entry name of new_state
-    switch (new_state) {
-        HELPER(STARTING_UP);
-        HELPER(ROS_SET_UP);
-        HELPER(MAVSDK_SET_UP);
-        HELPER(WAITING_FOR_ARM);
-        HELPER(ARMED);
-        HELPER(WAITING_FOR_COMMAND);
-        HELPER(FLYING_ACTION);
-        HELPER(FLYING_MISSION);
-        HELPER(RETURN_TO_HOME);
-        HELPER(LANDED);
-        HELPER(ERROR);
-        default:
-            throw std::runtime_error("Got unexpected state!");
-    }
-
-        // Undefine HELPER as it is no longer needed
-#undef HELPER
-
-    RCLCPP_INFO(this->get_logger(),
-                "Switching to new internal_state: INTERNAL_STATE::%s",
-                state_name);
-
     // Actually set the state.
     this->internal_state = new_state;
+
+    RCLCPP_INFO(this->get_logger(), "Switching to new internal_state: %s",
+                this->internal_state_to_str());
 }
 
 void FCCBridgeNode::setup_ros() {
@@ -234,8 +204,8 @@ void FCCBridgeNode::uav_command_subscriber_cb(
                     this->set_internal_state(INTERNAL_STATE::ERROR);
                     this->exit_process_on_error();
                 case INTERNAL_STATE::WAITING_FOR_COMMAND:
-                case INTERNAL_STATE::FLYING_ACTION:
                 case INTERNAL_STATE::FLYING_MISSION:
+                case INTERNAL_STATE::LANDING:
                 case INTERNAL_STATE::RETURN_TO_HOME:
                     RCLCPP_ERROR(this->get_logger(), "Triggering RTH...");
                     this->trigger_rth();
@@ -273,9 +243,12 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
                  "5Hz telemetry timer callback was triggered");
     this->check_last_mission_control_heartbeat();
     switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::ERROR:
             RCLCPP_WARN(this->get_logger(),
                         "5Hz Telemetry callback function was called in an "
                         "invalid state");
@@ -286,8 +259,8 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_ACTION:
         case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
         case INTERNAL_STATE::LANDED:
             break;
@@ -307,9 +280,31 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
     this->send_rc_state();
 
     // Check if there is currently a mission running
-    if (this->get_internal_state() == INTERNAL_STATE::FLYING_MISSION) {
-        // Send out mission progress
-        this->send_mission_progress();
+    switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+        case INTERNAL_STATE::LANDED:
+            RCLCPP_DEBUG(this->get_logger(),
+                         "Not in a state to publish mission progress");
+            break;
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+            // Send out mission progress
+            this->send_mission_progress();
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
     }
 
     // Send out UAV health
@@ -321,9 +316,12 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
                  "10Hz telemetry timer callback was triggered");
     this->check_last_mission_control_heartbeat();
     switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::ERROR:
             RCLCPP_WARN(this->get_logger(),
                         "10Hz Telemetry callback function was called in an "
                         "invalid state");
@@ -334,8 +332,8 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_ACTION:
         case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
         case INTERNAL_STATE::LANDED:
             break;

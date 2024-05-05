@@ -179,8 +179,40 @@ void FCCBridgeNode::send_mission_progress() {
     // Check if the mission is finished
     if (this->last_mission_progress->second) {
         // Switch to the waiting for command state
-        this->set_internal_state(INTERNAL_STATE::WAITING_FOR_COMMAND);
+        switch (this->get_internal_state()) {
+            case INTERNAL_STATE::ERROR:
+                // This should never happen, as the process exits on ERROR state
+                throw std::runtime_error(std::string(__func__) +
+                                         " called while in ERROR state");
+            case INTERNAL_STATE::STARTING_UP:
+            case INTERNAL_STATE::ROS_SET_UP:
+            case INTERNAL_STATE::MAVSDK_SET_UP:
+            case INTERNAL_STATE::WAITING_FOR_ARM:
+            case INTERNAL_STATE::ARMED:
+            case INTERNAL_STATE::WAITING_FOR_COMMAND:
+            case INTERNAL_STATE::RETURN_TO_HOME:
+            case INTERNAL_STATE::LANDED:
+                RCLCPP_ERROR(this->get_logger(),
+                             "Getting the mission progress in a non mission "
+                             "mode is invalid! Triggering RTH...");
+                this->trigger_rth();
+                return;
+            case INTERNAL_STATE::FLYING_MISSION:
+                // This means we are ready for the next command
+                this->set_internal_state(INTERNAL_STATE::WAITING_FOR_COMMAND);
+                break;
+            case INTERNAL_STATE::LANDING:
+                // This means we landed
+                this->set_internal_state(INTERNAL_STATE::LANDED);
+                break;
+            default:
+                throw std::runtime_error(
+                    std::string("Got invalid value for internal_state: ") +
+                    std::to_string(
+                        static_cast<int>(this->get_internal_state())));
+        }
         mission_progress_msg.progress = 1.0;
+        RCLCPP_INFO(this->get_logger(), "Mission finished successfully");
     } else {
         mission_progress_msg.progress = 0.0;
     }

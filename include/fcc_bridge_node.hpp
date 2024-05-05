@@ -83,10 +83,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
         ARMED = 4, /**< Waiting for TakeOff from mission control */
         WAITING_FOR_COMMAND = 5, /**< Waiting for a command from the waypoint or
                                     mission control node. */
-        FLYING_ACTION =
-            6, /**< Currently an action is running, waiting for it to finish */
         FLYING_MISSION =
-            7, /**< Currently a mission is running, waiting for it to finish */
+            6, /**< Currently a mission is running, waiting for it to finish */
+        LANDING = 7,        /**< Currently a trying to land */
         RETURN_TO_HOME = 8, /**< Returning home. In this state no more commands
                                are accepted. */
         LANDED = 9, /**< The drone has landed and the node will shutdown */
@@ -595,9 +594,11 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief This function starts a mission that will perform a take off and
      * fly to the specified waypoint
      *
+     * @param waypoint The waypoint to fly to
+     *
+     * @param speed_mps The speed to use while flying
+     *
      * @note Verifies the that waypoint is inside the geofence
-     * TODO: Waypoint check
-     * TODO: how to signal back if waypoint is ok???
      *
      * Implemented in src/fcc_bridge_node_command.cpp
      */
@@ -607,13 +608,30 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief This function starts a mission that will fly to the passed
      * waypoint
      *
+     * @param waypoint The waypoint to fly to
+     *
+     * @param speed_mps The speed to use while flying
+     *
      * @note Verifies the that waypoint is inside the geofence
-     * TODO: Waypoint check
      *
      * Implemented in src/fcc_bridge_node_command.cpp
      */
     void start_flying_to_waypoint(const interfaces::msg::Waypoint &waypoint,
                                   const float speed_mps);
+    /**
+     * @brief This function start a mission that will fly to the passed waypoint
+     * and then land
+     *
+     * @param waypoint The waypoint to fly to
+     *
+     * @param speed_mps The speed to use while flying
+     *
+     * @note Verifies the that waypoint is inside the geofence
+     *
+     * Implemented in src/fcc_bridge_node_command.cpp
+     */
+    void initiate_land(const interfaces::msg::Waypoint &waypoint,
+                       const float speed_mps);
 
     /*************************************************************************/
     /*                       MAVSDK specific functions                       */
@@ -734,6 +752,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @note Guarantees that FCCBridgeNode::internal_state is set to
      * FCCBridgeNode::INTERNAL_STATE::RETURN_TO_HOME if this function returns.
+     *
+     * @note This function is meant for safety use. To trigger a regular return
+     * to home use FCCBridgeNode::initiate_rth
      *
      * @warning This function returns. It is the callers responsibility to
      * cancel his own operation.
