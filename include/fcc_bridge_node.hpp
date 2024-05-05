@@ -104,8 +104,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @param new_state The new state to take on.
      *
-     * @throws std::runtime_error if new_state if not part of @ref
+     * @throws std::runtime_error if new_state if not part of
      * fcc_bridge_FCCBridgeNode::INTERNAL_STATE
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
      */
     void set_internal_state(const INTERNAL_STATE new_state);
     /**
@@ -270,9 +272,12 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * TODO: Geofence check
      *
-     * @throws std::runtime_error If @ref
-     * fcc_bridge::FCCBridgeNode::internal_state is STARTING_UP, ROS_SET_UP, or
-     * ERROR
+     * @throws std::runtime_error If FCCBridgeNode::internal_state is
+     * FCCBridgeNode::INTERNAL_STATE::STARTING_UP,
+     * FCCBridgeNode::INTERNAL_STATE::ROS_SET_UP, or
+     * FCCBridgeNode::INTERNAL_STATE::ERROR
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
      */
     void check_gps_state();
     /**
@@ -280,6 +285,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * internal state
      *
      * TODO: Currently just an empty function
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
      */
     void check_flight_state();
     /**
@@ -287,6 +294,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * internal state
      *
      * TODO: Currently just an empty function
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
      */
     void check_battery_state();
     /**
@@ -294,22 +303,27 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * internal state
      *
      * TODO: Currently just an empty function
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
      */
     void check_rc_state();
     /**
      * @brief Checks if the current UAV health is adequate for the current
      * internal state
      *
-     * @note Will set @ref fcc_bridge::FCCBridgeNode::internal_state to @ref
-     * fcc_bridge::FCCBridgeNode::INTERNAL_STATE::ERROR if
+     * @note Will set FCCBridgeNode::internal_state to
+     * FCCBridgeNode::INTERNAL_STATE::ERROR if
      * 1. is_gyrometer_calibration_ok && is_accelerometer_calibration_ok &&
      * is_magnetometer_calibration_ok is false or...
      * 2. If the UAV is airborne && is_local_position_ok &&
      * is_global_position_ok && is_home_position_ok is false
      *
-     * @throws std::runtime_error If @ref
-     * fcc_bridge::FCCBridgeNode::internal_state is STARTING_UP, ROS_SET_UP, or
-     * ERROR
+     * @throws std::runtime_error If FCCBridgeNode::internal_state is
+     * FCCBridgeNode::INTERNAL_STATE::STARTING_UP,
+     * FCCBridgeNode::INTERNAL_STATE::ROS_SET_UP, or
+     * FCCBridgeNode::INTERNAL_STATE::ERROR
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
      */
     void check_uav_health();
     /**
@@ -323,11 +337,13 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @returns geofence was configured && point is inside geofence
      *
-     * @throws std::runtime_error If @ref
-     * fcc_bridge::FCCBridgeNode::internal_state is ERROR
+     * @throws std::runtime_error If FCCBridgeNode::internal_state is
+     * FCCBridgeNode::INTERNAL_STATE::ERROR
      *
-     * @note Sets @ref fcc_bridge::FCCBridgeNode::internal_state to ERROR if no
-     * geofence was configured
+     * @note Sets FCCBridgeNode::internal_state to
+     * FCCBridgeNode::INTERNAL_STATE::ERROR if no geofence was configured
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
      */
     bool check_point_in_geofence(const double latitude_deg,
                                  const double longitude_deg,
@@ -340,11 +356,11 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @returns geofence was configured && point is inside geofence
      *
-     * @throws std::runtime_error If @ref
-     * fcc_bridge::FCCBridgeNode::internal_state is ERROR
+     * @throws std::runtime_error If FCCBridgeNode::internal_state is
+     * FCCBridgeNode::INTERNAL_STATE::ERROR
      *
-     * @note Sets @ref fcc_bridge::FCCBridgeNode::internal_state to ERROR if no
-     * geofence was configured
+     * @note Sets FCCBridgeNode::internal_state to
+     * FCCBridgeNode::INTERNAL_STATE::ERROR if no geofence was configured
      */
     inline bool check_point_in_geofence(
         const interfaces::msg::Waypoint &waypoint) {
@@ -360,11 +376,11 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @returns geofence was configured && point is inside geofence
      *
-     * @throws std::runtime_error If @ref
-     * fcc_bridge::FCCBridgeNode::internal_state is ERROR
+     * @throws std::runtime_error If FCCBridgeNode::internal_state is
+     * FCCBridgeNode::INTERNAL_STATE::ERROR
      *
-     * @note Sets @ref fcc_bridge::FCCBridgeNode::internal_state to ERROR if no
-     * geofence was configured
+     * @note Sets FCCBridgeNode::internal_state to
+     * FCCBridgeNode::INTERNAL_STATE::ERROR if no geofence was configured
      */
     inline bool check_point_in_geofence(
         const mavsdk::Telemetry::Position &position) {
@@ -380,13 +396,23 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @returns MAX_SPEED was configured && point is inside geofence
      *
-     * @throws std::runtime_error If @ref
-     * fcc_bridge::FCCBridgeNode::internal_state is ERROR
+     * @throws std::runtime_error If FCCBridgeNode::internal_state is
+     * FCCBridgeNode::INTERNAL_STATE::ERROR
      *
-     * @note Sets @ref fcc_bridge::FCCBridgeNode::internal_state to ERROR if no
-     * MAX_SPEED was configured
+     * @note Sets FCCBridgeNode::internal_state to
+     * FCCBridgeNode::INTERNAL_STATE::ERROR if no MAX_SPEED was configured
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
      */
     bool check_speed(const float speed_mps);
+    /**
+     * @brief Validated if the last received heartbeat is not too old.
+     *
+     * If it is too old trigger an RTH
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
+     */
+    void check_last_mission_control_heartbeat();
 
     /**************************************************************************/
     /*                         ROS specific functions                         */
@@ -397,10 +423,13 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Set up ROS specific functionality
      *
      * Sets internal_state to INTERNAL_STATE::ERROR if an error is encountered
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
      */
     void setup_ros();
     /**
      * @brief Callback function to be triggered when a new heartbeat is received
+     *
      * @param msg The received message
      *
      * @note Should only receive heartbeats from mission control using a filter
@@ -408,6 +437,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Triggers an RTH if the heartbeat is invalid or goes into error state if
      * MAVSDK has run into an issue.
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
      */
     void mission_control_heartbeat_subscriber_cb(
         const interfaces::msg::Heartbeat &msg);
@@ -422,72 +453,62 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Triggers an RTH if the command is deemed invalid such as when
      * 1. The time stamp in the message is older than one second.
-     * 2.
+     * TODO: Work out
      *
-     * @throws std::runtime_error If @ref
-     * fcc_bridge::FCCBridgeNode::internal_state is @ref
-     * fcc_bridge::FCCBridgeNode::INTERNAL_STATE::ERROR
+     * @throws std::runtime_error If FCCBridgeNode::internal_state is
+     * FCCBridgeNode::INTERNAL_STATE::ERROR
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
      */
     void uav_command_subscriber_cb(const interfaces::msg::UAVCommand &msg);
-    /**
-     * @brief This function starts a mission that will perform a take off and
-     * fly to the specified waypoint
-     *
-     * @note Verifies the that waypoint is inside the geofence
-     * TODO: Waypoint check
-     * TODO: how to signal back if waypoint is ok???
-     */
-    void initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
-                          const float speed_mps);
-    /**
-     * @brief This function starts a mission that will fly to the passed
-     * waypoint
-     *
-     * @note Verifies the that waypoint is inside the geofence
-     * TODO: Waypoint check
-     */
-    void start_flying_to_waypoint(const interfaces::msg::Waypoint &waypoint,
-                                  const float speed_mps);
     /**
      * @brief Callback function for the 5Hz telemetry timer
      *
      * Validates heartbeat.
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
      */
     void fcc_telemetry_timer_5hz_cb();
     /**
-     * @brief Callback function for the 5Hz telemetry timer
+     * @brief Callback function for the 10Hz telemetry timer
      *
      * Validates heartbeat
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
      */
     void fcc_telemetry_timer_10hz_cb();
-    /**
-     * @brief Validated if the last received heartbeat is not too old.
-     *
-     * If it is too old trigger an RTH
-     */
-    void check_last_mission_control_heartbeat();
+
+    /*************************************************************************/
+    /*                          Telemetry functions                          */
+    /*************************************************************************/
+
+   protected:
     /**
      * @brief Gets the GPS telemetry from the FCC and publishes it on the ROS
      * network
      *
-     * Verifies the GPS state using @ref
-     * fcc_bridge::FCCBridgeNode::check_gps_state
-     *
      * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
+     *
+     * Verifies the GPS state using FCCBridgeNode::check_gps_state
+     *
+     * Implemented in src/fcc_bridge_node_telemetry.cpp
      */
     void send_gps_telemetry();
     /**
      * @brief Gets the flight state from the FCC and publishes it on the ROS
      * network
      *
-     * Sets @ref fcc_bridge::FCCBridgeNode::internal_state to @ref
-     * fcc_bridge::FCCBridgeNode::INTERNAL_STATE::ARMED if the fcc_bridge is
-     * waiting for the UAV to be armed and the flight state indicates that the
-     * UAV is armed.
+     * Sets FCCBridgeNode::internal_state to
+     * FCCBridgeNode::INTERNAL_STATE::ARMED if the fcc_bridge is waiting for the
+     * UAV to be armed and the flight state indicates that the UAV is armed.
      *
      * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
+     *
+     * Verifies the flight state using FCCBridgeNode::check_flight_state
+     *
+     * Implemented in src/fcc_bridge_node_telemetry.cpp
      */
     void send_flight_state();
     /**
@@ -496,6 +517,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
+     *
+     * Verifies the battery state using FCCBridgeNode::check:_battery_state
+     *
+     * Implemented in src/fcc_bridge_node_telemetry.cpp
      */
     void send_battery_state();
     /**
@@ -503,6 +528,10 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
+     *
+     * Verifies the RC state using FCCBridgeNode::check_rc_state
+     *
+     * Implemented in src/fcc_bridge_node_telemetry.cpp
      */
     void send_rc_state();
     /**
@@ -511,6 +540,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
+     *
+     * Implemented in src/fcc_bridge_node_telemetry.cpp
      */
     void send_euler_angle();
     /**
@@ -522,18 +553,50 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @warning Will trigger an RTH if there is any issue with the mission
      * including no currently running mission
+     *
+     * Implemented in src/fcc_bridge_node_telemetry.cpp
      */
     void send_mission_progress();
     /**
      * @brief Gets the UAV health form the FCC and publishes on the ROS network
      *
-     * Verifies the GPS state using @ref
-     * fcc_bridge::FCCBridgeNode::check_uav_health
-     *
      * @warning Does not check he validity of the last heartbeat. That is the
      * calling functions responsibility
+     *
+     * Verifies the UAV health using FCCBridgeNode::check_uav_health
+     *
+     * Implemented in src/fcc_bridge_node_telemetry.cpp
      */
     void send_uav_health();
+
+    /*************************************************************************/
+    /*                           Command functions                           */
+    /*************************************************************************/
+
+   protected:
+    /**
+     * @brief This function starts a mission that will perform a take off and
+     * fly to the specified waypoint
+     *
+     * @note Verifies the that waypoint is inside the geofence
+     * TODO: Waypoint check
+     * TODO: how to signal back if waypoint is ok???
+     *
+     * Implemented in src/fcc_bridge_node_command.cpp
+     */
+    void initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
+                          const float speed_mps);
+    /**
+     * @brief This function starts a mission that will fly to the passed
+     * waypoint
+     *
+     * @note Verifies the that waypoint is inside the geofence
+     * TODO: Waypoint check
+     *
+     * Implemented in src/fcc_bridge_node_command.cpp
+     */
+    void start_flying_to_waypoint(const interfaces::msg::Waypoint &waypoint,
+                                  const float speed_mps);
 
     /*************************************************************************/
     /*                       MAVSDK specific functions                       */
@@ -545,66 +608,81 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Uses the ros parameter UAV_ID to identify the target UAV.
      * Set internal_state to INTERNAL_STATE::ERROR if an issue is encountered.
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void setup_mavsdk();
     /**
      * @brief Verifies the MAVSDK connection.
      *
      * If there is an issue this function will exit the process.
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void verify_mavsdk_connection();
     /**
      * @brief Gets the current GPSInfo and Position from the FCC
      *
-     * Stores the result in internal member variables @ref
-     * fcc_bridge::FCCBridgeNode::last_fcc_gps_info and @ref
-     * fcc_bridge::FCCBridgeNode::last_fcc_position
+     * Stores the result in internal member variables
+     * FCCBridgeNode::last_fcc_gps_info and @FCCBridgeNode::last_fcc_position
      *
      * Verifies the MAVSDK connection.
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void get_gps_telemetry();
     /**
      * @brief Gets the current FlightState from the FCC
      *
-     * Stores the result in the internal member variable @ref
-     * fcc_bridge::FCCBridgeNode::last_fcc_flight_state
+     * Stores the result in the internal member variables
+     * FCCBridgeNode::last_fcc_flight_mode and
+     * FCCBridgeNode::last_fcc_landed_state
      *
      * Verifies the MAVSDK connection.
-     * @note MAVSDK calls this information FlightMode
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void get_flight_state();
     /**
      * @brief Gets the current Battery state from the FCC
      *
-     * Stores the result in the internal member variable @ref
-     * fcc_bridge::FCCBridgeNode::last_fcc_battery_state
+     * Stores the result in the internal member variable
+     * FCCBridgeNode::last_fcc_battery_state
      *
      * Verifies the MAVSDK connection.
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void get_battery_state();
     /**
      * @brief Gets the current remote control from the FCC
      *
-     * Stores the result in the internal member variable @ref
-     * fcc_bridge::FCCBridgeNode::last_fcc_rc_state
+     * Stores the result in the internal member variable
+     * FCCBridgeNode::last_fcc_rc_state
      *
      * Verifies the MAVSDK connection.
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void get_rc_state();
     /**
      * @brief Gets the current euler angle from the FCC
      *
-     * Stores the result in the internal member variable @ref
-     * fcc_bridge::FCCBridgeNode::last_fcc_euler_angle
+     * Stores the result in the internal member variable
+     * FCCBridgeNode::last_fcc_euler_angle
      *
      * Verifies the MAVSDK connection
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void get_euler_angle();
     /**
      * @brief Gets the current mission progress from the FCC
      *
-     * Stores the result in the internal member variable @ref
-     * fcc_bridge::FCCBridgeNode::last_fcc_euler_angle
+     * Stores the result in the internal member variable
+     * FCCBridgeNode::last_fcc_euler_angle
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      *
      * Verifies the MAVSDK connection
      */
@@ -612,10 +690,12 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /**
      * @brief Gets the current UAV health from the FCC
      *
-     * Stores the result in the internal member variable @ref
-     * fcc_bridge::FCCBridgeNode::last_fcc_health
+     * Stores the result in the internal member variable
+     * FCCBridgeNode::last_fcc_health
      *
      * Verifies the MAVSDK connection
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void get_uav_health();
     /**
@@ -626,6 +706,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Verifies the MAVSDK connection
      *
      * @warning Does not perform any safety checks on the plan!
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     bool execute_mission_plan(const mavsdk::Mission::MissionPlan &plan);
     /**
@@ -633,12 +715,13 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Deactivates the node
      *
-     * @note Guarantees that @ref fcc_bridge::FCCBridgeNode::internal_state is
-     * set to @ref fcc_bridge::FCCBridgeNode::INTERNAL_STATE::RETURN_TO_HOME if
-     * this function returns.
+     * @note Guarantees that FCCBridgeNode::internal_state is set to
+     * FCCBridgeNode::INTERNAL_STATE::RETURN_TO_HOME if this function returns.
      *
      * @warning This function returns. It is the callers responsibility to
      * cancel his own operation.
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void trigger_rth();
     /**
@@ -646,6 +729,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Does not return.
      * Wrapper for test cases to check for error conditions without death tests.
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     [[noreturn]] void exit_process_on_error();
 
@@ -662,6 +747,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @return The ROS FixType
      *
      * @throws std::runtime_error If the MAVSDK FixType is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     static interfaces::msg::GPSPosition::_fix_type_type fix_type_mavsdk_to_ros(
         const mavsdk::Telemetry::FixType &fix_type);
@@ -673,6 +760,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @return The ROS FlightMode
      *
      * @throws std::runtime_error If the MAVSDK FlightMode is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     static interfaces::msg::FlightState::_mode_type::_mode_type
     flight_mode_mavsdk_to_ros(const mavsdk::Telemetry::FlightMode &flight_mode);
@@ -684,12 +773,14 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @return The ROS LandedState
      *
      * @throws std::runtime_error If the MAVSDK LandedState is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     static interfaces::msg::FlightState::_state_type::_state_type
     landed_state_mavsdk_to_ros(
         const mavsdk::Telemetry::LandedState &landed_state);
     /**
-     * @brief Conversion function to get the string representation of a @ref
+     * @brief Conversion function to get the string representation of a
      * mavsdk::ConnectionResult
      *
      * @param result The result code to convert
@@ -697,11 +788,13 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @return The string representation of the result
      *
      * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     static char const *mavsdk_connection_result_to_str(
         const mavsdk::ConnectionResult &result);
     /**
-     * @brief Conversion function to get the string representation of a @ref
+     * @brief Conversion function to get the string representation of a
      * mavsdk::Telemetry::FlightMode
      *
      * @param result The flight mode to convert
@@ -709,11 +802,13 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @return The string representation of the flight mode
      *
      * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     static char const *mavsdk_flight_mode_to_str(
         const mavsdk::Telemetry::FlightMode &flight_mode);
     /**
-     * @brief Conversion function to get the string representation of a @ref
+     * @brief Conversion function to get the string representation of a
      * mavsdk::Telemetry::LandedState
      *
      * @param landed_state The landed state to convert
@@ -721,38 +816,46 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @return The string representation of the flight mode
      *
      * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     static char const *mavsdk_landed_state_to_str(
         const mavsdk::Telemetry::LandedState &landed_state);
     /**
-     * @brief Conversion function to get the string representation of a @ref
+     * @brief Conversion function to get the string representation of a
      * mavsdk::Mission::Result
      *
      * @param result The result code to convert
      * @return The string representation of the result
      *
      * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     static char const *mavsdk_mission_result_to_str(
         const mavsdk::Mission::Result &result);
     /**
-     * @brief Conversion function to get the string representation of a @ref
+     * @brief Conversion function to get the string representation of a
      * mavsdk::Action::Result
      *
      * @param result The result code to convert
      * @return The string representation of the result
      *
      * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     static char const *mavsdk_action_result_to_str(
         const mavsdk::Action::Result &result);
     /**
      * @brief Conversion function to get the string representation of the
-     * current value of @ref fcc_bridge::FCCBridgeNode::internal_state
+     * current value of FCCBridgeNode::internal_state
      *
      * @return The string representation of the internal state
      *
      * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     char const *internal_state_to_str() const;
 
@@ -770,6 +873,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Sets up the ROS components, then the MAVSDK components and then activates
      * the node to signal it is ready for the SafetyLimits.
      * Exits the process on error.
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
      */
     FCCBridgeNode(
         const std::string &name/*,

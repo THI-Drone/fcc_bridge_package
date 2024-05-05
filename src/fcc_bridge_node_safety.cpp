@@ -214,4 +214,8 @@ bool FCCBridgeNode::check_speed(const float speed_mps) {
     return true;
 }
 
+void FCCBridgeNode::check_last_mission_control_heartbeat() {
+    // TODO: Check if last heartbeat is not too old.
+}
+
 }  // namespace fcc_bridge
