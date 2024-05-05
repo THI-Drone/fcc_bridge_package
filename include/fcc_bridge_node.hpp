@@ -666,7 +666,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /**
      * @brief This function initiates a return to home
      *
-     * @note This is a function that could allow for a more graceful RTH in the future. Right now it will just call FCCBridge::trigger_rth
+     * @note This is a function that could allow for a more graceful RTH in the
+     * future. Right now it will just call FCCBridge::trigger_rth
      *
      * Implemented in src/fcc_bridge_node_command.cpp
      */
