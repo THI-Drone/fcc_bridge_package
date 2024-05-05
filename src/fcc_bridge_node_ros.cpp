@@ -7,6 +7,9 @@
 // Libc header
 #include <chrono>
 
+// CommonLib header
+#include "common_package/topic_names.hpp"
+
 namespace fcc_bridge {
 
 namespace {
@@ -17,32 +20,7 @@ constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_5HZ{
 constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_10HZ{
     100}; /**< The period of the 10Hz telemetry timer */
 
-// Publisher topic names
-constexpr char const *const GPS_POSITION_TOPIC_NAME =
-    "uav_gps_position"; /**< Topic name for the GPS telemetry */
-constexpr char const *const FLIGHT_STATE_TOPIC_NAME =
-    "uav_flight_state"; /**< Topic name for the UAV flight state telemetry */
-constexpr char const *const BATTERY_STATE_TOPIC_NAME =
-    "uav_battery_state"; /**< Topic name for the UAV battery state telemetry */
-constexpr char const *const RC_STATE_TOPIC_NAME =
-    "uav_rc_state"; /**< Topic name for the RC state telemetry */
-constexpr char const *const EULER_ANGLE_TOPIC_NAME =
-    "uav_pose"; /**< Topic name for the UAV euler angle telemetry */
-constexpr char const *const MISSION_PROGRESS_TOPIC_NAME =
-    "uav_mission_progress"; /**< Topic name for the mission progress telemetry
-                             */
-constexpr char const *const UAV_HEALTH_TOPIC_NAME =
-    "uav_health"; /**< Topic name for the uav health telemetry */
-constexpr char const *const MISSION_START_TOPIC_NAME =
-    "mission_start"; /**< Topic name for the mission start signal send out when
-                        the FCC gets armed */
-
-// Subscriber topic names
-constexpr char const *const HEARTBEAT_TOPIC_NAME =
-    "heartbeat"; /**< Topic name for the heartbeat */
-constexpr char const *const UAV_COMMAND_TOPIC_NAME =
-    "uav_command"; /**< Topic name for uav commands */
-
+// Limits
 constexpr std::chrono::seconds MAX_UAV_COMMAND_AGE{
     1}; /**< Maximum age of a received UAV command */
 
@@ -102,39 +80,39 @@ void FCCBridgeNode::setup_ros() {
     // Create GPSInfo & Position publisher
     this->gps_position_publisher =
         this->create_publisher<interfaces::msg::GPSPosition>(
-            GPS_POSITION_TOPIC_NAME, 1);
+            common_lib::topic_names::GPSPosition, 1);
     // Create FlightState publisher
     this->flight_state_publisher =
         this->create_publisher<interfaces::msg::FlightState>(
-            FLIGHT_STATE_TOPIC_NAME, 1);
+            common_lib::topic_names::FlightState, 1);
 
     // Create BatteryState publisher
     this->battery_state_publisher =
         this->create_publisher<interfaces::msg::BatteryState>(
-            BATTERY_STATE_TOPIC_NAME, 1);
+            common_lib::topic_names::BatteryState, 1);
 
     // Create RCState publisher
     this->rc_state_publisher = this->create_publisher<interfaces::msg::RCState>(
-        RC_STATE_TOPIC_NAME, 1);
+        common_lib::topic_names::RCState, 1);
 
     // Create euler angle publisher
     this->euler_angle_publisher = this->create_publisher<interfaces::msg::Pose>(
-        EULER_ANGLE_TOPIC_NAME, 1);
+        common_lib::topic_names::Pose, 1);
 
     // Create mission progress publisher
     this->mission_progress_publisher =
         this->create_publisher<interfaces::msg::MissionProgress>(
-            MISSION_PROGRESS_TOPIC_NAME, 1);
+            common_lib::topic_names::MissionProgress, 1);
 
     // Create UAV health publisher
     this->uav_health_publisher =
         this->create_publisher<interfaces::msg::UAVHealth>(
-            UAV_HEALTH_TOPIC_NAME, 1);
+            common_lib::topic_names::UAVHealth, 1);
 
     // Create mission start publisher
     this->mission_start_publisher =
         this->create_publisher<interfaces::msg::MissionStart>(
-            MISSION_START_TOPIC_NAME, 1);
+            common_lib::topic_names::MissionStart, 1);
 
     // Setup subscriber
 
@@ -147,7 +125,7 @@ void FCCBridgeNode::setup_ros() {
     // Create Heartbeat subscription
     this->mission_control_heartbeat_subscriber =
         this->create_subscription<interfaces::msg::Heartbeat>(
-            HEARTBEAT_TOPIC_NAME, 1,
+            common_lib::topic_names::Heartbeat, 1,
             std::bind(&FCCBridgeNode::mission_control_heartbeat_subscriber_cb,
                       this, std::placeholders::_1),
             subscription_options);
@@ -162,7 +140,7 @@ void FCCBridgeNode::setup_ros() {
     // Create UAV command subscriber
     this->uav_command_subscriber =
         this->create_subscription<interfaces::msg::UAVCommand>(
-            UAV_COMMAND_TOPIC_NAME, 10,
+            common_lib::topic_names::UAVCommand, 10,
             std::bind(&FCCBridgeNode::uav_command_subscriber_cb, this,
                       std::placeholders::_1));
 
