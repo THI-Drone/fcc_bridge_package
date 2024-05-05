@@ -632,6 +632,14 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     void initiate_land(const interfaces::msg::Waypoint &waypoint,
                        const float speed_mps);
+    /**
+     * @brief This function initiates a return to home
+     *
+     * @note This is a function that could allow for a more graceful RTH in the future. Right now it will just call FCCBridge::trigger_rth
+     *
+     * Implemented in src/fcc_bridge_node_command.cpp
+     */
+    void initiate_rth();
 
     /*************************************************************************/
     /*                       MAVSDK specific functions                       */

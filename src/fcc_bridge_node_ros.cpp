@@ -179,8 +179,10 @@ void FCCBridgeNode::uav_command_subscriber_cb(
             this->start_flying_to_waypoint(msg.waypoint, msg.speed_m_s);
             break;
         case interfaces::msg::UAVCommand::LAND:
+            this->initiate_land(msg.waypoint, msg.speed_m_s);
             break;
         case interfaces::msg::UAVCommand::RTH:
+            this->initiate_rth();
             break;
         default:
             RCLCPP_ERROR(this->get_logger(), "Got unknown UAVCommand type %d",

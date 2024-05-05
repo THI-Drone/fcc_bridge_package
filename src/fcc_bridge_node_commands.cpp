@@ -454,4 +454,12 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
                 "to complete.");
 }
 
+void FCCBridgeNode::initiate_rth() {
+    RCLCPP_DEBUG(this->get_logger(), "Initiating RTH");
+
+    this->trigger_rth();
+
+    RCLCPP_INFO(this->get_logger(), "Successfully triggered an RTH");
+}
+
 }  // namespace fcc_bridge
