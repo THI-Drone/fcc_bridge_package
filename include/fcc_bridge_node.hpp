@@ -425,7 +425,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @note Verifies the that waypoint is inside the geofence
      * TODO: Waypoint check
      */
-    void start_flying_to_waypoint(const interfaces::msg::Waypoint &waypoint);
+    void start_flying_to_waypoint(const interfaces::msg::Waypoint &waypoint,
+                                  const float speed_mps);
     /**
      * @brief Callback function for the 5Hz telemetry timer
      *
