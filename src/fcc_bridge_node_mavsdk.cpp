@@ -484,6 +484,14 @@ void FCCBridgeNode::trigger_rth() {
 
 void FCCBridgeNode::exit_process_on_error() {
     RCLCPP_WARN(this->get_logger(), "Exiting process with EXIT_FAILURE");
+
+    if (this->get_internal_state() != INTERNAL_STATE::ERROR) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Exit was called while internal state was not ERROR but: "
+                     "%s! Exiting anyway...",
+                     this->internal_state_to_str());
+    }
+
     std::exit(EXIT_FAILURE);
 }
 }  // namespace fcc_bridge

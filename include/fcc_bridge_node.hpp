@@ -26,6 +26,7 @@
 #include "interfaces/msg/flight_state.hpp"
 #include "interfaces/msg/gps_position.hpp"
 #include "interfaces/msg/heartbeat.hpp"
+#include "interfaces/msg/mission_finished.hpp"
 #include "interfaces/msg/mission_progress.hpp"
 #include "interfaces/msg/mission_start.hpp"
 #include "interfaces/msg/pose.hpp"
@@ -116,6 +117,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @return The current internal state
      *
      * @warning Do not assume this function will stay constexpr!
+     *
+     * @note Will not trigger an exit if the FCCBridgeNode::internal_state
+     * indicates an error
      */
     constexpr INTERNAL_STATE get_internal_state() const {
         return this->internal_state;
@@ -176,6 +180,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
     rclcpp::Subscription<interfaces::msg::UAVWaypointCommand>::SharedPtr
         uav_waypoint_command_subscriber; /**< Subscriber for uav waypoint
                                             command messages */
+    rclcpp::Subscription<interfaces::msg::MissionFinished>::SharedPtr
+        mission_finished_subscriber; /**< Subscriber for mission finished
+                                        messages */
 
     // ROS timer
     rclcpp::TimerBase::SharedPtr
@@ -456,6 +463,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Triggers an RTH if the command is deemed invalid such as when
      * 1. The time stamp in the message is older than one second.
+     * 2. sender_id is not the active node
      * TODO: Work out
      *
      * @throws std::runtime_error If FCCBridgeNode::internal_state is
@@ -477,6 +485,23 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     void uav_waypoint_command_subscriber_cb(
         const interfaces::msg::UAVWaypointCommand &msg);
+    /**
+     * @brief Callback function to be triggered when a new MissionFinished
+     * message is received
+     *
+     * @param msg The received message
+     *
+     * - If the sender is not mission_control this will trigger an RTH
+     * - If mission control is not the active node this will trigger an RTH
+     * - If the UAV has not yet taken off this will trigger an exit.
+     * - If the UAV is airborne this message will trigger an RTH.
+     * - If the UAV is on ground and error_code is != 0 this message will
+     * trigger an exit.
+     * - Otherwise the Node will be stopped by a timer after 5 seconds
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
+     */
+    void mission_finished_cb(const interfaces::msg::MissionFinished &msg);
     /**
      * @brief Callback function for the 5Hz telemetry timer
      *
@@ -564,11 +589,17 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Gets the mission progress from the FCC and publishes it on the ROS
      * network
      *
-     * @warning Does not check he validity of the last heartbeat. That is the
+     * @warning Does not check the validity of the last heartbeat. That is the
      * calling functions responsibility
      *
      * @warning Will trigger an RTH if there is any issue with the mission
      * including no currently running mission
+     *
+     * Will set FCCBridgeNode::internal_state to WAITING_FOR_COMMAND or LANDED
+     * depending on the current state and whether the mission has finished.
+     *
+     * If the drone has landed trigger a timer that will stop the node after 1
+     * minute.
      *
      * Implemented in src/fcc_bridge_node_telemetry.cpp
      */

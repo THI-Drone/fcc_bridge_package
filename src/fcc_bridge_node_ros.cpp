@@ -6,6 +6,7 @@
 
 // Libc header
 #include <chrono>
+#include <cinttypes>
 
 // CommonLib header
 #include "common_package/topic_names.hpp"
@@ -19,6 +20,9 @@ constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_5HZ{
     200}; /**< The period of the 5Hz telemetry timer */
 constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_10HZ{
     100}; /**< The period of the 10Hz telemetry timer */
+
+// Mission control node name
+constexpr char const *const MISSION_CONTROL_NODE_NAME = "mission_control";
 
 // Limits
 constexpr std::chrono::seconds MAX_UAV_COMMAND_AGE{
@@ -119,6 +123,13 @@ void FCCBridgeNode::setup_ros() {
         this->create_subscription<interfaces::msg::UAVWaypointCommand>(
             common_lib::topic_names::UAVWaypointCommand, 10,
             std::bind(&FCCBridgeNode::uav_waypoint_command_subscriber_cb, this,
+                      std::placeholders::_1));
+
+    // Create MissionFinished subscriber
+    this->mission_finished_subscriber =
+        this->create_subscription<interfaces::msg::MissionFinished>(
+            common_lib::topic_names::MissionFinished, 10,
+            std::bind(&FCCBridgeNode::mission_finished_cb, this,
                       std::placeholders::_1));
 
     // Setup 5Hz timer to get telemetry from the FCC
@@ -238,6 +249,72 @@ void FCCBridgeNode::uav_waypoint_command_subscriber_cb(
 
     // Call the actual command handling
     this->uav_command_subscriber_cb(uav_command_msg);
+}
+
+void FCCBridgeNode::mission_finished_cb(
+    const interfaces::msg::MissionFinished &msg) {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Received a new MissionFinished message with sender_id: %s, "
+                 "error_code: %" PRIu8 ", reason: %s",
+                 msg.sender_id.c_str(), msg.error_code, msg.reason.c_str());
+
+    if (msg.sender_id != MISSION_CONTROL_NODE_NAME) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Received a MissionFinished message from a non mission "
+                     "control node");
+        this->trigger_rth();
+        return;
+    }
+
+    // TODO: Check if mission control is active
+
+    // Verify that we are in the right state
+    switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+            // The UAV has not yet taken off
+            RCLCPP_FATAL(this->get_logger(),
+                         "Received a MissionFinished while the UAV has not yet "
+                         "taken off! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            // The UAV is airborne. This will result in an RTH
+            RCLCPP_WARN(this->get_logger(),
+                        "Received a MissionFinished message while airborne. "
+                        "Triggering an RTH...");
+            this->trigger_rth();
+            return;
+        case INTERNAL_STATE::LANDED:
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    // This means we have landed
+    if (msg.error_code == 0) {
+        // Expected mission end
+        RCLCPP_INFO(this->get_logger(),
+                    "Ended mission with success. Ending process in 5 seconds.");
+        // TODO: trigger callback to end node in 5 seconds
+    } else {
+        RCLCPP_FATAL(this->get_logger(),
+                     "Ended mission with error code set! Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    }
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
