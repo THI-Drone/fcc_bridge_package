@@ -144,6 +144,13 @@ void FCCBridgeNode::setup_ros() {
             std::bind(&FCCBridgeNode::uav_command_subscriber_cb, this,
                       std::placeholders::_1));
 
+    // Create UAV waypoint command subscriber
+    this->uav_waypoint_command_subscriber =
+        this->create_subscription<interfaces::msg::UAVWaypointCommand>(
+            common_lib::topic_names::UAVWaypointCommand, 10,
+            std::bind(&FCCBridgeNode::uav_waypoint_command_subscriber_cb, this,
+                      std::placeholders::_1));
+
     // Setup 5Hz timer to get telemetry from the FCC
     this->fcc_telemetry_timer_5hz = this->create_wall_timer(
         FCC_TELEMETRY_PERIOD_5HZ,
@@ -242,6 +249,23 @@ void FCCBridgeNode::uav_command_subscriber_cb(
     }
 
     RCLCPP_DEBUG(this->get_logger(), "Finished handling command");
+}
+
+void FCCBridgeNode::uav_waypoint_command_subscriber_cb(
+    const interfaces::msg::UAVWaypointCommand &msg) {
+    RCLCPP_DEBUG(this->get_logger(),
+                 "Received a new UAVWaypointCommand message");
+
+    // Repackage message
+    interfaces::msg::UAVCommand uav_command_msg;
+    uav_command_msg.type = interfaces::msg::UAVCommand::FLY_TO_WAYPOINT;
+    uav_command_msg.sender_id = msg.sender_id;
+    uav_command_msg.time_stamp = msg.time_stamp;
+    uav_command_msg.speed_m_s = msg.speed_m_s;
+    uav_command_msg.waypoint = msg.waypoint;
+
+    // Call the actual command handling
+    this->uav_command_subscriber_cb(uav_command_msg);
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {

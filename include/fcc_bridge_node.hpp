@@ -32,6 +32,7 @@
 #include "interfaces/msg/rc_state.hpp"
 #include "interfaces/msg/uav_command.hpp"
 #include "interfaces/msg/uav_health.hpp"
+#include "interfaces/msg/uav_waypoint_command.hpp"
 
 // CommonLib headers
 #include "common_package/common_node.hpp"
@@ -173,6 +174,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
                                                  control heartbeats */
     rclcpp::Subscription<interfaces::msg::UAVCommand>::SharedPtr
         uav_command_subscriber; /**< Subscriber for uav command messages */
+    rclcpp::Subscription<interfaces::msg::UAVWaypointCommand>::SharedPtr
+        uav_waypoint_command_subscriber; /**< Subscriber for uav waypoint
+                                            command messages */
 
     // ROS timer
     rclcpp::TimerBase::SharedPtr
@@ -461,6 +465,19 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Implemented in src/fcc_bridge_node_ros.cpp
      */
     void uav_command_subscriber_cb(const interfaces::msg::UAVCommand &msg);
+    /**
+     * @brief Callback function to be triggered when a new UAVWaypointCommand
+     * message is received
+     *
+     * @param msg The received message
+     *
+     * Repackages the message as an interfaces::msg::UAVCommand and calls
+     * FCCBridge::uav_command_subscriber_cb
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
+     */
+    void uav_waypoint_command_subscriber_cb(
+        const interfaces::msg::UAVWaypointCommand &msg);
     /**
      * @brief Callback function for the 5Hz telemetry timer
      *
