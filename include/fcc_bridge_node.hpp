@@ -11,6 +11,7 @@
 #include <optional>
 
 // Mavsdk headers
+#include "mavsdk/log_callback.h"
 #include "mavsdk/mavsdk.h"
 #include "mavsdk/plugins/action/action.h"
 #include "mavsdk/plugins/mission/mission.h"
@@ -692,6 +693,25 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                       MAVSDK specific functions                       */
     /*************************************************************************/
 
+   private:
+    /**
+     * @brief Callback function to be triggered when MAVSDK wants to log
+     * something
+     *
+     * @param level The target log level
+     * @param message The message to log
+     * @param file The source file of the log
+     * @param line The line in the source file where the log originated from
+     *
+     * @returns If the log message should still be printed to stdout. Always
+     * true
+     *
+     * Converts a MAVSDK log message to a ROS log message
+     */
+    bool mavsdk_log_callback(const mavsdk::log::Level level,
+                             const std::string &message,
+                             const std::string &file, const int line);
+
    protected:
     /**
      * @brief Sets up the MAVSDK components.
@@ -792,6 +812,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Executes the passed mission plan asynchronously
      *
      * @param plan The plan to execute
+     *
+     * @return WHether executing the mission was successful
      *
      * Verifies the MAVSDK connection
      *

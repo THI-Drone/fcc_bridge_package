@@ -52,8 +52,47 @@ const std::map<const std::string, const struct sys_id_map_entry> SYS_ID_MAP{
 constexpr double AUTOPILOT_DISCOVERY_TIMEOUT_S = 1;
 }  // namespace
 
+bool FCCBridgeNode::mavsdk_log_callback(const mavsdk::log::Level level,
+                                        const std::string &message,
+                                        const std::string &file,
+                                        const int line) {
+    static constexpr char const *const LOG_FORMAT_STRING =
+        "MAVSDK Log: [Location: %s : %d] [%s]";
+
+    switch (level) {
+        case mavsdk::log::Level::Debug:
+            RCLCPP_DEBUG(this->get_logger(), LOG_FORMAT_STRING, file.c_str(),
+                         line, message.c_str());
+            break;
+        case mavsdk::log::Level::Info:
+            RCLCPP_INFO(this->get_logger(), LOG_FORMAT_STRING, file.c_str(),
+                        line, message.c_str());
+            break;
+        case mavsdk::log::Level::Warn:
+            RCLCPP_WARN(this->get_logger(), LOG_FORMAT_STRING, file.c_str(),
+                        line, message.c_str());
+            break;
+        case mavsdk::log::Level::Err:
+            RCLCPP_ERROR(this->get_logger(), LOG_FORMAT_STRING, file.c_str(),
+                         line, message.c_str());
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got an unknown MAVSDK::log::Level value: ") +
+                std::to_string(static_cast<int>(level)));
+    }
+
+    // Always return true to suppress MAVSDKs own stdout write
+    return true;
+}
+
 void FCCBridgeNode::setup_mavsdk() {
     RCLCPP_DEBUG(this->get_logger(), "Setting up MAVSDK");
+
+    mavsdk::log::subscribe(std::bind(
+        &FCCBridgeNode::mavsdk_log_callback, this, std::placeholders::_1,
+        std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+    RCLCPP_DEBUG(this->get_logger(), "Installed MAVSDK Log callback");
 
     // Internal state check
     if (this->get_internal_state() != INTERNAL_STATE::ROS_SET_UP) {
