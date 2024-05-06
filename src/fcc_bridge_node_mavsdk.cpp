@@ -61,20 +61,20 @@ bool FCCBridgeNode::mavsdk_log_callback(const mavsdk::log::Level level,
 
     switch (level) {
         case mavsdk::log::Level::Debug:
-            RCLCPP_DEBUG(this->get_logger(), LOG_FORMAT_STRING, file.c_str(),
-                         line, message.c_str());
+            RCLCPP_DEBUG(this->get_mavsdk_internal_logger(), LOG_FORMAT_STRING,
+                         file.c_str(), line, message.c_str());
             break;
         case mavsdk::log::Level::Info:
-            RCLCPP_INFO(this->get_logger(), LOG_FORMAT_STRING, file.c_str(),
-                        line, message.c_str());
+            RCLCPP_INFO(this->get_mavsdk_internal_logger(), LOG_FORMAT_STRING,
+                        file.c_str(), line, message.c_str());
             break;
         case mavsdk::log::Level::Warn:
-            RCLCPP_WARN(this->get_logger(), LOG_FORMAT_STRING, file.c_str(),
-                        line, message.c_str());
+            RCLCPP_WARN(this->get_mavsdk_internal_logger(), LOG_FORMAT_STRING,
+                        file.c_str(), line, message.c_str());
             break;
         case mavsdk::log::Level::Err:
-            RCLCPP_ERROR(this->get_logger(), LOG_FORMAT_STRING, file.c_str(),
-                         line, message.c_str());
+            RCLCPP_ERROR(this->get_mavsdk_internal_logger(), LOG_FORMAT_STRING,
+                         file.c_str(), line, message.c_str());
             break;
         default:
             throw std::runtime_error(
@@ -87,16 +87,17 @@ bool FCCBridgeNode::mavsdk_log_callback(const mavsdk::log::Level level,
 }
 
 void FCCBridgeNode::setup_mavsdk() {
-    RCLCPP_DEBUG(this->get_logger(), "Setting up MAVSDK");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(), "Setting up MAVSDK");
 
     mavsdk::log::subscribe(std::bind(
         &FCCBridgeNode::mavsdk_log_callback, this, std::placeholders::_1,
         std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-    RCLCPP_DEBUG(this->get_logger(), "Installed MAVSDK Log callback");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Installed MAVSDK Log callback");
 
     // Internal state check
     if (this->get_internal_state() != INTERNAL_STATE::ROS_SET_UP) {
-        RCLCPP_ERROR(this->get_logger(),
+        RCLCPP_ERROR(this->get_mavsdk_interface_logger(),
                      "Repeated try to setup MAVSDK components");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
@@ -109,13 +110,14 @@ void FCCBridgeNode::setup_mavsdk() {
         const rclcpp::exceptions::UninitializedStaticallyTypedParameterException
             &e) {
         // Catch if parameter was not set
-        RCLCPP_FATAL(this->get_logger(), "UAV_ID parameter was not set!");
+        RCLCPP_FATAL(this->get_ros_interface_logger(),
+                     "UAV_ID parameter was not set!");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     } catch (const rclcpp::exceptions::InvalidParameterTypeException &e) {
         // Catch if parameter is not a string
         RCLCPP_FATAL(
-            this->get_logger(),
+            this->get_ros_interface_logger(),
             "UAV_ID parameter was of wrong type! It has to be a string!");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
@@ -126,7 +128,8 @@ void FCCBridgeNode::setup_mavsdk() {
                    const struct sys_id_map_entry>::const_iterator
         uav_id_map_entry = SYS_ID_MAP.find(uav_id);
     if (uav_id_map_entry == SYS_ID_MAP.end()) {
-        RCLCPP_FATAL(this->get_logger(), "Got unknown UAV_ID!");
+        RCLCPP_FATAL(this->get_mavsdk_interface_logger(),
+                     "Got unknown UAV_ID!");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
@@ -143,13 +146,14 @@ void FCCBridgeNode::setup_mavsdk() {
 
     // Checking if the target UAV is a simulation target
     if (uav_id_map_entry->second.IS_SIMULATOR_TARGET) {
-        RCLCPP_WARN(this->get_logger(), "Connecting to simulator!");
+        RCLCPP_WARN(this->get_mavsdk_interface_logger(),
+                    "Connecting to simulator!");
         // Trying to connect to the simulated MAVLink network
         connection_result = this->mavsdk->add_udp_connection(
             SIMULATOR_IP_ADDRESS, SIMULATOR_PORT_NUMBER,
             mavsdk::ForwardingOption::ForwardingOff);
     } else {
-        RCLCPP_DEBUG(this->get_logger(),
+        RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
                      "Creating a connection to a real MAVLink network");
         // Trying to connect to the real MAVLink network
         connection_result = this->mavsdk->add_serial_connection(
@@ -158,10 +162,10 @@ void FCCBridgeNode::setup_mavsdk() {
     }
     // Checking if connection succeeded
     if (connection_result != mavsdk::ConnectionResult::Success) {
-        RCLCPP_FATAL(this->get_logger(),
+        RCLCPP_FATAL(this->get_mavsdk_interface_logger(),
                      "Failed to establish MAVSDK connection");
         RCLCPP_DEBUG(
-            this->get_logger(), "Error code: %s",
+            this->get_mavsdk_interface_logger(), "Error code: %s",
             FCCBridgeNode::mavsdk_connection_result_to_str(connection_result));
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
@@ -172,7 +176,7 @@ void FCCBridgeNode::setup_mavsdk() {
         this->mavsdk->first_autopilot(AUTOPILOT_DISCOVERY_TIMEOUT_S);
     // Checking if an autopilot was found
     if (!potential_system.has_value()) {
-        RCLCPP_FATAL(this->get_logger(),
+        RCLCPP_FATAL(this->get_mavsdk_interface_logger(),
                      "Could not discover an autopilot within %f seconds",
                      AUTOPILOT_DISCOVERY_TIMEOUT_S);
         this->set_internal_state(INTERNAL_STATE::ERROR);
@@ -182,14 +186,15 @@ void FCCBridgeNode::setup_mavsdk() {
 
     // Verifying that the system is connected
     if (!this->mavsdk_system->is_connected()) {
-        RCLCPP_FATAL(this->get_logger(), "Connection to system has failed!");
+        RCLCPP_FATAL(this->get_mavsdk_interface_logger(),
+                     "Connection to system has failed!");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
 
     // Verifying that the system has an autopilot
     if (!this->mavsdk_system->has_autopilot()) {
-        RCLCPP_FATAL(this->get_logger(),
+        RCLCPP_FATAL(this->get_mavsdk_interface_logger(),
                      "The MAVSDK system does not seem to have an autopilot!");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
@@ -204,11 +209,13 @@ void FCCBridgeNode::setup_mavsdk() {
     // Setting up mavsdk mission
     this->mavsdk_mission.emplace(this->mavsdk_system);
 
-    RCLCPP_INFO(this->get_logger(), "Successfully set up MAVSDK components");
+    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                "Successfully set up MAVSDK components");
 }
 
 void FCCBridgeNode::verify_mavsdk_connection() {
-    RCLCPP_DEBUG(this->get_logger(), "Verifying MAVSDK connection");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Verifying MAVSDK connection");
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
@@ -216,7 +223,7 @@ void FCCBridgeNode::verify_mavsdk_connection() {
             this->set_internal_state(INTERNAL_STATE::ERROR);
             [[fallthrough]];
         case INTERNAL_STATE::ERROR:
-            RCLCPP_ERROR(this->get_logger(),
+            RCLCPP_ERROR(this->get_mavsdk_interface_logger(),
                          "MAVSDK is not set up! Exiting...");
             // Does not return
             this->exit_process_on_error();
@@ -228,10 +235,11 @@ void FCCBridgeNode::verify_mavsdk_connection() {
         case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
             if (this->mavsdk_system->is_connected()) {
-                RCLCPP_INFO(this->get_logger(), "MAVSDK state is good");
+                RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                            "MAVSDK state is good");
                 return;
             }
-            RCLCPP_FATAL(this->get_logger(),
+            RCLCPP_FATAL(this->get_mavsdk_interface_logger(),
                          "An MAVSDK error was encountered! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             // Does not return
@@ -252,17 +260,19 @@ void FCCBridgeNode::get_gps_telemetry() {
     this->verify_mavsdk_connection();
 
     // Get GPSInfo
-    RCLCPP_DEBUG(this->get_logger(), "Getting GPSInfo from FCC");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Getting GPSInfo from FCC");
     this->last_fcc_gps_info = this->mavsdk_telemtry->gps_info();
 
     // Get GPS position
-    RCLCPP_DEBUG(this->get_logger(), "Getting position from FCC");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Getting position from FCC");
     this->last_fcc_position = this->mavsdk_telemtry->position();
 
     RCLCPP_INFO(
-        this->get_logger(),
-        "Current position of UAV: Lat: %f°\tLon: %f°\tAbsolute "
-        "attitude: %fm\trelative attitude: %fm\tNo. of satellites: %" PRId32,
+        this->get_fcc_telemetry_logger(),
+        "Current position of UAV: Lat: %f°\tLon: %f°\tAbsolute attitude: "
+        "%fm\trelative attitude: %fm\tNo. of satellites: %" PRId32,
         this->last_fcc_position->latitude_deg,
         this->last_fcc_position->longitude_deg,
         static_cast<double>(this->last_fcc_position->absolute_altitude_m),
@@ -279,19 +289,22 @@ void FCCBridgeNode::get_flight_state() {
     this->verify_mavsdk_connection();
 
     // Get flight mode
-    RCLCPP_DEBUG(this->get_logger(), "Getting FlightMode from FCC");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Getting FlightMode from FCC");
     this->last_fcc_flight_mode = this->mavsdk_telemtry->flight_mode();
 
-    RCLCPP_INFO(this->get_logger(), "The current flight mode is: %s",
+    RCLCPP_INFO(this->get_fcc_telemetry_logger(),
+                "The current flight mode is: %s",
                 FCCBridgeNode::mavsdk_flight_mode_to_str(
                     this->last_fcc_flight_mode.value()));
 
     // Get landed state
-    RCLCPP_DEBUG(this->get_logger(), "Getting LandedState from FCC");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Getting LandedState from FCC");
     this->last_fcc_landed_state = this->mavsdk_telemtry->landed_state();
 
     RCLCPP_INFO(
-        this->get_logger(), "The current landed state is: %s",
+        this->get_fcc_telemetry_logger(), "The current landed state is: %s",
         this->mavsdk_landed_state_to_str(this->last_fcc_landed_state.value()));
 }
 
@@ -303,11 +316,12 @@ void FCCBridgeNode::get_battery_state() {
     this->verify_mavsdk_connection();
 
     // Get battery state
-    RCLCPP_DEBUG(this->get_logger(), "Getting Battery state from FCC");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Getting Battery state from FCC");
     this->last_fcc_battery_state = this->mavsdk_telemtry->battery();
 
     RCLCPP_INFO(
-        this->get_logger(),
+        this->get_fcc_telemetry_logger(),
         "The current FCC battery state: Battery id: %" PRIu32
         "\tTemperature: %f°C\tVoltage: %fV\tBattery current: "
         "%fA\tConsumed capacity: %fAh\tRemaining percent: %f%%",
@@ -327,13 +341,14 @@ void FCCBridgeNode::get_rc_state() {
     this->verify_mavsdk_connection();
 
     // Get RC state
-    RCLCPP_DEBUG(this->get_logger(), "Getting RC state from FCC");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Getting RC state from FCC");
     this->last_fcc_rc_state = this->mavsdk_telemtry->rc_status();
 
     RCLCPP_INFO(
-        this->get_logger(),
-        "The current FCC RC state: RC was available once: %s\tRC is "
-        "available: %s\t Signal strength: %f%%",
+        this->get_fcc_telemetry_logger(),
+        "The current FCC RC state: RC was available once: %s\tRC is available: "
+        "%s\t Signal strength: %f%%",
         this->last_fcc_rc_state->was_available_once ? "true" : "false",
         this->last_fcc_rc_state->is_available ? "true" : "false",
         static_cast<double>(this->last_fcc_rc_state->signal_strength_percent));
@@ -347,10 +362,11 @@ void FCCBridgeNode::get_euler_angle() {
     this->verify_mavsdk_connection();
 
     // Get euler angle
-    RCLCPP_DEBUG(this->get_logger(), "Getting euler angle from FCC");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Getting euler angle from FCC");
     this->last_fcc_euler_angle = this->mavsdk_telemtry->attitude_euler();
 
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_INFO(this->get_fcc_telemetry_logger(),
                 "The current FCC euler angle: Roll %f° (Positive means banking "
                 "to the right)\tPitch: %f° (Positive means Nose up)\tYaw: "
                 "%f°(Clockwise from above)",
@@ -367,10 +383,11 @@ void FCCBridgeNode::get_mission_progress() {
     this->verify_mavsdk_connection();
 
     // Get mission progress
-    RCLCPP_DEBUG(this->get_logger(), "Getting mission progress");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Getting mission progress");
     this->last_mission_progress = this->mavsdk_mission->is_mission_finished();
 
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_INFO(this->get_fcc_telemetry_logger(),
                 "The current mission is finished: %s\t Result code: %s",
                 this->last_mission_progress->second ? "true" : "false",
                 FCCBridgeNode::mavsdk_mission_result_to_str(
@@ -385,7 +402,7 @@ void FCCBridgeNode::get_uav_health() {
     this->verify_mavsdk_connection();
 
     // Get the UAV health
-    RCLCPP_DEBUG(this->get_logger(), "Getting UAV health");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(), "Getting UAV health");
     this->last_fcc_health = this->mavsdk_telemtry->health();
 
     static auto bool_to_str = [](const bool b) -> const char * {
@@ -393,7 +410,7 @@ void FCCBridgeNode::get_uav_health() {
     };
 
     RCLCPP_INFO(
-        this->get_logger(),
+        this->get_fcc_telemetry_logger(),
         "Current UAV health: Gyrometer calibrated: %s\tAccelerometer "
         "calibrated: %s\tMagnetometer calibrated: %s\tLocal position ok: "
         "%s\tGlobal position ok: %s\tHome position ok: %s\tArmable: %s",
@@ -408,7 +425,8 @@ void FCCBridgeNode::get_uav_health() {
 
 bool FCCBridgeNode::execute_mission_plan(
     const mavsdk::Mission::MissionPlan &plan) {
-    RCLCPP_DEBUG(this->get_logger(), "Got new mission plan to execute");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Got new mission plan to execute");
 
     // Verify MAVSDK connection
     this->verify_mavsdk_connection();
@@ -419,7 +437,7 @@ bool FCCBridgeNode::execute_mission_plan(
 
     if (no_rth_after_mission_result != mavsdk::Mission::Result::Success) {
         RCLCPP_ERROR(
-            this->get_logger(),
+            this->get_mavsdk_interface_logger(),
             "Failed to disable automatic RTH after mission end with result: %s",
             FCCBridgeNode::mavsdk_mission_result_to_str(
                 no_rth_after_mission_result));
@@ -432,7 +450,7 @@ bool FCCBridgeNode::execute_mission_plan(
 
     if (upload_result != mavsdk::Mission::Result::Success) {
         RCLCPP_ERROR(
-            this->get_logger(),
+            this->get_mavsdk_interface_logger(),
             "Failed to upload mission plan to FCC with result: %s",
             FCCBridgeNode::mavsdk_mission_result_to_str(upload_result));
         return false;
@@ -443,12 +461,14 @@ bool FCCBridgeNode::execute_mission_plan(
 
     if (mission_start_result != mavsdk::Mission::Result::Success) {
         RCLCPP_ERROR(
-            this->get_logger(), "Failed to start mission with result: %s",
+            this->get_mavsdk_interface_logger(),
+            "Failed to start mission with result: %s",
             FCCBridgeNode::mavsdk_mission_result_to_str(mission_start_result));
         return false;
     }
 
-    RCLCPP_INFO(this->get_logger(), "Successfully executed mission plan");
+    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                "Successfully executed mission plan");
 
     return true;
 }
@@ -469,12 +489,12 @@ void FCCBridgeNode::trigger_rth() {
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::LANDED:
             // In this case the UAV is on the ground
-            RCLCPP_ERROR(this->get_logger(),
+            RCLCPP_ERROR(this->get_internal_state_logger(),
                          "Attempted RTH while on ground! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::RETURN_TO_HOME:
-            RCLCPP_WARN(this->get_logger(),
+            RCLCPP_WARN(this->get_internal_state_logger(),
                         "Trying to trigger RTH while already returning home");
             return;
         case INTERNAL_STATE::FLYING_MISSION:
@@ -483,7 +503,7 @@ void FCCBridgeNode::trigger_rth() {
             // mission.
             mission_clear_result = this->mavsdk_mission->clear_mission();
             if (mission_clear_result != mavsdk::Mission::Result::Success) {
-                RCLCPP_FATAL(this->get_logger(),
+                RCLCPP_FATAL(this->get_mavsdk_interface_logger(),
                              "Could not clear exiting mission with result: %s! "
                              "Exiting...",
                              FCCBridgeNode::mavsdk_mission_result_to_str(
@@ -500,7 +520,7 @@ void FCCBridgeNode::trigger_rth() {
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
 
-    RCLCPP_WARN(this->get_logger(), "Triggering RTH");
+    RCLCPP_WARN(this->get_mavsdk_interface_logger(), "Triggering RTH");
 
     // Verify MAVSDK
     this->verify_mavsdk_connection();
@@ -518,14 +538,14 @@ void FCCBridgeNode::trigger_rth() {
     this->mavsdk_action->return_to_launch_async(
         std::bind(&FCCBridgeNode::mavsdk_rth_cb, this, std::placeholders::_1));
 
-    RCLCPP_DEBUG(this->get_logger(), "Triggered RTH");
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(), "Triggered RTH");
 }
 
 void FCCBridgeNode::exit_process_on_error() {
-    RCLCPP_WARN(this->get_logger(), "Exiting process with EXIT_FAILURE");
+    RCLCPP_WARN(this->get_safety_logger(), "Exiting process with EXIT_FAILURE");
 
     if (this->get_internal_state() != INTERNAL_STATE::ERROR) {
-        RCLCPP_ERROR(this->get_logger(),
+        RCLCPP_ERROR(this->get_safety_logger(),
                      "Exit was called while internal state was not ERROR but: "
                      "%s! Exiting anyway...",
                      this->internal_state_to_str());

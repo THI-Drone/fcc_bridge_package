@@ -7,38 +7,45 @@
 namespace fcc_bridge {
 
 void FCCBridgeNode::mavsdk_rth_cb(const mavsdk::Action::Result &result) {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
                  "Return to launch action callback triggered");
 
     if (result != mavsdk::Action::Result::Success) {
         // In this case something went wrong. Nothing left but to exit.
-        RCLCPP_FATAL(this->get_logger(), "Return to launch failed! Exiting...");
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "Return to launch failed! Exiting...");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
     }
 
-    RCLCPP_INFO(this->get_logger(), "Return to home successful!");
+    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                "Return to home successful!");
     this->set_internal_state(INTERNAL_STATE::LANDED);
 }
 
 void FCCBridgeNode::check_gps_state() {
-    RCLCPP_DEBUG(this->get_logger(), "Checking GPS state");
+    RCLCPP_DEBUG(this->get_safety_logger(), "Checking GPS state");
 
     // Ensuring there is valid gps info present
     if (!this->last_fcc_gps_info.has_value()) {
         RCLCPP_DEBUG(
-            this->get_logger(),
+            this->get_safety_logger(),
             "No cached GPS info found, getting an update from the FCC");
         this->get_gps_telemetry();
     }
 
     switch (this->get_internal_state()) {
+            // This function should never be called in these states
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::ERROR:
-            throw std::runtime_error(std::string(__func__) +
-                                     " was called in an invalid state: " +
-                                     this->internal_state_to_str());
+            RCLCPP_FATAL(
+                this->get_internal_state_logger(),
+                "In an invalid state for a uav health check! Exiting...");
+            this->exit_process_on_error();
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::FLYING_MISSION:
@@ -51,7 +58,7 @@ void FCCBridgeNode::check_gps_state() {
                 // This is unrecoverable. If this happens on the ground nothing
                 // there is no danger. If the drone is airborne manual control
                 // is required.
-                RCLCPP_FATAL(this->get_logger(),
+                RCLCPP_FATAL(this->get_safety_logger(),
                              "Lost GPS fix in armed state! Exiting...");
                 this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
@@ -66,7 +73,7 @@ void FCCBridgeNode::check_gps_state() {
                 // This is unrecoverable. If this happens on the ground nothing
                 // there is no danger. If the drone is airborne manual control
                 // is required.
-                RCLCPP_FATAL(this->get_logger(),
+                RCLCPP_FATAL(this->get_safety_logger(),
                              "The FCC has no GPS installed! Exiting...");
                 this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
@@ -83,40 +90,46 @@ void FCCBridgeNode::check_gps_state() {
         // The current point is outside the geofence. If we are in
     }
 
-    RCLCPP_INFO(this->get_logger(), "GPS state is O.K.");
+    RCLCPP_INFO(this->get_safety_logger(), "GPS state is O.K.");
 }
 
 void FCCBridgeNode::check_flight_state() {
-    RCLCPP_WARN_ONCE(this->get_logger(), "Flight State check not implemented!");
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                     "Flight State check not implemented!");
 }
 
 void FCCBridgeNode::check_battery_state() {
-    RCLCPP_WARN_ONCE(this->get_logger(),
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
                      "Battery State check not implemented!");
 }
 
 void FCCBridgeNode::check_rc_state() {
-    RCLCPP_WARN_ONCE(this->get_logger(), "RC State check not implemented!");
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                     "RC State check not implemented!");
 }
 
 void FCCBridgeNode::check_uav_health() {
-    RCLCPP_DEBUG(this->get_logger(), "Checking UAV health state");
+    RCLCPP_DEBUG(this->get_safety_logger(), "Checking UAV health state");
 
     // Ensuring there is valid uav health present
     if (!this->last_fcc_health.has_value()) {
         RCLCPP_DEBUG(
-            this->get_logger(),
+            this->get_safety_logger(),
             "No cached uav health found, getting an update from the FCC");
         this->get_uav_health();
     }
     switch (this->get_internal_state()) {
             // This function should never be called in these states
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::ERROR:
-            throw std::runtime_error(std::string(__func__) +
-                                     " was called in an invalid state: " +
-                                     this->internal_state_to_str());
+            RCLCPP_FATAL(
+                this->get_internal_state_logger(),
+                "In an invalid state for a uav health check! Exiting...");
+            this->exit_process_on_error();
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::FLYING_MISSION:
@@ -129,7 +142,7 @@ void FCCBridgeNode::check_uav_health() {
                 // This is unrecoverable. If this happens on the ground nothing
                 // there is no danger. If the drone is airborne manual control
                 // is required.
-                RCLCPP_FATAL(this->get_logger(),
+                RCLCPP_FATAL(this->get_safety_logger(),
                              "FCC cannot determine its own position any more "
                              "or has lost its home position! Exiting...");
                 this->set_internal_state(INTERNAL_STATE::ERROR);
@@ -146,7 +159,7 @@ void FCCBridgeNode::check_uav_health() {
                 // This is unrecoverable. If this happens on the ground nothing
                 // there is no danger. If the drone is airborne manual control
                 // is required.
-                RCLCPP_FATAL(this->get_logger(),
+                RCLCPP_FATAL(this->get_safety_logger(),
                              "UAV sensors are not calibrated! Exiting...");
                 this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
@@ -158,15 +171,15 @@ void FCCBridgeNode::check_uav_health() {
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
 
-    RCLCPP_INFO(this->get_logger(), "UAV health is O.K.");
+    RCLCPP_INFO(this->get_safety_logger(), "UAV health is O.K.");
 }
 
 bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
                                             const double longitude_deg,
                                             const float relative_altitude_m) {
-    RCLCPP_WARN_ONCE(this->get_logger(),
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
                      "Geofence check fully not implemented!");
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_safety_logger(),
                  "Checking whether point (lat: %f°\tlon: %f°\trel alt: %fm) is "
                  "inside the geofence",
                  latitude_deg, longitude_deg,
@@ -194,7 +207,7 @@ bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
         case INTERNAL_STATE::ROS_SET_UP:
         case INTERNAL_STATE::MAVSDK_SET_UP:
             // In these states there is no geofence configured
-            RCLCPP_ERROR(this->get_logger(),
+            RCLCPP_ERROR(this->get_safety_logger(),
                          "Tried to check if point is inside geofence, while no "
                          "geofence was configured");
             this->set_internal_state(INTERNAL_STATE::ERROR);
@@ -210,11 +223,13 @@ bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
 
 bool FCCBridgeNode::check_speed(const float speed_mps) {
     (void)speed_mps;
-    RCLCPP_WARN_ONCE(this->get_logger(), "Speed check not implemented!");
+    RCLCPP_WARN_ONCE(this->get_safety_logger(), "Speed check not implemented!");
     return true;
 }
 
 void FCCBridgeNode::check_last_mission_control_heartbeat() {
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                     "Heartbeat check not implemented!");
     // TODO: Check if last heartbeat is not too old.
 }
 

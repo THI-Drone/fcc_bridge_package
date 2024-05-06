@@ -35,15 +35,16 @@ void FCCBridgeNode::set_internal_state(
     // Actually set the state.
     this->internal_state = new_state;
 
-    RCLCPP_INFO(this->get_logger(), "Switching to new internal_state: %s",
+    RCLCPP_INFO(this->get_internal_state_logger(),
+                "Switching to new internal_state: %s",
                 this->internal_state_to_str());
 }
 
 void FCCBridgeNode::setup_ros() {
-    RCLCPP_DEBUG(this->get_logger(), "Setting up ROS");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(), "Setting up ROS");
     // Check if the node is in the correct state
     if (this->get_internal_state() != INTERNAL_STATE::STARTING_UP) {
-        RCLCPP_ERROR(this->get_logger(),
+        RCLCPP_ERROR(this->get_internal_state_logger(),
                      "Attempted to setup ROS components more than once");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
@@ -106,7 +107,8 @@ void FCCBridgeNode::setup_ros() {
 
     // Ensure that the filter is enabled. (Some DDS versions do not support it)
     if (!this->mission_control_heartbeat_subscriber->is_cft_enabled()) {
-        RCLCPP_FATAL(this->get_logger(), "Content filtering is not enabled!");
+        RCLCPP_FATAL(this->get_ros_interface_logger(),
+                     "Content filtering is not enabled!");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         return;
     }
@@ -152,13 +154,14 @@ void FCCBridgeNode::setup_ros() {
 
 void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     const interfaces::msg::Heartbeat &msg) {
-    RCLCPP_DEBUG(this->get_logger(), "Received heartbeat from mission control");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Received heartbeat from mission control");
 
     // Check if the heartbeat tick has increased since last time or in the case
     // of an overflow that is equal to 0
     if (msg.tick <= this->last_mission_control_heartbeat.tick &&
         msg.tick != 0) {
-        RCLCPP_ERROR(this->get_logger(),
+        RCLCPP_ERROR(this->get_safety_logger(),
                      "The received heartbeat is not newer than the last one! "
                      "Triggering RTH...");
         this->trigger_rth();
@@ -171,17 +174,18 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     // Verify that the received heartbeat is not too old
     this->check_last_mission_control_heartbeat();
 
-    RCLCPP_INFO(this->get_logger(), "Mission control is alive and ok");
+    RCLCPP_INFO(this->get_safety_logger(), "Mission control is alive and ok");
 }
 
 void FCCBridgeNode::uav_command_subscriber_cb(
     const interfaces::msg::UAVCommand &msg) {
-    RCLCPP_DEBUG(this->get_logger(), "Received a new UAVCommand message");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Received a new UAVCommand message");
 
     // Ensure that the message is not too old
     if (this->now() - msg.time_stamp > rclcpp::Duration(MAX_UAV_COMMAND_AGE)) {
         RCLCPP_ERROR(
-            this->get_logger(),
+            this->get_safety_logger(),
             "Received a UAVCommand that is too old! Triggering RTH...");
         this->trigger_rth();
         return;
@@ -203,8 +207,8 @@ void FCCBridgeNode::uav_command_subscriber_cb(
             this->initiate_rth();
             break;
         default:
-            RCLCPP_ERROR(this->get_logger(), "Got unknown UAVCommand type %d",
-                         msg.type);
+            RCLCPP_ERROR(this->get_safety_logger(),
+                         "Got unknown UAVCommand type %d", msg.type);
             switch (this->get_internal_state()) {
                 case INTERNAL_STATE::ERROR:
                     // This should never happen as the process should have
@@ -219,7 +223,7 @@ void FCCBridgeNode::uav_command_subscriber_cb(
                 case INTERNAL_STATE::LANDED:
                     // In these cases the UAV is not airborne so the process
                     // will exit
-                    RCLCPP_FATAL(this->get_logger(),
+                    RCLCPP_FATAL(this->get_safety_logger(),
                                  "Drone is still on ground. Exiting...");
                     this->set_internal_state(INTERNAL_STATE::ERROR);
                     this->exit_process_on_error();
@@ -227,7 +231,8 @@ void FCCBridgeNode::uav_command_subscriber_cb(
                 case INTERNAL_STATE::FLYING_MISSION:
                 case INTERNAL_STATE::LANDING:
                 case INTERNAL_STATE::RETURN_TO_HOME:
-                    RCLCPP_ERROR(this->get_logger(), "Triggering RTH...");
+                    RCLCPP_ERROR(this->get_safety_logger(),
+                                 "Triggering RTH...");
                     this->trigger_rth();
                     return;
                 default:
@@ -238,12 +243,13 @@ void FCCBridgeNode::uav_command_subscriber_cb(
             }
     }
 
-    RCLCPP_DEBUG(this->get_logger(), "Finished handling command");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Finished handling command message");
 }
 
 void FCCBridgeNode::uav_waypoint_command_subscriber_cb(
     const interfaces::msg::UAVWaypointCommand &msg) {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Received a new UAVWaypointCommand message");
 
     // Repackage message
@@ -260,15 +266,15 @@ void FCCBridgeNode::uav_waypoint_command_subscriber_cb(
 
 void FCCBridgeNode::mission_finished_cb(
     const interfaces::msg::MissionFinished &msg) {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Received a new MissionFinished message with sender_id: %s, "
                  "error_code: %" PRIu8 ", reason: %s",
                  msg.sender_id.c_str(), msg.error_code, msg.reason.c_str());
 
     if (msg.sender_id != MISSION_CONTROL_NODE_NAME) {
-        RCLCPP_ERROR(this->get_logger(),
+        RCLCPP_ERROR(this->get_safety_logger(),
                      "Received a MissionFinished message from a non mission "
-                     "control node");
+                     "control node! Triggering RTH...");
         this->trigger_rth();
         return;
     }
@@ -287,7 +293,7 @@ void FCCBridgeNode::mission_finished_cb(
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
             // The UAV has not yet taken off
-            RCLCPP_FATAL(this->get_logger(),
+            RCLCPP_FATAL(this->get_internal_state_logger(),
                          "Received a MissionFinished while the UAV has not yet "
                          "taken off! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
@@ -297,7 +303,7 @@ void FCCBridgeNode::mission_finished_cb(
         case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
             // The UAV is airborne. This will result in an RTH
-            RCLCPP_WARN(this->get_logger(),
+            RCLCPP_WARN(this->get_internal_state_logger(),
                         "Received a MissionFinished message while airborne. "
                         "Triggering an RTH...");
             this->trigger_rth();
@@ -313,11 +319,11 @@ void FCCBridgeNode::mission_finished_cb(
     // This means we have landed
     if (msg.error_code == 0) {
         // Expected mission end
-        RCLCPP_INFO(this->get_logger(),
+        RCLCPP_INFO(this->get_internal_state_logger(),
                     "Ended mission with success. Ending process in 5 seconds.");
         // TODO: trigger callback to end node in 5 seconds
     } else {
-        RCLCPP_FATAL(this->get_logger(),
+        RCLCPP_FATAL(this->get_safety_logger(),
                      "Ended mission with error code set! Exiting...");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
@@ -325,8 +331,10 @@ void FCCBridgeNode::mission_finished_cb(
 }
 
 void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
-    RCLCPP_DEBUG(this->get_logger(), "Received a new SafetyLimits message");
-    RCLCPP_WARN(this->get_logger(), "Safety limits not fully implemented");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Received a new SafetyLimits message");
+    RCLCPP_WARN(this->get_safety_logger(),
+                "Safety limits not fully implemented");
     // TODO: Sender check
 
     // Safety limits to populate
@@ -336,7 +344,7 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
     if (msg.max_speed_m_s <= 0 ||
         safety_limits::HARD_MAX_SPEED_LIMIT_MPS < msg.max_speed_m_s) {
         RCLCPP_WARN(
-            this->get_logger(),
+            this->get_safety_logger(),
             "Got invalid speed: %f outside of range (0;%f]. Using Internal "
             "limit: %f",
             static_cast<double>(msg.max_speed_m_s),
@@ -351,14 +359,14 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
     // Actually set safety limits
     this->safety_limits = local_safety_limits;
 
-    RCLCPP_INFO(this->get_logger(), "Set safety limits");
+    RCLCPP_INFO(this->get_safety_logger(), "Set safety limits");
 
     // Go into WAITING_FOR_ARM state
     this->set_internal_state(INTERNAL_STATE::WAITING_FOR_ARM);
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "5Hz telemetry timer callback was triggered");
     this->check_last_mission_control_heartbeat();
     switch (this->get_internal_state()) {
@@ -368,7 +376,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
                                      " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
-            RCLCPP_WARN(this->get_logger(),
+            RCLCPP_WARN(this->get_internal_state_logger(),
                         "5Hz Telemetry callback function was called in an "
                         "invalid state");
             return;
@@ -412,7 +420,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::RETURN_TO_HOME:
         case INTERNAL_STATE::LANDED:
-            RCLCPP_DEBUG(this->get_logger(),
+            RCLCPP_ERROR(this->get_internal_state_logger(),
                          "Not in a state to publish mission progress");
             break;
         case INTERNAL_STATE::FLYING_MISSION:
@@ -428,10 +436,13 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
 
     // Send out UAV health
     this->send_uav_health();
+
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "5Hz telemetry timer callback successful");
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "10Hz telemetry timer callback was triggered");
     this->check_last_mission_control_heartbeat();
     switch (this->get_internal_state()) {
@@ -441,7 +452,7 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
                                      " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
-            RCLCPP_WARN(this->get_logger(),
+            RCLCPP_WARN(this->get_internal_state_logger(),
                         "10Hz Telemetry callback function was called in an "
                         "invalid state");
             return;
@@ -468,7 +479,7 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     // Send out euler angle
     this->send_euler_angle();
 
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "10Hz telemetry timer callback successful");
 }
 
@@ -482,19 +493,21 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
     // Setup ROS objects such as timer, publishers etc.
     this->setup_ros();
     if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
-        RCLCPP_FATAL(this->get_logger(), "Failed to setup ROS! Exiting...");
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "Failed to setup ROS! Exiting...");
         this->exit_process_on_error();
     }
+
     this->set_internal_state(INTERNAL_STATE::ROS_SET_UP);
-    RCLCPP_INFO(this->get_logger(), "Transitioning into ROS_SET_UP state");
 
     // Setup MAVSDK objects such as system, telemetry etc.
     this->setup_mavsdk();
     if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
-        RCLCPP_FATAL(this->get_logger(), "Failed to setup MAVSDK! Exiting...");
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "Failed to setup MAVSDK! Exiting...");
         this->exit_process_on_error();
     }
-    RCLCPP_INFO(this->get_logger(), "Transitioning into MAVSDK_SET_UP state");
+
     this->set_internal_state(INTERNAL_STATE::MAVSDK_SET_UP);
 
     // Activating node to signal that it is ready for the safety limits

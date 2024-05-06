@@ -67,6 +67,98 @@ using s64 = int64_t; /**< Signed 64 bit integer */
  */
 class FCCBridgeNode : public common_lib::CommonNode {
     /************************************************************************/
+    /*                   Child logger names and accessors                   */
+    /************************************************************************/
+
+   private:
+    // Logger name
+    static constexpr char const *const MAVSDK_INTERNAL_LOGGER_NAME =
+        "mavsdk_internal"; /**< Messages from this child logger are internal
+                              MAVSDK log messages*/
+    static constexpr char const *const MAVSDK_INTERFACE_LOGGER_NAME =
+        "mavsdk_interface"; /**< Messages from this child logger are connected
+                               to MAVSDK events */
+    static constexpr char const *const ROS_INTERFACE_LOGGER_NAME =
+        "ros_interface"; /**< Messages from this child logger are connected to
+                            ROS events */
+    static constexpr char const *const FCC_TELEMETRY_LOGGER_NAME =
+        "fcc_telemetry"; /**< Messages from this child logger contain telemetry
+                            from the fcc */
+    static constexpr char const *const INTERNAL_STATE_LOGGER_NAME =
+        "internal_state"; /**< Messages from this child logger are connected to
+                             the internal state */
+    static constexpr char const *const SAFETY_LOGGER_NAME =
+        "safety"; /**< Message from this child logger are connected to safety
+                     events */
+    static constexpr char const *const COMMAND_HANDLER_LOGGER_NAME =
+        "command_handler"; /**< Message from this child logger are connected to
+                              command handling events */
+
+    // Accessors
+    /**
+     * @brief Gets the logger for internal MAVSDK log messages
+     *
+     * @return The rclcpp::Logger
+     */
+    inline rclcpp::Logger get_mavsdk_internal_logger() const {
+        return this->get_logger().get_child(MAVSDK_INTERNAL_LOGGER_NAME);
+    }
+
+    /**
+     * @brief Gets the logger for MAVSDK related log messages
+     *
+     * @return The rclcpp::Logger
+     */
+    inline rclcpp::Logger get_mavsdk_interface_logger() const {
+        return this->get_logger().get_child(MAVSDK_INTERFACE_LOGGER_NAME);
+    }
+
+    /**
+     * @brief Gets the logger for ROS related log messages
+     *
+     * @return The rclcpp::Logger
+     */
+    inline rclcpp::Logger get_ros_interface_logger() const {
+        return this->get_logger().get_child(ROS_INTERFACE_LOGGER_NAME);
+    }
+
+    /**
+     * @brief Gets the logger for FCC telemetry messages
+     *
+     * @return The rclcpp::Logger
+     */
+    inline rclcpp::Logger get_fcc_telemetry_logger() const {
+        return this->get_logger().get_child(FCC_TELEMETRY_LOGGER_NAME);
+    }
+
+    /**
+     * @brief Gets the logger for internal state related log messages
+     *
+     * @return The rclcpp::Logger
+     */
+    inline rclcpp::Logger get_internal_state_logger() const {
+        return this->get_logger().get_child(INTERNAL_STATE_LOGGER_NAME);
+    }
+
+    /**
+     * @brief Gets the logger for safety related log messages
+     *
+     * @return The rclcpp::Logger
+     */
+    inline rclcpp::Logger get_safety_logger() const {
+        return this->get_logger().get_child(SAFETY_LOGGER_NAME);
+    }
+
+    /**
+     * @brief Gets the logger for command related log messages
+     *
+     * @return The rclcpp::Logger
+     */
+    inline rclcpp::Logger get_command_handler_logger() const {
+        return this->get_logger().get_child(COMMAND_HANDLER_LOGGER_NAME);
+    }
+
+    /************************************************************************/
     /*                        Internal state members                        */
     /************************************************************************/
 

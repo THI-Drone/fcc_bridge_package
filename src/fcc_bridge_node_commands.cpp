@@ -15,7 +15,7 @@ constexpr float WAYPOINT_ACCEPTANCE_RADIUS_M =
 
 void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
                                      const float speed_mps) {
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_INFO(this->get_command_handler_logger(),
                 "Received a command to takeoff to lat: %f°\tlon: %f°\trel alt: "
                 "%fm with speed: %fm/s",
                 waypoint.latitude_deg, waypoint.longitude_deg,
@@ -36,7 +36,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
             // The UAV is still or again on the ground so the only thing left is
             // to kill the process
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_internal_state_logger(),
                 "Received a takeoff command in an invalid state! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
@@ -46,7 +46,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
         case INTERNAL_STATE::RETURN_TO_HOME:
             // If the UAV is airborne and another takeoff command is received
             // something must have gone wrong so an RTH is triggered
-            RCLCPP_ERROR(this->get_logger(),
+            RCLCPP_ERROR(this->get_internal_state_logger(),
                          "Received a takeoff command while airborne! "
                          "Triggering RTH...");
             this->trigger_rth();
@@ -65,7 +65,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
             // This means an unrecoverable error has occurred such as missing
             // safety limits
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "There has been an unrecoverable error checking if the target "
                 "speed for takeoff was inside the safety limits! Exiting...");
         } else {
@@ -73,7 +73,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
             // deemed safe. Because the UAV is on the ground this results in a
             // process exit.
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "The target takeoff speed is outside the speed "
                 "safety limits (%f is not in (%f;%f]). The UAV should "
                 "not be airborne! Exiting...",
@@ -90,7 +90,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
     if (waypoint.relative_altitude_m ==
         interfaces::msg::Waypoint::INVALID_ALTITUDE) {
         RCLCPP_FATAL(
-            this->get_logger(),
+            this->get_command_handler_logger(),
             "Got an invalid waypoint for a takeoff command! Exiting...");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
@@ -103,14 +103,14 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
             // This means an unrecoverable error has occurred such as missing
             // safety limits
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "There has been an unrecoverable error checking if the target "
                 "waypoint for takeoff was inside the geofence! Exiting...");
         } else {
             // The waypoint is outside the geofence. The UAV is still on the
             // ground so the process will exit.
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "Got an waypoint with lat: %f°\tlon: %f°\trel. alt. %fm "
                 "for a takeoff that is outside the geofence! Exiting...",
                 waypoint.latitude_deg, waypoint.longitude_deg,
@@ -121,7 +121,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
         this->exit_process_on_error();
     }
 
-    RCLCPP_INFO(this->get_logger(), "Clear for takeoff");
+    RCLCPP_INFO(this->get_command_handler_logger(), "Clear for takeoff");
 
     // Mission item that describes the takeoff action
     mavsdk::Mission::MissionItem takeoff_mission_item;
@@ -144,7 +144,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
 
     // Execute mission
     if (!this->execute_mission_plan(takeoff_mission_plan)) {
-        RCLCPP_FATAL(this->get_logger(),
+        RCLCPP_FATAL(this->get_command_handler_logger(),
                      "There was an error triggering the waypoint mission! "
                      "Triggering RTH...");
         this->trigger_rth();
@@ -155,13 +155,13 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
     this->set_internal_state(INTERNAL_STATE::FLYING_MISSION);
 
     RCLCPP_INFO(
-        this->get_logger(),
+        this->get_command_handler_logger(),
         "Successfully triggered takeoff. Waiting for mission to complete.");
 }
 
 void FCCBridgeNode::start_flying_to_waypoint(
     const interfaces::msg::Waypoint &waypoint, const float speed_mps) {
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_INFO(this->get_command_handler_logger(),
                 "Received a command to fly to a waypoint at lat: %f°\tlon: "
                 "%f°\trel alt: %fm with speed: %fm/s",
                 waypoint.latitude_deg, waypoint.longitude_deg,
@@ -183,7 +183,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
             // The UAV is still or again on the ground so the only thing left is
             // to kill the process
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_internal_state_logger(),
                 "Received a takeoff command in an invalid state! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
@@ -193,7 +193,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
             // If the UAV is already waiting on a UAVCommand and another
             // waypoint command is received something must have gone wrong so an
             // RTH is triggered
-            RCLCPP_ERROR(this->get_logger(),
+            RCLCPP_ERROR(this->get_internal_state_logger(),
                          "Received a waypoint command while there is already a "
                          "command in progress! Triggering RTH...");
             this->trigger_rth();
@@ -212,7 +212,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
             // This means an unrecoverable error has occurred such as missing
             // safety limits
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "There has been an unrecoverable error checking if the target "
                 "speed for waypoint was inside the safety limits! Exiting...");
             // Exit the process
@@ -221,7 +221,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
             // In this case the target waypoint speed is outside the limits
             // deemed safe. This will result in an RTH
             RCLCPP_ERROR(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "The target waypoint speed is outside the speed safety limits "
                 "(%f is not in (%f;%f]). Triggering RTH...",
                 static_cast<double>(speed_mps),
@@ -236,7 +236,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
     if (waypoint.relative_altitude_m ==
         interfaces::msg::Waypoint::INVALID_ALTITUDE) {
         RCLCPP_ERROR(
-            this->get_logger(),
+            this->get_command_handler_logger(),
             "Got an invalid waypoint for a takeoff command! Triggering RTH...");
         this->trigger_rth();
         return;
@@ -249,7 +249,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
             // This means an unrecoverable error has occurred such as missing
             // safety limits
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "There has been an unrecoverable error checking if the target "
                 "waypoint was inside the geofence! Exiting...");
             // Exit the process
@@ -257,7 +257,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
         } else {
             // The waypoint is outside the geofence. This will trigger an RTH.
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "Got an waypoint with lat: %f°\tlon: %f°\trel. alt. %fm to fly "
                 "to that is outside the geofence! Triggering RTH...",
                 waypoint.latitude_deg, waypoint.longitude_deg,
@@ -267,7 +267,8 @@ void FCCBridgeNode::start_flying_to_waypoint(
         }
     }
 
-    RCLCPP_INFO(this->get_logger(), "Clear for fly to waypoint");
+    RCLCPP_INFO(this->get_command_handler_logger(),
+                "Clear for fly to waypoint");
 
     // Mission item that describes the fly to waypoint action
     mavsdk::Mission::MissionItem fly_to_waypoint_mission_item;
@@ -293,9 +294,10 @@ void FCCBridgeNode::start_flying_to_waypoint(
 
     // Execute mission
     if (!this->execute_mission_plan(fly_to_waypoint_mission_plan)) {
-        RCLCPP_FATAL(this->get_logger(),
+        RCLCPP_FATAL(this->get_command_handler_logger(),
                      "There was an error triggering the fly to waypoint "
                      "mission! Exiting...");
+        // TODO: Change to RTH
         this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
     }
@@ -303,14 +305,14 @@ void FCCBridgeNode::start_flying_to_waypoint(
     // Set state to waiting for mission
     this->set_internal_state(INTERNAL_STATE::FLYING_MISSION);
 
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_INFO(this->get_command_handler_logger(),
                 "Successfully triggered fly to waypoint. Waiting for mission "
                 "to complete.");
 }
 
 void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
                                   const float speed_mps) {
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_INFO(this->get_command_handler_logger(),
                 "Received a command to land at waypoint at lat: %f°\tlon: "
                 "%f°\trel alt: %fm with speed: %fm/s",
                 waypoint.latitude_deg, waypoint.longitude_deg,
@@ -332,7 +334,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
             // The UAV is still or again on the ground so the only thing left is
             // to kill the process
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_internal_state_logger(),
                 "Received a takeoff command in an invalid state! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
@@ -342,7 +344,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
             // If the UAV is already waiting on a UAVCommand and another
             // command is received something must have gone wrong so an RTH is
             // triggered
-            RCLCPP_ERROR(this->get_logger(),
+            RCLCPP_ERROR(this->get_internal_state_logger(),
                          "Received a waypoint command while there is already a "
                          "command in progress! Triggering RTH...");
             this->trigger_rth();
@@ -361,7 +363,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
             // This means an unrecoverable error has occurred such as missing
             // safety limits
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "There has been an unrecoverable error checking if the target "
                 "speed for waypoint was inside the safety limits! Exiting...");
             // Exit the process
@@ -370,7 +372,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
             // In this case the target waypoint speed is outside the limits
             // deemed safe. This will result in an RTH
             RCLCPP_ERROR(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "The target waypoint speed is outside the speed safety limits "
                 "(%f is not in (%f;%f]). Triggering RTH...",
                 static_cast<double>(speed_mps),
@@ -385,7 +387,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
     if (waypoint.relative_altitude_m ==
         interfaces::msg::Waypoint::INVALID_ALTITUDE) {
         RCLCPP_ERROR(
-            this->get_logger(),
+            this->get_command_handler_logger(),
             "Got an invalid waypoint for a takeoff command! Triggering RTH...");
         this->trigger_rth();
         return;
@@ -398,7 +400,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
             // This means an unrecoverable error has occurred such as missing
             // safety limits
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "There has been an unrecoverable error checking if the target "
                 "waypoint was inside the geofence! Exiting...");
             // Exit the process
@@ -406,7 +408,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
         } else {
             // The waypoint is outside the geofence. This will trigger an RTH.
             RCLCPP_FATAL(
-                this->get_logger(),
+                this->get_command_handler_logger(),
                 "Got an waypoint with lat: %f°\tlon: %f°\trel. alt. %fm to fly "
                 "to that is outside the geofence! Triggering RTH...",
                 waypoint.latitude_deg, waypoint.longitude_deg,
@@ -416,7 +418,8 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
         }
     }
 
-    RCLCPP_INFO(this->get_logger(), "Clear for land at waypoint");
+    RCLCPP_INFO(this->get_command_handler_logger(),
+                "Clear for land at waypoint");
 
     // Mission item that describes the fly to waypoint action
     mavsdk::Mission::MissionItem land_at_waypoint_mission_item;
@@ -443,26 +446,28 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
     // Execute mission
     if (!this->execute_mission_plan(land_at_waypoint_mission_plan)) {
         RCLCPP_FATAL(
-            this->get_logger(),
+            this->get_command_handler_logger(),
             "There was an error triggering the land mission! Exiting...");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
+        // TODO: Change to RTH
     }
 
     // Set state to waiting for mission
     this->set_internal_state(INTERNAL_STATE::LANDING);
 
-    RCLCPP_INFO(this->get_logger(),
+    RCLCPP_INFO(this->get_command_handler_logger(),
                 "Successfully triggered land at waypoint. Waiting for mission "
                 "to complete.");
 }
 
 void FCCBridgeNode::initiate_rth() {
-    RCLCPP_DEBUG(this->get_logger(), "Initiating RTH");
+    RCLCPP_DEBUG(this->get_command_handler_logger(), "Initiating RTH");
 
     this->trigger_rth();
 
-    RCLCPP_INFO(this->get_logger(), "Successfully triggered an RTH");
+    RCLCPP_INFO(this->get_command_handler_logger(),
+                "Successfully triggered an RTH");
 }
 
 }  // namespace fcc_bridge

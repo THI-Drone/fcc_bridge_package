@@ -7,7 +7,7 @@
 namespace fcc_bridge {
 
 void FCCBridgeNode::send_gps_telemetry() {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Getting updated GPS telemetry and publishing the update");
 
     this->get_gps_telemetry();
@@ -29,11 +29,12 @@ void FCCBridgeNode::send_gps_telemetry() {
     // Publish the message
     this->gps_position_publisher->publish(gps_msg);
 
-    RCLCPP_DEBUG(this->get_logger(), "Published current GPS position");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Published current GPS position");
 }
 
 void FCCBridgeNode::send_flight_state() {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Getting updated flight state and publishing the update");
 
     // Update flight state
@@ -47,14 +48,17 @@ void FCCBridgeNode::send_flight_state() {
     if (this->get_internal_state() == INTERNAL_STATE::WAITING_FOR_ARM &&
         this->last_fcc_flight_mode.value() ==
             mavsdk::Telemetry::FlightMode::Ready) {
-        RCLCPP_INFO(this->get_logger(),
+        RCLCPP_INFO(this->get_internal_state_logger(),
                     "Drone is armed and ready for takeoff. Switching to ARMED "
                     "state and sending MissionStart message");
+
         this->set_internal_state(INTERNAL_STATE::ARMED);
         interfaces::msg::MissionStart mission_start_msg;
         mission_start_msg.sender_id = this->get_name();
         this->mission_start_publisher->publish(mission_start_msg);
-        RCLCPP_DEBUG(this->get_logger(), "MissionStart message send");
+
+        RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                     "MissionStart message send");
     }
 
     // In this case retrieving the flight state was successful meaning that it
@@ -70,11 +74,12 @@ void FCCBridgeNode::send_flight_state() {
     // Publish the message
     this->flight_state_publisher->publish(flight_state_msg);
 
-    RCLCPP_DEBUG(this->get_logger(), "Published current flight state");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Published current flight state");
 }
 
 void FCCBridgeNode::send_battery_state() {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Getting updated battery state and publishing the update");
 
     // Update battery state
@@ -102,11 +107,12 @@ void FCCBridgeNode::send_battery_state() {
     // Publish the message
     this->battery_state_publisher->publish(battery_state_msg);
 
-    RCLCPP_DEBUG(this->get_logger(), "Published current battery state");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Published current battery state");
 }
 
 void FCCBridgeNode::send_rc_state() {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Getting updated RC state and publishing the update");
 
     // Update RC state
@@ -129,11 +135,12 @@ void FCCBridgeNode::send_rc_state() {
     // Publish the message
     this->rc_state_publisher->publish(rc_state_msg);
 
-    RCLCPP_DEBUG(this->get_logger(), "Published current RC state");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Published current RC state");
 }
 
 void FCCBridgeNode::send_euler_angle() {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Getting updated euler angle and publishing the update");
 
     // Update euler angle
@@ -151,11 +158,12 @@ void FCCBridgeNode::send_euler_angle() {
     // Publish the message
     this->euler_angle_publisher->publish(euler_angle_msg);
 
-    RCLCPP_DEBUG(this->get_logger(), "Published current euler angle");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Published current euler angle");
 }
 
 void FCCBridgeNode::send_mission_progress() {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Getting updated mission progress and publishing the update");
 
     // Update mission progress
@@ -165,7 +173,7 @@ void FCCBridgeNode::send_mission_progress() {
     if (this->last_mission_progress->first !=
         mavsdk::Mission::Result::Success) {
         // Trigger an RTH on any error
-        RCLCPP_ERROR(this->get_logger(),
+        RCLCPP_ERROR(this->get_safety_logger(),
                      "Failed to get mission progress! Triggering RTH...");
         this->trigger_rth();
         return;
@@ -192,7 +200,7 @@ void FCCBridgeNode::send_mission_progress() {
             case INTERNAL_STATE::WAITING_FOR_COMMAND:
             case INTERNAL_STATE::RETURN_TO_HOME:
             case INTERNAL_STATE::LANDED:
-                RCLCPP_ERROR(this->get_logger(),
+                RCLCPP_ERROR(this->get_internal_state_logger(),
                              "Getting the mission progress in a non mission "
                              "mode is invalid! Triggering RTH...");
                 this->trigger_rth();
@@ -213,7 +221,8 @@ void FCCBridgeNode::send_mission_progress() {
                         static_cast<int>(this->get_internal_state())));
         }
         mission_progress_msg.progress = 1.0;
-        RCLCPP_INFO(this->get_logger(), "Mission finished successfully");
+        RCLCPP_INFO(this->get_internal_state_logger(),
+                    "Mission finished successfully");
     } else {
         mission_progress_msg.progress = 0.0;
     }
@@ -221,11 +230,12 @@ void FCCBridgeNode::send_mission_progress() {
     // Publish the message
     this->mission_progress_publisher->publish(mission_progress_msg);
 
-    RCLCPP_DEBUG(this->get_logger(), "Published current mission progress");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Published current mission progress");
 }
 
 void FCCBridgeNode::send_uav_health() {
-    RCLCPP_DEBUG(this->get_logger(),
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Getting updated uav health and publishing the update");
 
     // Update UAV health
@@ -233,9 +243,6 @@ void FCCBridgeNode::send_uav_health() {
 
     // Verify the health depending on the internal state
     this->check_uav_health();
-
-    RCLCPP_INFO(this->get_logger(), "UAV config is ok in the current state %s",
-                this->internal_state_to_str());
 
     // In this case retrieving the UAV health was successful meaning that it
     // can be safely accessed.
@@ -259,7 +266,8 @@ void FCCBridgeNode::send_uav_health() {
     // Publish the message
     this->uav_health_publisher->publish(uav_health_msg);
 
-    RCLCPP_DEBUG(this->get_logger(), "Published current UAV health");
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Published current UAV health");
 }
 
 }  // namespace fcc_bridge
