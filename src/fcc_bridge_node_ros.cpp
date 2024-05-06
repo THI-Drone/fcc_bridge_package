@@ -132,6 +132,13 @@ void FCCBridgeNode::setup_ros() {
             std::bind(&FCCBridgeNode::mission_finished_cb, this,
                       std::placeholders::_1));
 
+    // Create SafetyLimits subscriber
+    this->safety_limits_subscriber =
+        this->create_subscription<interfaces::msg::SafetyLimits>(
+            common_lib::topic_names::SafetyLimits, 10,
+            std::bind(&FCCBridgeNode::safety_limits_cb, this,
+                      std::placeholders::_1));
+
     // Setup 5Hz timer to get telemetry from the FCC
     this->fcc_telemetry_timer_5hz = this->create_wall_timer(
         FCC_TELEMETRY_PERIOD_5HZ,
@@ -315,6 +322,38 @@ void FCCBridgeNode::mission_finished_cb(
         this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
     }
+}
+
+void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
+    RCLCPP_DEBUG(this->get_logger(), "Received a new SafetyLimits message");
+    RCLCPP_WARN(this->get_logger(), "Safety limits not fully implemented");
+    // TODO: Sender check
+
+    // Safety limits to populate
+    struct safety_limits safety_limits;
+
+    // Validate max_speed_m_s
+    if (msg.max_speed_m_s <= 0 ||
+        safety_limits::HARD_MAX_SPEED_LIMIT_MPS < msg.max_speed_m_s) {
+        RCLCPP_WARN(
+            this->get_logger(),
+            "Got invalid speed: %f outside of range (0;%f]. Using Internal "
+            "limit: %f",
+            static_cast<double>(msg.max_speed_m_s),
+            static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS),
+            static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS));
+        safety_limits.max_speed_mps = safety_limits::HARD_MAX_SPEED_LIMIT_MPS;
+    } else {
+        safety_limits.max_speed_mps = msg.max_speed_m_s;
+    }
+
+    // Actually set safety limits
+    this->safety_limits = safety_limits;
+
+    RCLCPP_INFO(this->get_logger(), "Set safety limits");
+
+    // Go into WAITING_FOR_ARM state
+    this->set_internal_state(INTERNAL_STATE::WAITING_FOR_ARM);
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {

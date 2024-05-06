@@ -31,6 +31,7 @@
 #include "interfaces/msg/mission_start.hpp"
 #include "interfaces/msg/pose.hpp"
 #include "interfaces/msg/rc_state.hpp"
+#include "interfaces/msg/safety_limits.hpp"
 #include "interfaces/msg/uav_command.hpp"
 #include "interfaces/msg/uav_health.hpp"
 #include "interfaces/msg/uav_waypoint_command.hpp"
@@ -183,6 +184,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
     rclcpp::Subscription<interfaces::msg::MissionFinished>::SharedPtr
         mission_finished_subscriber; /**< Subscriber for mission finished
                                         messages */
+    rclcpp::Subscription<interfaces::msg::SafetyLimits>::SharedPtr
+        safety_limits_subscriber; /**< Subscriber for safety limit messages */
 
     // ROS timer
     rclcpp::TimerBase::SharedPtr
@@ -502,6 +505,18 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Implemented in src/fcc_bridge_node_ros.cpp
      */
     void mission_finished_cb(const interfaces::msg::MissionFinished &msg);
+    /**
+     * @brief Callback function to be triggered when a new SafetyLimits message
+     * is received
+     *
+     * @param msg The received message
+     *
+     * Stores the received safety limits in FCCBridgeNode::safety_limits and
+     * enforces the internal hard limits
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
+     */
+    void safety_limits_cb(const interfaces::msg::SafetyLimits &msg);
     /**
      * @brief Callback function for the 5Hz telemetry timer
      *
