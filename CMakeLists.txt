@@ -52,7 +52,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
           -fstack-protector-strong
           -fstack-clash-protection
           -fPIE
-          -fcf-protection=full
 
           -Wl,-z,relro
           -Wl,-z,now
