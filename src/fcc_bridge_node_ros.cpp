@@ -330,7 +330,7 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
     // TODO: Sender check
 
     // Safety limits to populate
-    struct safety_limits safety_limits;
+    struct safety_limits local_safety_limits;
 
     // Validate max_speed_m_s
     if (msg.max_speed_m_s <= 0 ||
@@ -342,13 +342,13 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
             static_cast<double>(msg.max_speed_m_s),
             static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS),
             static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS));
-        safety_limits.max_speed_mps = safety_limits::HARD_MAX_SPEED_LIMIT_MPS;
+        local_safety_limits.max_speed_mps = safety_limits::HARD_MAX_SPEED_LIMIT_MPS;
     } else {
-        safety_limits.max_speed_mps = msg.max_speed_m_s;
+        local_safety_limits.max_speed_mps = msg.max_speed_m_s;
     }
 
     // Actually set safety limits
-    this->safety_limits = safety_limits;
+    this->safety_limits = local_safety_limits;
 
     RCLCPP_INFO(this->get_logger(), "Set safety limits");
 

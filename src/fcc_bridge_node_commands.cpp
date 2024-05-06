@@ -19,7 +19,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
                 "Received a command to takeoff to lat: %f°\tlon: %f°\trel alt: "
                 "%fm with speed: %fm/s",
                 waypoint.latitude_deg, waypoint.longitude_deg,
-                waypoint.relative_altitude_m, static_cast<double>(speed_mps));
+                static_cast<double>(waypoint.relative_altitude_m), static_cast<double>(speed_mps));
 
     // Verify that the uav is in the right state
     switch (this->get_internal_state()) {
@@ -113,7 +113,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
                 "Got an waypoint with lat: %f°\tlon: %f°\trel. alt. %fm "
                 "for a takeoff that is outside the geofence! Exiting...",
                 waypoint.latitude_deg, waypoint.longitude_deg,
-                waypoint.relative_altitude_m);
+                static_cast<double>(waypoint.relative_altitude_m));
             this->set_internal_state(INTERNAL_STATE::ERROR);
         }
         // Exit the process
@@ -164,7 +164,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
                 "Received a command to fly to a waypoint at lat: %f°\tlon: "
                 "%f°\trel alt: %fm with speed: %fm/s",
                 waypoint.latitude_deg, waypoint.longitude_deg,
-                waypoint.relative_altitude_m, static_cast<double>(speed_mps));
+                static_cast<double>(waypoint.relative_altitude_m), static_cast<double>(speed_mps));
 
     // Verify that the uav is in the right state
     switch (this->get_internal_state()) {
@@ -259,7 +259,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
                 "Got an waypoint with lat: %f°\tlon: %f°\trel. alt. %fm to fly "
                 "to that is outside the geofence! Triggering RTH...",
                 waypoint.latitude_deg, waypoint.longitude_deg,
-                waypoint.relative_altitude_m);
+                static_cast<double>(waypoint.relative_altitude_m));
             this->trigger_rth();
             return;
         }
@@ -312,7 +312,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
                 "Received a command to land at waypoint at lat: %f°\tlon: "
                 "%f°\trel alt: %fm with speed: %fm/s",
                 waypoint.latitude_deg, waypoint.longitude_deg,
-                waypoint.relative_altitude_m, static_cast<double>(speed_mps));
+                static_cast<double>(waypoint.relative_altitude_m), static_cast<double>(speed_mps));
 
     // Verify that the uav is in the right state
     switch (this->get_internal_state()) {
@@ -407,7 +407,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
                 "Got an waypoint with lat: %f°\tlon: %f°\trel. alt. %fm to fly "
                 "to that is outside the geofence! Triggering RTH...",
                 waypoint.latitude_deg, waypoint.longitude_deg,
-                waypoint.relative_altitude_m);
+                static_cast<double>(waypoint.relative_altitude_m));
             this->trigger_rth();
             return;
         }

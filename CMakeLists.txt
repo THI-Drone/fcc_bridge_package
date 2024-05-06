@@ -8,8 +8,114 @@ set(JSON_ImplicitConversions OFF) # deactivate implicit type conversion
 
 project(fcc_bridge)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wdouble-promotion -Wformat=2 -Wswitch-enum -Wswitch-default)
+# Compiler flags courtesy of https://airbus-seclab.github.io/c-compiler-security/
+if(CMAKE_COMPILER_IS_GNUCXX)
+  add_compile_options(
+          -Wall
+          -Wextra
+          -Wpedantic
+          -Werror
+          -Wdouble-promotion
+          -Wformat=2
+          -Wswitch-enum
+          -Wswitch-default
+          -Wformat-overflow=2
+          -Wformat-truncation=2
+          -Wformat-security
+          -Wnull-dereference
+          -Wstack-protector
+          -Wtrampolines
+          -Walloca
+          -Wvla
+          -Warray-bounds=2
+          -Wimplicit-fallthrough=3
+          -Wshift-overflow=2
+          -Wcast-qual
+          -Wstringop-overflow=4
+          -Wconversion
+          -Warith-conversion
+          -Wlogical-op
+          -Wduplicated-cond
+          -Wduplicated-branches
+          -Wformat-signedness
+          -Wshadow
+          -Wstrict-overflow=5
+          -Wundef
+          -Wstack-usage=1000000
+          -Wcast-align=strict
+          -Wlogical-op
+          -Wduplicated-cond
+          -Wduplicated-branches
+          -Wformat-signedness
+          -Wcast-align=strict
+
+          -fstack-protector-strong
+          -fstack-clash-protection
+          -fPIE
+          -fcf-protection=full
+
+          -Wl,-z,relro
+          -Wl,-z,now
+          -Wl,-z,noexecstack
+          -Wl,-z,separate-code
+  )
+
+  add_compile_definitions(D_FORTIFY_SOURCE=2)
+
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+
+  message(WARNING "Clang support untested")
+
+  add_compile_definitions(
+          -Werror
+          -Walloca
+          -Wcast-qual
+          -Wconversion
+          -Wformat=2
+          -Wformat-security
+          -Wnull-dereference
+          -Wstack-protector
+          -Wvla -Warray-bounds
+          -Warray-bounds-pointer-arithmetic
+          -Wassign-enum
+          -Wbad-function-cast
+          -Wconditional-uninitialized
+          -Wconversion
+          -Wfloat-equal
+          -Wformat-type-confusion
+          -Widiomatic-parentheses
+          -Wimplicit-fallthrough
+          -Wloop-analysis
+          -Wpointer-arith
+          -Wshift-sign-overflow
+          -Wshorten-64-to-32
+          -Wswitch-enum
+          -Wtautological-constant-in-range-compare
+          -Wunreachable-code-aggressive
+          -Wthread-safety
+          -Wthread-safety-beta
+          -Wcomma
+
+          -fstack-protector-strong
+          -fsanitize=safe-stack
+          -fPIE
+          -fstack-clash-protection
+          -fsanitize=bounds
+          -fsanitize-undefined-trap-on-error
+          -fsanitize=cfi
+
+          -Wl,-z,relro
+          -Wl,-z,now
+          -Wl,-z,noexecstack
+          -Wl,-z,separate-code
+  )
+
+  add_compile_definitions(D_FORTIFY_SOURCE=3)
+
+else()
+
+message(FATAL_ERROR "Unsupported compiler")
+
 endif()
 
 # find dependencies

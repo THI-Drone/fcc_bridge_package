@@ -31,13 +31,13 @@ struct sys_id_map_entry {
     /**
      * @brief Constructor to create an instance of this struct in a well defined
      * manner
-     * @param MAVLINK_SYS_ID The MAVLink System ID to use
+     * @param mavlink_sys_id The MAVLink System ID to use
      * @param IS_SIMULATOR_TARGET If the selected target is a simulator
      */
-    constexpr sys_id_map_entry(const u8 MAVLINK_SYS_ID,
-                               const bool IS_SIMULATOR_TARGET)
-        : MAVLINK_SYS_ID(MAVLINK_SYS_ID),
-          IS_SIMULATOR_TARGET(IS_SIMULATOR_TARGET) {}
+    constexpr sys_id_map_entry(const u8 mavlink_sys_id,
+                               const bool is_simulator_target)
+        : MAVLINK_SYS_ID(mavlink_sys_id),
+          IS_SIMULATOR_TARGET(is_simulator_target) {}
 };
 
 // Map to get the MAVLink System id for the selected
