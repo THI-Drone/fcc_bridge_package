@@ -342,7 +342,8 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
             static_cast<double>(msg.max_speed_m_s),
             static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS),
             static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS));
-        local_safety_limits.max_speed_mps = safety_limits::HARD_MAX_SPEED_LIMIT_MPS;
+        local_safety_limits.max_speed_mps =
+            safety_limits::HARD_MAX_SPEED_LIMIT_MPS;
     } else {
         local_safety_limits.max_speed_mps = msg.max_speed_m_s;
     }
