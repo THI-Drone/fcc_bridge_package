@@ -4,7 +4,6 @@ include(FetchContent)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(JSON_ImplicitConversions OFF) # deactivate implicit type conversion
 
 project(fcc_bridge)
 
@@ -120,7 +119,6 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(nlohmann_json REQUIRED)  # JSON library
 find_package(rclcpp REQUIRED)
 find_package(interfaces REQUIRED)
 find_package(common_package REQUIRED)
@@ -142,7 +140,7 @@ target_link_libraries(fcc_bridge
         MAVSDK::mavsdk
 )
 
-ament_target_dependencies(fcc_bridge rclcpp interfaces common_package nlohmann_json)
+ament_target_dependencies(fcc_bridge rclcpp interfaces common_package)
 
 install (TARGETS
   fcc_bridge
