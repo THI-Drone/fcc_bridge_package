@@ -25,6 +25,34 @@ void FCCBridgeNode::mavsdk_rth_cb(const mavsdk::Action::Result &result) {
     // TODO: Disarm
 }
 
+void FCCBridgeNode::validate_safety_limits() {
+    RCLCPP_DEBUG(this->get_safety_logger(), "Validating safety limits");
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                     "Safety limit validation is not fully implemented");
+
+    if (!this->safety_limits.has_value()) {
+        RCLCPP_ERROR(this->get_safety_logger(),
+                     "Safety limits is not initialized");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        return;
+    }
+
+    // Check speed limit
+    if (this->safety_limits->max_speed_mps <= 0 ||
+        safety_limits::HARD_MAX_SPEED_LIMIT_MPS <
+            this->safety_limits->max_speed_mps) {
+        RCLCPP_WARN(
+            this->get_safety_logger(),
+            "Got invalid speed: %f outside of range (0;%f]. Using Internal "
+            "limit: %f",
+            static_cast<double>(this->safety_limits->max_speed_mps),
+            static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS),
+            static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS));
+        this->safety_limits->max_speed_mps =
+            safety_limits::HARD_MAX_SPEED_LIMIT_MPS;
+    }
+}
+
 void FCCBridgeNode::check_gps_state() {
     RCLCPP_DEBUG(this->get_safety_logger(), "Checking GPS state");
 

@@ -367,6 +367,17 @@ class FCCBridgeNode : public common_lib::CommonNode {
 
    protected:
     /**
+     * @brief Validates that FCCBridgeNode::safety_limits contains safe values.
+     *
+     * Enforces hard limits
+     *
+     * If there is something that can not be corrected set
+     * FCCBridgeNode::internal_state to INTERNAL_STATE::ERROR
+     *
+     * Implemented in src/fcc_bridge_node_safety.cpp
+     */
+    void validate_safety_limits();
+    /**
      * @brief Checks if the current GPS Fix type is adequate for the current
      * internal state
      *

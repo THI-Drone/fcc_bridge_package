@@ -333,31 +333,16 @@ void FCCBridgeNode::mission_finished_cb(
 void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Received a new SafetyLimits message");
-    RCLCPP_WARN(this->get_safety_logger(),
-                "Safety limits not fully implemented");
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                     "Safety limits not fully implemented");
     // TODO: Sender check
 
-    // Safety limits to populate
-    struct safety_limits local_safety_limits;
+    // Initialize safety limits
+    this->safety_limits = {};
 
-    // Validate max_speed_m_s
-    if (msg.max_speed_m_s <= 0 ||
-        safety_limits::HARD_MAX_SPEED_LIMIT_MPS < msg.max_speed_m_s) {
-        RCLCPP_WARN(
-            this->get_safety_logger(),
-            "Got invalid speed: %f outside of range (0;%f]. Using Internal "
-            "limit: %f",
-            static_cast<double>(msg.max_speed_m_s),
-            static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS),
-            static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS));
-        local_safety_limits.max_speed_mps =
-            safety_limits::HARD_MAX_SPEED_LIMIT_MPS;
-    } else {
-        local_safety_limits.max_speed_mps = msg.max_speed_m_s;
-    }
+    this->safety_limits->max_speed_mps = msg.max_speed_m_s;
 
-    // Actually set safety limits
-    this->safety_limits = local_safety_limits;
+    this->validate_safety_limits();
 
     RCLCPP_INFO(this->get_safety_logger(), "Set safety limits");
 
