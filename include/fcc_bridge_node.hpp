@@ -1055,6 +1055,19 @@ class FCCBridgeNode : public common_lib::CommonNode {
     static char const *mavsdk_action_result_to_str(
         const mavsdk::Action::Result &result);
     /**
+     * @brief Conversion function to get the string representation of a
+     * mavsdk::Telemetry::FixType
+     *
+     * @param result The FixType to convert
+     * @return The string representation of the FixType
+     *
+     * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
+     */
+    static char const *mavsdk_fix_type_to_str(
+        const mavsdk::Telemetry::FixType &fix_type);
+    /**
      * @brief Conversion function to get the string representation of the
      * current value of FCCBridgeNode::internal_state
      *

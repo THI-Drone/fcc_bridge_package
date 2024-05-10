@@ -272,12 +272,15 @@ void FCCBridgeNode::get_gps_telemetry() {
     RCLCPP_INFO(
         this->get_fcc_telemetry_logger(),
         "Current position of UAV: Lat: %f°\tLon: %f°\tAbsolute attitude: "
-        "%fm\trelative attitude: %fm\tNo. of satellites: %" PRId32,
+        "%fm\trelative attitude: %fm\tNo. of satellites: %" PRId32
+        "\tFix type: %s",
         this->last_fcc_position->latitude_deg,
         this->last_fcc_position->longitude_deg,
         static_cast<double>(this->last_fcc_position->absolute_altitude_m),
         static_cast<double>(this->last_fcc_position->relative_altitude_m),
-        this->last_fcc_gps_info->num_satellites);  // TODO: Print out fix type
+        this->last_fcc_gps_info->num_satellites,
+        FCCBridgeNode::mavsdk_fix_type_to_str(
+            this->last_fcc_gps_info->fix_type));
 }
 
 void FCCBridgeNode::get_flight_state() {

@@ -213,6 +213,7 @@ void FCCBridgeNode::send_mission_progress() {
                 // This means we landed
                 this->set_internal_state(INTERNAL_STATE::LANDED);
                 // TODO: Trigger timer to end node after 1 minute
+                // TODO: Disarm
                 break;
             default:
                 throw std::runtime_error(

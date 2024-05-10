@@ -21,6 +21,8 @@ void FCCBridgeNode::mavsdk_rth_cb(const mavsdk::Action::Result &result) {
     RCLCPP_INFO(this->get_mavsdk_interface_logger(),
                 "Return to home successful!");
     this->set_internal_state(INTERNAL_STATE::LANDED);
+
+    // TODO: Disarm
 }
 
 void FCCBridgeNode::check_gps_state() {

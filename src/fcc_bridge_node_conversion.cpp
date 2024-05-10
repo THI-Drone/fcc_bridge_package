@@ -217,6 +217,23 @@ const char *FCCBridgeNode::mavsdk_action_result_to_str(
     }
 }
 
+const char *FCCBridgeNode::mavsdk_fix_type_to_str(
+    const mavsdk::Telemetry::FixType &fix_type) {
+    switch (fix_type) {
+        ENUM_TO_STR(mavsdk::Telemetry::FixType, NoGps);
+        ENUM_TO_STR(mavsdk::Telemetry::FixType, NoFix);
+        ENUM_TO_STR(mavsdk::Telemetry::FixType, Fix2D);
+        ENUM_TO_STR(mavsdk::Telemetry::FixType, Fix3D);
+        ENUM_TO_STR(mavsdk::Telemetry::FixType, FixDgps);
+        ENUM_TO_STR(mavsdk::Telemetry::FixType, RtkFloat);
+        ENUM_TO_STR(mavsdk::Telemetry::FixType, RtkFixed);
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid mavsdk::Telemetry::FixType value: ") +
+                std::to_string(static_cast<int>(fix_type)));
+    }
+}
+
 const char *FCCBridgeNode::internal_state_to_str() const {
     switch (this->get_internal_state()) {
         ENUM_TO_STR(INTERNAL_STATE, STARTING_UP);
