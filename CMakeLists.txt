@@ -48,6 +48,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
           -Wduplicated-branches
           -Wformat-signedness
           -Wcast-align=strict
+          -Wfloat-equal
 
           -fstack-protector-strong
           -fstack-clash-protection

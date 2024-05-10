@@ -218,12 +218,31 @@ bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
 
+    // Check that the waypoint values are finite floats
+    if(!std::isfinite(latitude_deg)) {
+        RCLCPP_WARN(this->get_safety_logger(), "Latitude is not a finite number");
+        return false;
+    }
+    if(!std::isfinite(longitude_deg)) {
+        RCLCPP_WARN(this->get_safety_logger(), "Longitude is not a finite number");
+        return false;
+    }
+    if(!std::isfinite(relative_altitude_m)) {
+        RCLCPP_WARN(this->get_safety_logger(), "Altitude is not a finite number");
+        return false;
+    }
+
     return true;  // TODO: implement actual geofence check
 }
 
 bool FCCBridgeNode::check_speed(const float speed_mps) {
     (void)speed_mps;
     RCLCPP_WARN_ONCE(this->get_safety_logger(), "Speed check not implemented!");
+    // Check that the speed is a finite float
+    if(!std::isfinite(speed_mps)) {
+        RCLCPP_WARN(this->get_safety_logger(), "Latitude is not a finite number");
+        return false;
+    }
     return true;
 }
 
