@@ -421,7 +421,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
         case INTERNAL_STATE::RETURN_TO_HOME:
         case INTERNAL_STATE::LANDED:
             RCLCPP_INFO(this->get_internal_state_logger(),
-                         "Not in a state to publish mission progress");
+                        "Not in a state to publish mission progress");
             break;
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
