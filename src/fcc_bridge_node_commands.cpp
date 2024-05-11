@@ -87,8 +87,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
     }
 
     // Check that the waypoint is valid
-    if (0.f <= std::abs(waypoint.relative_altitude_m -
-                        interfaces::msg::Waypoint::INVALID_ALTITUDE)) {
+    if (FCCBridgeNode::check_waypoint_invalid(waypoint)) {
         RCLCPP_FATAL(
             this->get_command_handler_logger(),
             "Got an invalid waypoint for a takeoff command! Exiting...");
@@ -233,8 +232,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
     }
 
     // Check that the waypoint is valid
-    if (0.f <= std::abs(waypoint.relative_altitude_m -
-                        interfaces::msg::Waypoint::INVALID_ALTITUDE)) {
+    if (FCCBridgeNode::check_waypoint_invalid(waypoint)) {
         RCLCPP_ERROR(
             this->get_command_handler_logger(),
             "Got an invalid waypoint for a takeoff command! Triggering RTH...");
@@ -384,8 +382,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
     }
 
     // Check that the waypoint is valid
-    if (0.f >= std::abs(waypoint.relative_altitude_m -
-                        interfaces::msg::Waypoint::INVALID_ALTITUDE)) {
+    if (FCCBridgeNode::check_waypoint_invalid(waypoint)) {
         RCLCPP_ERROR(
             this->get_command_handler_logger(),
             "Got an invalid waypoint for a takeoff command! Triggering RTH...");

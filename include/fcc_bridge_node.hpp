@@ -517,6 +517,30 @@ class FCCBridgeNode : public common_lib::CommonNode {
                                              position.relative_altitude_m);
     }
     /**
+     * @brief Checks if the waypoints altitude is valid
+     *
+     * @param relative_altitude The relative altitude of the waypoint
+     *
+     * @return True if the waypoint is invalid
+     */
+    constexpr static bool check_waypoint_invalid(
+        const float relative_altitude) {
+        return 0.f >= std::abs(relative_altitude -
+                               interfaces::msg::Waypoint::INVALID_ALTITUDE);
+    }
+    /**
+     * @brief Checks if the waypoints is valid
+     *
+     * @param waypoint The waypoint to check
+     *
+     * @return True if the waypoint is invalid
+     */
+    constexpr static bool check_waypoint_invalid(
+        const interfaces::msg::Waypoint &waypoint) {
+        return FCCBridgeNode::check_waypoint_invalid(
+            waypoint.relative_altitude_m);
+    }
+    /**
      * @brief Checks whether the given speed is inside the valid range
      * (0;MAX_SPEED]
      *
