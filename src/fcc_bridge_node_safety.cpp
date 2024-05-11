@@ -78,11 +78,11 @@ void FCCBridgeNode::check_gps_state() {
     }
 
     switch (this->get_internal_state()) {
-            // This function should never be called in these states
         case INTERNAL_STATE::ERROR:
             // This should never happen, as the process exits on ERROR state
             throw std::runtime_error(std::string(__func__) +
                                      " called while in ERROR state");
+            // This function should never be called in these states
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
             RCLCPP_FATAL(
@@ -128,9 +128,36 @@ void FCCBridgeNode::check_gps_state() {
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
 
-    // Check that the current coordinate is inside the geofence.
-    if (!this->check_point_in_geofence(this->last_fcc_position.value())) {
-        // The current point is outside the geofence. If we are in
+    switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
+            // This function should never be called in these states
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+            RCLCPP_FATAL(this->get_internal_state_logger(),
+                         "In an invalid state to check GPS! Exiting...");
+            this->exit_process_on_error();
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::LANDED:
+            // Check that the current coordinate is inside the geofence.
+            if (!this->check_point_in_geofence(
+                    this->last_fcc_position.value())) {
+                // The current point is outside the geofence.
+                // TODO
+            }
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
     }
 
     RCLCPP_INFO(this->get_safety_logger(), "GPS state is O.K.");
