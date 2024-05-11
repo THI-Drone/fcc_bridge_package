@@ -183,6 +183,7 @@ if(BUILD_TESTING)
           test/main.cpp
 
           # Safety function tests
+          test/safety/test_check_telemetry_result.cpp
           test/safety/test_mavsdk_rth_cb.cpp
   )
 
