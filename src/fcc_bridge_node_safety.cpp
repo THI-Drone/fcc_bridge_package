@@ -87,7 +87,7 @@ void FCCBridgeNode::check_gps_state() {
         case INTERNAL_STATE::ROS_SET_UP:
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
-                "In an invalid state for a uav health check! Exiting...");
+                "In an invalid state for a gps state check! Exiting...");
             this->exit_process_on_error();
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
@@ -273,6 +273,8 @@ bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
                 // Every thing ok proceed to the actual geofence check
                 break;
             }
+            RCLCPP_WARN(this->get_safety_logger(),
+                        "Safety limits not configured!");
             [[fallthrough]];
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
