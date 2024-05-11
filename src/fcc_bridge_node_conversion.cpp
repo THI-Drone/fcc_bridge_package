@@ -268,6 +268,24 @@ const char *FCCBridgeNode::mavsdk_fix_type_to_str(
     }
 }
 
+const char *FCCBridgeNode::mavsdk_telemetry_result_to_str(
+    const mavsdk::Telemetry::Result &result) {
+    switch (result) {
+        ENUM_TO_STR(mavsdk::Telemetry::Result, Unknown);
+        ENUM_TO_STR(mavsdk::Telemetry::Result, Success);
+        ENUM_TO_STR(mavsdk::Telemetry::Result, NoSystem);
+        ENUM_TO_STR(mavsdk::Telemetry::Result, ConnectionError);
+        ENUM_TO_STR(mavsdk::Telemetry::Result, Busy);
+        ENUM_TO_STR(mavsdk::Telemetry::Result, CommandDenied);
+        ENUM_TO_STR(mavsdk::Telemetry::Result, Timeout);
+        ENUM_TO_STR(mavsdk::Telemetry::Result, Unsupported);
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid mavsdk::Telemetry::Result value: ") +
+                std::to_string(static_cast<int>(result)));
+    }
+}
+
 const char *FCCBridgeNode::internal_state_to_str() const {
     switch (this->get_internal_state()) {
         ENUM_TO_STR(INTERNAL_STATE, STARTING_UP);

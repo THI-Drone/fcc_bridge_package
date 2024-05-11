@@ -6,6 +6,20 @@
 
 namespace fcc_bridge {
 
+void FCCBridgeNode::check_telemetry_result(
+    const mavsdk::Telemetry::Result &result, const char *const telemetry_type) {
+    if (result != mavsdk::Telemetry::Result::Success) {
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "Failed to set rate for %s with result: %s! Exiting...",
+                     telemetry_type,
+                     FCCBridgeNode::mavsdk_telemetry_result_to_str(result));
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    }
+    RCLCPP_DEBUG(this->get_safety_logger(), "Successfully set rate for %s",
+                 telemetry_type);
+}
+
 void FCCBridgeNode::mavsdk_rth_cb(const mavsdk::Action::Result &result) {
     RCLCPP_DEBUG(this->get_safety_logger(),
                  "Return to launch action callback triggered");

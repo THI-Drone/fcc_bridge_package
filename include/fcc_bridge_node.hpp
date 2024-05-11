@@ -350,6 +350,19 @@ class FCCBridgeNode : public common_lib::CommonNode {
 
    protected:
     /**
+     * @brief Checks whether setting the telemetry rate for telemetry_type was
+     * successful
+     *
+     * @param result The result code of the operation
+     * @param telemetry_type The type of telemetry whose rate was set
+     *
+     * @warning Exits the process if result does not indicate a success
+     *
+     * Implemented in src/fcc_bridge_node_safety.coo
+     */
+    void check_telemetry_result(const mavsdk::Telemetry::Result &result,
+                                char const *const telemetry_type);
+    /**
      * @brief Callback function to be triggered when an asynchronous RTH mavsdk
      * action finished
      *
@@ -1078,6 +1091,19 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     static char const *mavsdk_fix_type_to_str(
         const mavsdk::Telemetry::FixType &fix_type);
+    /**
+     * @brief Conversion function to get the string representation of a
+     * mavsdk::Telemetry::Result
+     *
+     * @param result The Result to convert
+     * @return The string representation of the Result
+     *
+     * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
+     */
+    static char const *mavsdk_telemetry_result_to_str(
+        const mavsdk::Telemetry::Result &result);
     /**
      * @brief Conversion function to get the string representation of the
      * current value of FCCBridgeNode::internal_state

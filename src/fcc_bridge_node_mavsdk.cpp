@@ -176,8 +176,32 @@ void FCCBridgeNode::setup_mavsdk() {
     // Setting up mavsdk mission
     this->mavsdk_mission.emplace(this->mavsdk_system);
 
+    // Set Telemetry rates so that MAVSDK has fresh values in its cache
+
+    // 10Hz Telemetry
+    this->check_telemetry_result(this->mavsdk_telemtry->set_rate_gps_info(10.0),
+                                 "GPSInfo");
+    this->check_telemetry_result(this->mavsdk_telemtry->set_rate_position(10.0),
+                                 "Position");
+    this->check_telemetry_result(
+        this->mavsdk_telemtry->set_rate_attitude_euler(10.0), "EulerAngle");
+
+    // 5Hz Telemetry
+    this->check_telemetry_result(this->mavsdk_telemtry->set_rate_battery(5.0),
+                                 "BatteryState");
+    this->check_telemetry_result(this->mavsdk_telemtry->set_rate_rc_status(5.0),
+                                 "RCStatus");
+    this->check_telemetry_result(this->mavsdk_telemtry->set_rate_home(5.0),
+                                 "Home");
+    this->check_telemetry_result(this->mavsdk_telemtry->set_rate_in_air(5.0),
+                                 "In Air");
+    this->check_telemetry_result(
+        this->mavsdk_telemtry->set_rate_landed_state(5.0), "LandedState");
+
     RCLCPP_INFO(this->get_mavsdk_interface_logger(),
                 "Successfully set up MAVSDK components");
+
+    // TODO: Log Autopilot hardware id and flight number
 }
 
 void FCCBridgeNode::verify_mavsdk_connection() {
