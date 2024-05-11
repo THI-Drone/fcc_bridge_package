@@ -338,7 +338,7 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
     // TODO: Sender check
 
     // Initialize safety limits
-    this->safety_limits = {};
+    this->safety_limits.emplace();
 
     this->safety_limits->max_speed_mps = msg.max_speed_m_s;
 
