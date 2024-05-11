@@ -136,10 +136,11 @@ void FCCBridgeNode::check_gps_state() {
             // This function should never be called in these states
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::MAVSDK_SET_UP:
             RCLCPP_FATAL(this->get_internal_state_logger(),
                          "In an invalid state to check GPS! Exiting...");
             this->exit_process_on_error();
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+            break;
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::FLYING_MISSION:
