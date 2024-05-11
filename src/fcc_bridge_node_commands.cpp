@@ -275,7 +275,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
     fly_to_waypoint_mission_item.latitude_deg = waypoint.latitude_deg;
     fly_to_waypoint_mission_item.longitude_deg = waypoint.longitude_deg;
     fly_to_waypoint_mission_item.relative_altitude_m =
-        fly_to_waypoint_mission_item.relative_altitude_m;
+        waypoint.relative_altitude_m;
     fly_to_waypoint_mission_item.speed_m_s = speed_mps;
     fly_to_waypoint_mission_item.is_fly_through = false;
     fly_to_waypoint_mission_item.acceptance_radius_m =
@@ -425,7 +425,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
     land_at_waypoint_mission_item.latitude_deg = waypoint.latitude_deg;
     land_at_waypoint_mission_item.longitude_deg = waypoint.longitude_deg;
     land_at_waypoint_mission_item.relative_altitude_m =
-        land_at_waypoint_mission_item.relative_altitude_m;
+        waypoint.relative_altitude_m;
     land_at_waypoint_mission_item.speed_m_s = speed_mps;
     land_at_waypoint_mission_item.is_fly_through = false;
     land_at_waypoint_mission_item.acceptance_radius_m =
