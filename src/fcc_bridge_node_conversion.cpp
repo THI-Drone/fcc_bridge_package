@@ -11,6 +11,40 @@
 
 namespace fcc_bridge {
 
+bool FCCBridgeNode::mavsdk_log_callback(const mavsdk::log::Level level,
+                                        const std::string &message,
+                                        const std::string &file,
+                                        const int line) {
+    static constexpr char const *const LOG_FORMAT_STRING =
+        "MAVSDK Log: [Location: %s : %d] [%s]";
+
+    switch (level) {
+        case mavsdk::log::Level::Debug:
+            RCLCPP_DEBUG(this->get_mavsdk_internal_logger(), LOG_FORMAT_STRING,
+                         file.c_str(), line, message.c_str());
+            break;
+        case mavsdk::log::Level::Info:
+            RCLCPP_INFO(this->get_mavsdk_internal_logger(), LOG_FORMAT_STRING,
+                        file.c_str(), line, message.c_str());
+            break;
+        case mavsdk::log::Level::Warn:
+            RCLCPP_WARN(this->get_mavsdk_internal_logger(), LOG_FORMAT_STRING,
+                        file.c_str(), line, message.c_str());
+            break;
+        case mavsdk::log::Level::Err:
+            RCLCPP_ERROR(this->get_mavsdk_internal_logger(), LOG_FORMAT_STRING,
+                         file.c_str(), line, message.c_str());
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got an unknown MAVSDK::log::Level value: ") +
+                std::to_string(static_cast<int>(level)));
+    }
+
+    // Always return true to suppress MAVSDKs own stdout write
+    return true;
+}
+
 interfaces::msg::GPSPosition::_fix_type_type
 FCCBridgeNode::fix_type_mavsdk_to_ros(
     const mavsdk::Telemetry::FixType &fix_type) {

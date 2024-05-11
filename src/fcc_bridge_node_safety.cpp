@@ -7,7 +7,7 @@
 namespace fcc_bridge {
 
 void FCCBridgeNode::mavsdk_rth_cb(const mavsdk::Action::Result &result) {
-    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+    RCLCPP_DEBUG(this->get_safety_logger(),
                  "Return to launch action callback triggered");
 
     if (result != mavsdk::Action::Result::Success) {
@@ -18,8 +18,7 @@ void FCCBridgeNode::mavsdk_rth_cb(const mavsdk::Action::Result &result) {
         this->exit_process_on_error();
     }
 
-    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
-                "Return to home successful!");
+    RCLCPP_INFO(this->get_safety_logger(), "Return to home successful!");
     this->set_internal_state(INTERNAL_STATE::LANDED);
 
     // TODO: Disarm

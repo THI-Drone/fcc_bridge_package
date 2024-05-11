@@ -162,7 +162,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                        Internal state members                        */
     /************************************************************************/
 
-   private:
+   protected:
     // Internal state enum and member to track the current state of the FCC
     // Bridge
     enum INTERNAL_STATE : u8 {
@@ -193,7 +193,6 @@ class FCCBridgeNode : public common_lib::CommonNode {
     INTERNAL_STATE
     internal_state; /**< Current internal state of the fcc_node */
 
-   protected:
     /**
      * @brief Set the internal state of this node
      *
@@ -349,7 +348,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                            Safety functions                            */
     /**************************************************************************/
 
-   private:
+   protected:
     /**
      * @brief Callback function to be triggered when an asynchronous RTH mavsdk
      * action finished
@@ -365,7 +364,6 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     void mavsdk_rth_cb(const mavsdk::Action::Result &result);
 
-   protected:
     /**
      * @brief Validates that FCCBridgeNode::safety_limits contains safe values.
      *
@@ -810,6 +808,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * true
      *
      * Converts a MAVSDK log message to a ROS log message
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
      */
     bool mavsdk_log_callback(const mavsdk::log::Level level,
                              const std::string &message,
