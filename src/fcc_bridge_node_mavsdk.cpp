@@ -422,6 +422,8 @@ bool FCCBridgeNode::execute_mission_plan(
     RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
                  "Got new mission plan to execute");
 
+    RCLCPP_DEBUG_STREAM(this->get_mavsdk_interface_logger(), plan);
+
     // Verify MAVSDK connection
     this->verify_mavsdk_connection();
 
