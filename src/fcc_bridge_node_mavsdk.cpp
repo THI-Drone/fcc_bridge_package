@@ -278,6 +278,7 @@ void FCCBridgeNode::get_flight_state() {
     // Clear Cached values
     this->last_fcc_flight_mode = std::nullopt;
     this->last_fcc_landed_state = std::nullopt;
+    this->last_fcc_armed_state = std::nullopt;
 
     // Verify MAVSDK connection
     this->verify_mavsdk_connection();
@@ -300,6 +301,15 @@ void FCCBridgeNode::get_flight_state() {
     RCLCPP_INFO(
         this->get_fcc_telemetry_logger(), "The current landed state is: %s",
         this->mavsdk_landed_state_to_str(this->last_fcc_landed_state.value()));
+
+    // Get armed state
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(),
+                 "Getting armed state from FCC");
+    this->last_fcc_armed_state = this->mavsdk_telemtry->armed();
+
+    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                "The current armed state is: %s",
+                this->last_fcc_armed_state.value() ? "true" : "false");
 }
 
 void FCCBridgeNode::get_battery_state() {

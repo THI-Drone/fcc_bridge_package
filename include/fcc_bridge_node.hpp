@@ -302,6 +302,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
     std::optional<mavsdk::Telemetry::LandedState>
         last_fcc_landed_state; /**< The last LandedState received from the FCC
                                 */
+    std::optional<bool>
+        last_fcc_armed_state; /**< The last armed state received from the FCC */
     std::optional<mavsdk::Telemetry::Battery>
         last_fcc_battery_state; /**< The last received battery state from the
                                    FCC */
@@ -887,6 +889,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Stores the result in the internal member variables
      * FCCBridgeNode::last_fcc_flight_mode and
      * FCCBridgeNode::last_fcc_landed_state
+     * FCCBridgeNode::last_fcc_armed_state
      *
      * Verifies the MAVSDK connection.
      *

@@ -46,8 +46,7 @@ void FCCBridgeNode::send_flight_state() {
     // If we are in the WAITING_FOR_ARM state and the drone is READY send
     // MissionStart and wait for takeoff
     if (this->get_internal_state() == INTERNAL_STATE::WAITING_FOR_ARM &&
-        this->last_fcc_flight_mode.value() ==
-            mavsdk::Telemetry::FlightMode::Ready) {
+        this->last_fcc_armed_state.value()) {
         RCLCPP_INFO(this->get_internal_state_logger(),
                     "Drone is armed and ready for takeoff. Switching to ARMED "
                     "state and sending MissionStart message");
@@ -70,6 +69,7 @@ void FCCBridgeNode::send_flight_state() {
         this->last_fcc_flight_mode.value());
     flight_state_msg.state.state = FCCBridgeNode::landed_state_mavsdk_to_ros(
         this->last_fcc_landed_state.value());
+    flight_state_msg.armed = this->last_fcc_armed_state.value();
 
     // Publish the message
     this->flight_state_publisher->publish(flight_state_msg);
