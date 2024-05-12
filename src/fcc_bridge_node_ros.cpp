@@ -22,7 +22,8 @@ constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_10HZ{
     100}; /**< The period of the 10Hz telemetry timer */
 
 // Mission control node name
-constexpr char const *const MISSION_CONTROL_NODE_NAME = "mission_control";
+constexpr char const *const MISSION_CONTROL_NODE_NAME =
+    "mission_control"; /**< Name of the mission control node */
 
 // Limits
 constexpr std::chrono::seconds MAX_UAV_COMMAND_AGE{
@@ -95,7 +96,9 @@ void FCCBridgeNode::setup_ros() {
     // heartbeats
     rclcpp::SubscriptionOptions subscription_options;
     subscription_options.content_filter_options.filter_expression =
-        "sender_id = 'mission_control'";
+        "sender_id = '%0'";
+    subscription_options.content_filter_options.expression_parameters.push_back(
+        MISSION_CONTROL_NODE_NAME);
 
     // Create Heartbeat subscription
     this->mission_control_heartbeat_subscriber =
