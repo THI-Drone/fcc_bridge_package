@@ -334,8 +334,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
     struct safety_limits {
         // TODO: Implement
         constexpr static float MIN_SPEED_LIMIT_MPS =
-            0; /**< The minimum speed allow when flying to a waypoint. Exclusive
-                */
+            0; /**< The minimum speed allowed when flying to a waypoint.
+                  Exclusive */
         constexpr static float HARD_MAX_SPEED_LIMIT_MPS =
             5; /**< The hard speed limit which will cap the soft speed limit.
                   Inclusive */
