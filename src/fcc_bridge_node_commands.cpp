@@ -16,8 +16,8 @@ constexpr float WAYPOINT_ACCEPTANCE_RADIUS_M =
 void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
                                      const float speed_mps) {
     RCLCPP_INFO(this->get_command_handler_logger(),
-                "Received a command to takeoff to lat: %f°\tlon: %f°\trel alt: "
-                "%fm with speed: %fm/s",
+        "Received a command to take off to lat: %f°\tlon: %f°\trel alt: "
+        "%fm with speed: %fm/s",
                 waypoint.latitude_deg, waypoint.longitude_deg,
                 static_cast<double>(waypoint.relative_altitude_m),
                 static_cast<double>(speed_mps));
@@ -27,7 +27,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
         case INTERNAL_STATE::ERROR:
             // This should never happen as the process should have exited before
             throw std::runtime_error(
-                "Received command to take of while in ERROR state");
+                "Received command to take off while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
         case INTERNAL_STATE::MAVSDK_SET_UP:
@@ -37,7 +37,9 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
             // to kill the process
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
-                "Received a takeoff command in an invalid state! Exiting...");
+                         "Received a take off command in an invalid state %s! "
+                         "Exiting...",
+                         this->internal_state_to_str());
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
@@ -47,7 +49,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
             // If the UAV is airborne and another takeoff command is received
             // something must have gone wrong so an RTH is triggered
             RCLCPP_ERROR(this->get_internal_state_logger(),
-                         "Received a takeoff command while airborne! "
+                         "Received a take off command while airborne! "
                          "Triggering RTH...");
             this->trigger_rth();
             return;
@@ -67,14 +69,14 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
             RCLCPP_FATAL(
                 this->get_command_handler_logger(),
                 "There has been an unrecoverable error checking if the target "
-                "speed for takeoff was inside the safety limits! Exiting...");
+                "speed for take off was inside the safety limits! Exiting...");
         } else {
             // In this case the target takeoff speed is outside the limits
             // deemed safe. Because the UAV is on the ground this results in a
             // process exit.
             RCLCPP_FATAL(
                 this->get_command_handler_logger(),
-                "The target takeoff speed is outside the speed "
+                "The target take off speed is outside the speed "
                 "safety limits (%f is not in (%f;%f]). The UAV should "
                 "not be airborne! Exiting...",
                 static_cast<double>(speed_mps),
@@ -90,7 +92,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
     if (FCCBridgeNode::check_waypoint_invalid(waypoint)) {
         RCLCPP_FATAL(
             this->get_command_handler_logger(),
-            "Got an invalid waypoint for a takeoff command! Exiting...");
+            "Got an invalid waypoint for a take off command! Exiting...");
         this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
     }
@@ -104,14 +106,14 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
             RCLCPP_FATAL(
                 this->get_command_handler_logger(),
                 "There has been an unrecoverable error checking if the target "
-                "waypoint for takeoff was inside the geofence! Exiting...");
+                "waypoint for take off was inside the geofence! Exiting...");
         } else {
             // The waypoint is outside the geofence. The UAV is still on the
             // ground so the process will exit.
             RCLCPP_FATAL(
                 this->get_command_handler_logger(),
                 "Got an waypoint with lat: %f°\tlon: %f°\trel. alt. %fm "
-                "for a takeoff that is outside the geofence! Exiting...",
+                "for a take off that is outside the geofence! Exiting...",
                 waypoint.latitude_deg, waypoint.longitude_deg,
                 static_cast<double>(waypoint.relative_altitude_m));
             this->set_internal_state(INTERNAL_STATE::ERROR);
@@ -120,7 +122,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
         this->exit_process_on_error();
     }
 
-    RCLCPP_INFO(this->get_command_handler_logger(), "Clear for takeoff");
+    RCLCPP_INFO(this->get_command_handler_logger(), "Clear for take off");
 
     // Mission item that describes the takeoff action
     mavsdk::Mission::MissionItem takeoff_mission_item;
@@ -144,10 +146,10 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
     // Execute mission
     if (!this->execute_mission_plan(takeoff_mission_plan)) {
         RCLCPP_FATAL(this->get_command_handler_logger(),
-                     "There was an error triggering the waypoint mission! "
-                     "Triggering RTH...");
-        this->trigger_rth();
-        return;
+                     "There was an error triggering the take off mission! "
+                     "Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
     }
 
     // Set state to waiting for mission
@@ -155,7 +157,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
 
     RCLCPP_INFO(
         this->get_command_handler_logger(),
-        "Successfully triggered takeoff. Waiting for mission to complete.");
+        "Successfully triggered take off. Waiting for mission to complete.");
 }
 
 void FCCBridgeNode::start_flying_to_waypoint(
@@ -172,7 +174,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
         case INTERNAL_STATE::ERROR:
             // This should never happen as the process should have exited before
             throw std::runtime_error(
-                "Received command to take of while in ERROR state");
+                "Received command to fly to waypoint while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
         case INTERNAL_STATE::MAVSDK_SET_UP:
@@ -183,7 +185,9 @@ void FCCBridgeNode::start_flying_to_waypoint(
             // to kill the process
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
-                "Received a takeoff command in an invalid state! Exiting...");
+                         "Received a fly to waypoint command in an invalid "
+                         "state %s! Exiting...",
+                         this->internal_state_to_str());
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::FLYING_MISSION:
@@ -193,8 +197,8 @@ void FCCBridgeNode::start_flying_to_waypoint(
             // waypoint command is received something must have gone wrong so an
             // RTH is triggered
             RCLCPP_ERROR(this->get_internal_state_logger(),
-                         "Received a waypoint command while there is already a "
-                         "command in progress! Triggering RTH...");
+                "Received a fly to waypoint command while there is already a "
+                "command in progress! Triggering RTH...");
             this->trigger_rth();
             return;
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
@@ -235,7 +239,8 @@ void FCCBridgeNode::start_flying_to_waypoint(
     if (FCCBridgeNode::check_waypoint_invalid(waypoint)) {
         RCLCPP_ERROR(
             this->get_command_handler_logger(),
-            "Got an invalid waypoint for a takeoff command! Triggering RTH...");
+                     "Got an invalid waypoint for a fly to waypoint command! "
+                     "Triggering RTH...");
         this->trigger_rth();
         return;
     }
@@ -294,10 +299,10 @@ void FCCBridgeNode::start_flying_to_waypoint(
     if (!this->execute_mission_plan(fly_to_waypoint_mission_plan)) {
         RCLCPP_FATAL(this->get_command_handler_logger(),
                      "There was an error triggering the fly to waypoint "
-                     "mission! Exiting...");
-        // TODO: Change to RTH
-        this->set_internal_state(INTERNAL_STATE::ERROR);
-        this->exit_process_on_error();
+                     "mission! Triggering RTH...");
+        // Try an RTH
+        this->trigger_rth();
+        return;
     }
 
     // Set state to waiting for mission
@@ -322,7 +327,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
         case INTERNAL_STATE::ERROR:
             // This should never happen as the process should have exited before
             throw std::runtime_error(
-                "Received command to take of while in ERROR state");
+                "Received command to land at waypoint while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
         case INTERNAL_STATE::MAVSDK_SET_UP:
@@ -333,7 +338,9 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
             // to kill the process
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
-                "Received a takeoff command in an invalid state! Exiting...");
+                         "Received a land at waypoint command in an invalid "
+                         "state %s! Exiting...",
+                         this->internal_state_to_str());
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::FLYING_MISSION:
@@ -343,8 +350,8 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
             // command is received something must have gone wrong so an RTH is
             // triggered
             RCLCPP_ERROR(this->get_internal_state_logger(),
-                         "Received a waypoint command while there is already a "
-                         "command in progress! Triggering RTH...");
+                         "Received a land at waypoint command while there is "
+                         "already a command in progress! Triggering RTH...");
             this->trigger_rth();
             return;
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
@@ -385,7 +392,8 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
     if (FCCBridgeNode::check_waypoint_invalid(waypoint)) {
         RCLCPP_ERROR(
             this->get_command_handler_logger(),
-            "Got an invalid waypoint for a takeoff command! Triggering RTH...");
+                     "Got an invalid waypoint for a land at waypoint command! "
+                     "Triggering RTH...");
         this->trigger_rth();
         return;
     }
@@ -416,7 +424,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
     }
 
     RCLCPP_INFO(this->get_command_handler_logger(),
-                "Clear for land at waypoint");
+                "Clear to land at waypoint");
 
     // Mission item that describes the fly to waypoint action
     mavsdk::Mission::MissionItem land_at_waypoint_mission_item;
@@ -444,10 +452,11 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
     if (!this->execute_mission_plan(land_at_waypoint_mission_plan)) {
         RCLCPP_FATAL(
             this->get_command_handler_logger(),
-            "There was an error triggering the land mission! Exiting...");
-        this->set_internal_state(INTERNAL_STATE::ERROR);
-        this->exit_process_on_error();
-        // TODO: Change to RTH
+                     "There was an error triggering the land mission! "
+                     "Triggering RTH...");
+        // Try RTH
+        this->trigger_rth();
+        return;
     }
 
     // Set state to waiting for mission
