@@ -163,7 +163,7 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     // Check if the heartbeat tick has increased since last time or in the case
     // of an overflow that is equal to 0
     if (msg.tick <= this->last_mission_control_heartbeat.tick &&
-        msg.tick != 0) {
+        msg.tick == 0 && this->last_mission_control_heartbeat.tick == 0) {
         RCLCPP_ERROR(this->get_safety_logger(),
                      "The received heartbeat is not newer than the last one! "
                      "Triggering RTH...");
