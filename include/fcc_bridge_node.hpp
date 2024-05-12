@@ -1161,8 +1161,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Implemented in src/fcc_bridge_node_ros.cpp
      */
     FCCBridgeNode(
-        const std::string &name/*,
-        const rclcpp::NodeOptions &node_options = rclcpp::NodeOptions()*/);
+        const std::string &name,
+        const rclcpp::NodeOptions &node_options = rclcpp::NodeOptions());
 };
 
 }  // namespace fcc_bridge

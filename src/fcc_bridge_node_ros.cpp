@@ -468,9 +468,10 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
                  "10Hz telemetry timer callback successful");
 }
 
-FCCBridgeNode::FCCBridgeNode(const std::string &name/*,
-                               const rclcpp::NodeOptions &node_options*/)
-    : CommonNode(name), internal_state(INTERNAL_STATE::STARTING_UP) {
+FCCBridgeNode::FCCBridgeNode(const std::string &name,
+                             const rclcpp::NodeOptions &node_options)
+    : CommonNode(name, node_options),
+      internal_state(INTERNAL_STATE::STARTING_UP) {
     // Pre-populate the last mission control heartbeat
     this->last_mission_control_heartbeat.time_stamp = this->now();
     this->last_mission_control_heartbeat.tick = 0;
