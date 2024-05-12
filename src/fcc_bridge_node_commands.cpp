@@ -15,12 +15,13 @@ constexpr float WAYPOINT_ACCEPTANCE_RADIUS_M =
 
 void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
                                      const float speed_mps) {
-    RCLCPP_INFO(this->get_command_handler_logger(),
+    RCLCPP_INFO(
+        this->get_command_handler_logger(),
         "Received a command to take off to lat: %f°\tlon: %f°\trel alt: "
         "%fm with speed: %fm/s",
-                waypoint.latitude_deg, waypoint.longitude_deg,
-                static_cast<double>(waypoint.relative_altitude_m),
-                static_cast<double>(speed_mps));
+        waypoint.latitude_deg, waypoint.longitude_deg,
+        static_cast<double>(waypoint.relative_altitude_m),
+        static_cast<double>(speed_mps));
 
     // Verify that the uav is in the right state
     switch (this->get_internal_state()) {
@@ -35,8 +36,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
         case INTERNAL_STATE::LANDED:
             // The UAV is still or again on the ground so the only thing left is
             // to kill the process
-            RCLCPP_FATAL(
-                this->get_internal_state_logger(),
+            RCLCPP_FATAL(this->get_internal_state_logger(),
                          "Received a take off command in an invalid state %s! "
                          "Exiting...",
                          this->internal_state_to_str());
@@ -183,8 +183,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
         case INTERNAL_STATE::ARMED:
             // The UAV is still or again on the ground so the only thing left is
             // to kill the process
-            RCLCPP_FATAL(
-                this->get_internal_state_logger(),
+            RCLCPP_FATAL(this->get_internal_state_logger(),
                          "Received a fly to waypoint command in an invalid "
                          "state %s! Exiting...",
                          this->internal_state_to_str());
@@ -196,7 +195,8 @@ void FCCBridgeNode::start_flying_to_waypoint(
             // If the UAV is already waiting on a UAVCommand and another
             // waypoint command is received something must have gone wrong so an
             // RTH is triggered
-            RCLCPP_ERROR(this->get_internal_state_logger(),
+            RCLCPP_ERROR(
+                this->get_internal_state_logger(),
                 "Received a fly to waypoint command while there is already a "
                 "command in progress! Triggering RTH...");
             this->trigger_rth();
@@ -237,8 +237,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
 
     // Check that the waypoint is valid
     if (FCCBridgeNode::check_waypoint_invalid(waypoint)) {
-        RCLCPP_ERROR(
-            this->get_command_handler_logger(),
+        RCLCPP_ERROR(this->get_command_handler_logger(),
                      "Got an invalid waypoint for a fly to waypoint command! "
                      "Triggering RTH...");
         this->trigger_rth();
@@ -336,8 +335,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
         case INTERNAL_STATE::ARMED:
             // The UAV is still or again on the ground so the only thing left is
             // to kill the process
-            RCLCPP_FATAL(
-                this->get_internal_state_logger(),
+            RCLCPP_FATAL(this->get_internal_state_logger(),
                          "Received a land at waypoint command in an invalid "
                          "state %s! Exiting...",
                          this->internal_state_to_str());
@@ -390,8 +388,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
 
     // Check that the waypoint is valid
     if (FCCBridgeNode::check_waypoint_invalid(waypoint)) {
-        RCLCPP_ERROR(
-            this->get_command_handler_logger(),
+        RCLCPP_ERROR(this->get_command_handler_logger(),
                      "Got an invalid waypoint for a land at waypoint command! "
                      "Triggering RTH...");
         this->trigger_rth();
@@ -450,8 +447,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
 
     // Execute mission
     if (!this->execute_mission_plan(land_at_waypoint_mission_plan)) {
-        RCLCPP_FATAL(
-            this->get_command_handler_logger(),
+        RCLCPP_FATAL(this->get_command_handler_logger(),
                      "There was an error triggering the land mission! "
                      "Triggering RTH...");
         // Try RTH

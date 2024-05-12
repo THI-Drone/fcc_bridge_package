@@ -192,5 +192,5 @@ class Geofence {
     }
 };
 
-}  // namespace geofence
+}  // namespace fcc_bridge
 #endif
