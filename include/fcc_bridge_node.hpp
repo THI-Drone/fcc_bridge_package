@@ -40,6 +40,9 @@
 // CommonLib headers
 #include "common_package/common_node.hpp"
 
+// Geofence header
+#include "geofence.hpp"
+
 /**
  * @brief Holds the fcc_bridge symbols
  */
@@ -59,6 +62,10 @@ using s8 = int8_t;   /**< Signed 8 bit integer */
 using s16 = int16_t; /**< Signed 16 bit integer */
 using s32 = int32_t; /**< Signed 32 bit integer */
 using s64 = int64_t; /**< Signed 64 bit integer */
+
+// Explicit Geofence template instantiation
+using GeofenceInstace =
+    Geofence<double>; /**< Explicit template instantiation with a double */
 
 /**
  * @brief Class that provides the bridge between MAVLink and ROS
@@ -331,18 +338,54 @@ class FCCBridgeNode : public common_lib::CommonNode {
 
    private:
     // Safety limits
-    struct safety_limits {
-        // TODO: Implement
+    struct SafetyLimits {
+        // Speed limits
         constexpr static float MIN_SPEED_LIMIT_MPS =
-            0; /**< The minimum speed allowed when flying to a waypoint.
+            0.f; /**< The minimum speed allowed when flying to a waypoint.
                   Exclusive */
         constexpr static float HARD_MAX_SPEED_LIMIT_MPS =
-            5; /**< The hard speed limit which will cap the soft speed limit.
+            5.f; /**< The hard speed limit which will cap the soft speed limit!
                   Inclusive */
         float max_speed_mps;
+
+        // State of charge limits
+        constexpr static float HARD_MIN_SOC =
+            30.f; /**< The hard minimum state of charge limit in percent. Will
+                     cap the soft minimum SoC limit! */
+
+        float min_soc; /**< Minimum state of charge in percent allowed before an
+                          RTH is triggered */
+
+        // Height limits
+        constexpr static float HARD_MAX_HEIGHT_M =
+            50; /**< The hard height limit of the UAV. Will cap the soft height
+                   limit! */
+
+        float max_height_m; /**< Max height above the launch position the UAV is
+                               allowed to climb to. Inclusive */
+
+        // Geofence limit
+        GeofenceInstace geofence; /**< Geofence to be enforced */
+
+        /**
+         * @brief Creates a SafetyLimits instance
+         *
+         * @param max_speed_mps_p The preferred max speed
+         * @param min_soc_p The preferred minimum state of charge
+         * @param max_height_m_p The preferred max height
+         * @param geofence_polygon_p The target geofence polygon
+         */
+        constexpr SafetyLimits(
+            const float max_speed_mps_p, const float min_soc_p,
+            const float max_height_m_p,
+            const GeofenceInstace::PolygonType &geofence_polygon_p)
+            : max_speed_mps(max_speed_mps_p),
+              min_soc(min_soc_p),
+              max_height_m(max_height_m_p),
+              geofence(geofence_polygon_p) {}
     }; /**< struct to hold all currently active safety limits */
 
-    std::optional<struct safety_limits>
+    std::optional<struct SafetyLimits>
         safety_limits; /**< Safety limits to be enforced such as geofence and
                           max speed */
 
@@ -384,7 +427,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Enforces hard limits
      *
-     * If there is something that can not be corrected set
+     * If there is something that cannot be corrected set
      * FCCBridgeNode::internal_state to INTERNAL_STATE::ERROR
      *
      * Implemented in src/fcc_bridge_node_safety.cpp

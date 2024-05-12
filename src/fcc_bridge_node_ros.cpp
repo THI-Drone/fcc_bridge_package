@@ -336,18 +336,71 @@ void FCCBridgeNode::mission_finished_cb(
 void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Received a new SafetyLimits message");
-    RCLCPP_WARN_ONCE(this->get_safety_logger(),
-                     "Safety limits not fully implemented");
-    // TODO: Sender check
+
+    switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::LANDED:
+            // The UAV has not yet taken off
+            RCLCPP_FATAL(this->get_internal_state_logger(),
+                         "Received a MissionFinished while the UAV has not yet "
+                         "taken off! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            // The UAV is airborne. This will result in an RTH
+            RCLCPP_WARN(this->get_internal_state_logger(),
+                        "Received a MissionFinished message while airborne. "
+                        "Triggering an RTH...");
+            this->trigger_rth();
+            return;
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+    if (msg.sender_id != MISSION_CONTROL_NODE_NAME) {
+        RCLCPP_FATAL(this->get_ros_interface_logger(),
+                     "Got safety limits from invalid sender: %s (Expected: "
+                     "%s)! Exiting...",
+                     msg.sender_id.c_str(), MISSION_CONTROL_NODE_NAME);
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    }
+
+    GeofenceInstace::PolygonType geofence_polygon;
+
+    for (const interfaces::msg::Waypoint &point : msg.geofence_points) {
+        RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                     "Got geofence point lat: %f°\tlon: %f°",
+                     point.latitude_deg, point.longitude_deg);
+        geofence_polygon.push_back({point.latitude_deg, point.longitude_deg});
+    }
 
     // Initialize safety limits
-    this->safety_limits.emplace();
-
-    this->safety_limits->max_speed_mps = msg.max_speed_m_s;
+    this->safety_limits.emplace(msg.max_speed_m_s, msg.min_soc,
+                                msg.max_height_m, geofence_polygon);
 
     this->validate_safety_limits();
 
-    RCLCPP_INFO(this->get_safety_logger(), "Set safety limits");
+    if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
+        RCLCPP_FATAL(this->get_ros_interface_logger(),
+                     "Failed to validate safety limits! Exiting...");
+        this->exit_process_on_error();
+    }
+
+    RCLCPP_INFO(this->get_ros_interface_logger(), "Set safety limits");
 
     // Go into WAITING_FOR_ARM state
     this->set_internal_state(INTERNAL_STATE::WAITING_FOR_ARM);

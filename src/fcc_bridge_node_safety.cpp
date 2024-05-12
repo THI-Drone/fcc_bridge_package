@@ -52,18 +52,49 @@ void FCCBridgeNode::validate_safety_limits() {
 
     // Check speed limit
     if (this->safety_limits->max_speed_mps <= 0 ||
-        safety_limits::HARD_MAX_SPEED_LIMIT_MPS <
+        SafetyLimits::HARD_MAX_SPEED_LIMIT_MPS <
             this->safety_limits->max_speed_mps) {
         RCLCPP_WARN(
             this->get_safety_logger(),
-            "Got invalid speed: %f outside of range (0;%f]. Using Internal "
+            "Got invalid speed: %fm/s outside of range (0;%f]. Using Internal "
             "limit: %f",
             static_cast<double>(this->safety_limits->max_speed_mps),
-            static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS),
-            static_cast<double>(safety_limits::HARD_MAX_SPEED_LIMIT_MPS));
+            static_cast<double>(SafetyLimits::HARD_MAX_SPEED_LIMIT_MPS),
+            static_cast<double>(SafetyLimits::HARD_MAX_SPEED_LIMIT_MPS));
         this->safety_limits->max_speed_mps =
-            safety_limits::HARD_MAX_SPEED_LIMIT_MPS;
+            SafetyLimits::HARD_MAX_SPEED_LIMIT_MPS;
     }
+
+    // Check minimum state of charge
+    if (this->safety_limits->min_soc < SafetyLimits::HARD_MIN_SOC) {
+        RCLCPP_WARN(this->get_safety_logger(),
+                    "Got invalid minimum state of charge: %f%%, Using Internal "
+                    "limit: %f",
+                    static_cast<double>(this->safety_limits->min_soc),
+                    static_cast<double>(SafetyLimits::HARD_MIN_SOC));
+        this->safety_limits->min_soc = SafetyLimits::HARD_MIN_SOC;
+    }
+
+    // Check maximum altitude
+    if (SafetyLimits::HARD_MAX_HEIGHT_M < this->safety_limits->max_height_m) {
+        RCLCPP_WARN(this->get_safety_logger(),
+                    "Got invalid maximum height: %fm, Using Internal limit: %f",
+                    static_cast<double>(this->safety_limits->max_height_m),
+                    static_cast<double>(SafetyLimits::HARD_MAX_HEIGHT_M));
+        this->safety_limits->max_height_m = SafetyLimits::HARD_MAX_HEIGHT_M;
+    }
+
+    // Check geofence
+    if (this->safety_limits->geofence.get_polygon_point_count() < 3) {
+        RCLCPP_ERROR(
+            this->get_safety_logger(),
+            "Got an effective polygon with less then 3 points! Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        return;
+    }
+
+    RCLCPP_DEBUG(this->get_safety_logger(),
+                 "Validating safety limits successful");
 }
 
 void FCCBridgeNode::check_gps_state() {
@@ -308,7 +339,20 @@ bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
         return false;
     }
 
-    return true;  // TODO: implement actual geofence check
+    if (!this->safety_limits->geofence.isIn({latitude_deg, longitude_deg})) {
+        RCLCPP_WARN(this->get_safety_logger(), "Point is not inside geofence!");
+        return false;
+    }
+
+    if (this->safety_limits->max_height_m < relative_altitude_m) {
+        RCLCPP_WARN(this->get_safety_logger(),
+                    "Point is above maximum altitude!");
+        return false;
+    }
+
+    RCLCPP_DEBUG(this->get_safety_logger(), "Waypoint passed check");
+
+    return true;
 }
 
 bool FCCBridgeNode::check_speed(const float speed_mps) {

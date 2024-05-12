@@ -80,7 +80,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
                 "safety limits (%f is not in (%f;%f]). The UAV should "
                 "not be airborne! Exiting...",
                 static_cast<double>(speed_mps),
-                static_cast<double>(safety_limits::MIN_SPEED_LIMIT_MPS),
+                static_cast<double>(SafetyLimits::MIN_SPEED_LIMIT_MPS),
                 static_cast<double>(this->safety_limits->max_speed_mps));
             this->set_internal_state(INTERNAL_STATE::ERROR);
         }
@@ -228,7 +228,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
                 "The target waypoint speed is outside the speed safety limits "
                 "(%f is not in (%f;%f]). Triggering RTH...",
                 static_cast<double>(speed_mps),
-                static_cast<double>(safety_limits::MIN_SPEED_LIMIT_MPS),
+                static_cast<double>(SafetyLimits::MIN_SPEED_LIMIT_MPS),
                 static_cast<double>(this->safety_limits->max_speed_mps));
             this->trigger_rth();
             return;
@@ -381,7 +381,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
                 "The target waypoint speed is outside the speed safety limits "
                 "(%f is not in (%f;%f]). Triggering RTH...",
                 static_cast<double>(speed_mps),
-                static_cast<double>(safety_limits::MIN_SPEED_LIMIT_MPS),
+                static_cast<double>(SafetyLimits::MIN_SPEED_LIMIT_MPS),
                 static_cast<double>(this->safety_limits->max_speed_mps));
             this->trigger_rth();
             return;

@@ -1,5 +1,7 @@
 /*
  * See here: https://github.com/chrberger/geofence/blob/master/geofence.hpp
+ *
+ * Modifications by Johan <job8197@thi.de>
  */
 
 /*
@@ -37,126 +39,158 @@
 #include <type_traits>
 #include <vector>
 
-namespace geofence {
+namespace fcc_bridge {
 
 /**
- * @param a
- * @param b
- * @return true if a and b are (almost - in case of floating points) equal
+ * @brief This class defines a geofence and allows checking if a given point is
+ * inside it.
+ *
+ * @tparam T The type of a coordinate axis value. Must be arithmetic.
  */
 template <typename T>
-inline bool isEqual(T a, T b) {
-    // Inspired by:
-    // https://www.embeddeduse.com/2019/08/26/qt-compare-two-floats/
+class Geofence {
     static_assert(std::is_arithmetic<T>::value, "T must be an arithmetic type");
+
+   public:
+    using PointType = std::array<T, 2>; /**< The type of a single point
+                                           {Latitude_deg, Longitude_deg} */
+
+    using PolygonType =
+        std::vector<PointType>; /**< The type of the polygon used */
+
+   private:
+    const PolygonType convex_polygon;
+
+   public:
+    constexpr Geofence(const PolygonType &polygon = PolygonType{})
+        : convex_polygon(Geofence::getConvexHull(polygon)) {}
+
+    inline typename PolygonType::size_type get_polygon_point_count() const {
+        return this->convex_polygon.size();
+    }
+
+   private:
+    /**
+     * @param a
+     * @param b
+     * @return true if a and b are (almost - in case of floating points) equal
+     */
+    constexpr static bool isEqual(const T a, const T b) {
+        // Inspired by:
+        // https://www.embeddeduse.com/2019/08/26/qt-compare-two-floats/
+
 #pragma GCC diagnostic push
 #if defined(__clang__)
 #pragma GCC diagnostic ignored "-Wabsolute-value"
 #endif
-    constexpr auto EPSILON = 1.0e-09f;
-    return (std::abs(a - b) <= EPSILON)
-               ? true
-               : std::abs(a - b) <=
-                     EPSILON * (std::max)(std::abs(a), std::abs(b));
+
+        constexpr T EPSILON = 1.0e-09;
+        return (std::abs(a - b) <= EPSILON)
+                   ? true
+                   : std::abs(a - b) <=
+                         EPSILON * (std::max)(std::abs(a), std::abs(b));
+
 #pragma GCC diagnostic pop
-}
-
-/**
- * Compute convex hull using Andrew's monotone chain algorithm.
- * @param polygon
- * @return convex hull
- */
-template <typename T>
-inline std::vector<std::array<T, 2>> getConvexHull(
-    const std::vector<std::array<T, 2>> &polygon) {
-    static_assert(std::is_arithmetic<T>::value, "T must be an arithmetic type");
-
-    // Inspired by:
-    // https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#C++
-
-    auto isLeft = [](const std::array<T, 2> &a, const std::array<T, 2> &b) {
-        constexpr const uint8_t X{0};
-        constexpr const uint8_t Y{1};
-        return (a[X] < b[X] ||
-                ((!(a[X] < b[X]) && !(a[X] > b[X]) /*a[X] == b[X]*/) &&
-                 a[Y] < b[Y]));
-    };
-
-    auto ccw = [](const std::array<T, 2> &a, const std::array<T, 2> &b,
-                  const std::array<T, 2> &c) {
-        constexpr const uint8_t X{0};
-        constexpr const uint8_t Y{1};
-        return (b[X] - a[X]) * (c[Y] - a[Y]) - (b[Y] - a[Y]) * (c[X] - a[X]);
-    };
-
-    auto sortedPolygon{polygon};
-    std::sort(sortedPolygon.begin(), sortedPolygon.end(), isLeft);
-
-    // Construct lower half of convex hull.
-    std::vector<std::array<T, 2>> lowerHalf;
-    for (auto it{sortedPolygon.begin()}; it != sortedPolygon.end(); ++it) {
-        while (
-            lowerHalf.size() >= 2 &&
-            !(ccw(*(lowerHalf.rbegin() + 1), *(lowerHalf.rbegin()), *it) < 0)) {
-            lowerHalf.pop_back();
-        }
-        lowerHalf.push_back(*it);
     }
 
-    // Construct upper half of convex hull.
-    std::vector<std::array<T, 2>> upperHalf;
-    for (auto it{sortedPolygon.rbegin()}; it != sortedPolygon.rend(); ++it) {
-        while (
-            upperHalf.size() >= 2 &&
-            !(ccw(*(upperHalf.rbegin() + 1), *(upperHalf.rbegin()), *it) < 0)) {
-            upperHalf.pop_back();
+    /**
+     * Compute convex hull using Andrew's monotone chain algorithm.
+     * @param polygon
+     * @return convex hull
+     */
+    constexpr static PolygonType getConvexHull(const PolygonType &polygon) {
+        // Inspired by:
+        // https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#C++
+
+        constexpr auto isLeft = [](const PointType &a, const PointType &b) {
+            constexpr const uint8_t X{0};
+            constexpr const uint8_t Y{1};
+            return (a[X] < b[X] ||
+                    ((!(a[X] < b[X]) && !(a[X] > b[X]) /*a[X] == b[X]*/) &&
+                     a[Y] < b[Y]));
+        };
+
+        constexpr auto ccw = [](const PointType &a, const PointType &b,
+                                const PointType &c) {
+            constexpr const uint8_t X{0};
+            constexpr const uint8_t Y{1};
+            return (b[X] - a[X]) * (c[Y] - a[Y]) -
+                   (b[Y] - a[Y]) * (c[X] - a[X]);
+        };
+
+        auto sortedPolygon{polygon};
+        std::sort(sortedPolygon.begin(), sortedPolygon.end(), isLeft);
+
+        // Construct lower half of convex hull.
+        PolygonType lowerHalf;
+        for (auto it{sortedPolygon.begin()}; it != sortedPolygon.end(); ++it) {
+            while (lowerHalf.size() >= 2 &&
+                   !(ccw(*(lowerHalf.rbegin() + 1), *(lowerHalf.rbegin()),
+                         *it) < 0)) {
+                lowerHalf.pop_back();
+            }
+            lowerHalf.push_back(*it);
         }
-        upperHalf.push_back(*it);
+
+        // Construct upper half of convex hull.
+        PolygonType upperHalf;
+        for (auto it{sortedPolygon.rbegin()}; it != sortedPolygon.rend();
+             ++it) {
+            while (upperHalf.size() >= 2 &&
+                   !(ccw(*(upperHalf.rbegin() + 1), *(upperHalf.rbegin()),
+                         *it) < 0)) {
+                upperHalf.pop_back();
+            }
+            upperHalf.push_back(*it);
+        }
+
+        PolygonType convexHull;
+        convexHull.insert(convexHull.end(), lowerHalf.begin(), lowerHalf.end());
+        convexHull.insert(convexHull.end(), upperHalf.begin() + 1,
+                          upperHalf.end() - 1);
+        return convexHull;
     }
 
-    std::vector<std::array<T, 2>> convexHull;
-    convexHull.insert(convexHull.end(), lowerHalf.begin(), lowerHalf.end());
-    convexHull.insert(convexHull.end(), upperHalf.begin() + 1,
-                      upperHalf.end() - 1);
-    return convexHull;
-}
-
-/**
- * @param polygon describing a geofenced area
- * @param p point to test whether inside or not
- * @return true if p is inside the polygon OR when p is any vertex OR on an edge
- * of the convex hull
- */
-template <typename T>
-inline bool isIn(std::vector<std::array<T, 2>> &polygon, std::array<T, 2> &p) {
-    static_assert(std::is_arithmetic<T>::value, "T must be an arithmetic type");
-    bool inside{false};
-    if (2 < polygon.size()) {
+   public:
+    /**
+     * @param polygon describing a geofenced area
+     * @param p point to test whether inside or not
+     * @return true if p is inside the polygon OR when p is any vertex OR on an
+     * edge of the convex hull
+     */
+    constexpr bool isIn(const PointType &p) const {
+        if (this->convex_polygon.size() < 3) {
+            throw std::runtime_error("Polygon is empty");
+        }
+        bool inside{false};
         constexpr const uint8_t X{0};
         constexpr const uint8_t Y{1};
-        const std::size_t POINTS{polygon.size()};
+        const std::size_t POINTS{this->convex_polygon.size()};
         std::size_t i{0};
         std::size_t j{POINTS - 1};
         for (; i < POINTS; j = i++) {
-            if (isEqual(p[X], polygon.at(i)[X]) &&
-                isEqual(p[Y], polygon.at(i)[Y])) {
+            if (isEqual(p[X], this->convex_polygon.at(i)[X]) &&
+                isEqual(p[Y], this->convex_polygon.at(i)[Y])) {
                 return true;
             }
 
             // The algorithms is based on W. Randolph Franklin's implementation
             // that can be found here:
             // https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
-            if (((polygon.at(i)[Y] > p[Y]) != (polygon.at(j)[Y] > p[Y])) &&
-                (p[X] < (polygon.at(j)[X] - polygon.at(i)[X]) *
-                                (p[Y] - polygon.at(i)[Y]) /
-                                (polygon.at(j)[Y] - polygon.at(i)[Y]) +
-                            polygon.at(i)[X])) {
+            if (((this->convex_polygon.at(i)[Y] > p[Y]) !=
+                 (this->convex_polygon.at(j)[Y] > p[Y])) &&
+                (p[X] < (this->convex_polygon.at(j)[X] -
+                         this->convex_polygon.at(i)[X]) *
+                                (p[Y] - this->convex_polygon.at(i)[Y]) /
+                                (this->convex_polygon.at(j)[Y] -
+                                 this->convex_polygon.at(i)[Y]) +
+                            this->convex_polygon.at(i)[X])) {
                 inside = !inside;
             }
         }
+        return inside;
     }
-    return inside;
-}
+};
 
 }  // namespace geofence
 #endif
