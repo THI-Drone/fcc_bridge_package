@@ -19,7 +19,7 @@ constexpr int UART_BAUD_RATE = 57600;
 // Simulator IP address
 constexpr char const *const SIMULATOR_IP_ADDRESS = "127.0.0.1";
 // Simulator UDP Port number
-constexpr int SIMULATOR_PORT_NUMBER = 14550;
+constexpr int SIMULATOR_PORT_NUMBER = 14540;
 
 /**
  * @brief Struct to hold an entry in @ref fcc_bridge::SYS_ID_MAP
