@@ -400,14 +400,14 @@ bool FCCBridgeNode::check_flight_mode() {
 
     if (this->get_internal_state() == INTERNAL_STATE::STARTING_UP ||
         this->get_internal_state() == INTERNAL_STATE::ROS_SET_UP) {
-        return true;
+        RCLCPP_FATAL(this->get_internal_state_logger(),
+                     "In an invalid state to check FlightMode! Exiting...");
+        this->exit_process_on_error();
     }
 
     if (this->get_internal_state() == INTERNAL_STATE::MAVSDK_SET_UP ||
         this->get_internal_state() == INTERNAL_STATE::WAITING_FOR_ARM) {
-        RCLCPP_FATAL(this->get_internal_state_logger(),
-                     "In an invalid state to check FlightMode! Exiting...");
-        this->exit_process_on_error();
+        return true;
     }
 
     if (!this->last_fcc_landed_state.has_value()) {
