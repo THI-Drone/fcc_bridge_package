@@ -11,15 +11,15 @@
 namespace fcc_bridge::test::safety {
 
 class FCCBridgeNodeWrapper : public ::fcc_bridge::test::FCCBridgeNodeWrapper {
-    // mavsdk_rth_cb test cases implemented in
-    // test/safety/test_mavsdk_rth_cb.cpp
-    FRIEND_TEST(TestMAVSDKRTHCBFAILURE, RTHFailure);
-    FRIEND_TEST(BaseTestFixture, MAVSDKRTHCBSUCESS);
-
     // check_telemetry_result test cases implemented in
     // test/safety/test_check_telemetry_result.cpp
     FRIEND_TEST(TestMAVSDKRTelemetryRateFailure, TelemetryRateSetFailure);
     FRIEND_TEST(BaseTestFixture, TelemetryRateSetSucess);
+
+    // mavsdk_rth_cb test cases implemented in
+    // test/safety/test_mavsdk_rth_cb.cpp
+    FRIEND_TEST(TestMAVSDKRTHCBFAILURE, RTHFailure);
+    FRIEND_TEST(BaseTestFixture, MAVSDKRTHCBSUCESS);
 };
 
 using BaseTestFixture =

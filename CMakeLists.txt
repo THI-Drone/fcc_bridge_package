@@ -194,6 +194,7 @@ if(BUILD_TESTING)
 
           # Safety function tests
           test/safety/setup.cpp
+          test/safety/test_check_landed_state.cpp
           test/safety/test_check_telemetry_result.cpp
           test/safety/test_mavsdk_rth_cb.cpp
   )
