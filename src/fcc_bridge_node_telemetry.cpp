@@ -205,6 +205,7 @@ void FCCBridgeNode::send_mission_progress() {
                              "mode is invalid! Triggering RTH...");
                 this->trigger_rth();
                 return;
+            case INTERNAL_STATE::TAKING_OFF:
             case INTERNAL_STATE::FLYING_MISSION:
                 // This means we are ready for the next command
                 this->set_internal_state(INTERNAL_STATE::WAITING_FOR_COMMAND);

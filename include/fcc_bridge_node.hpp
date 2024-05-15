@@ -184,14 +184,15 @@ class FCCBridgeNode : public common_lib::CommonNode {
         WAITING_FOR_ARM =
             3,     /**< In this state the node waits for the FCC to be armed */
         ARMED = 4, /**< Waiting for TakeOff from mission control */
-        WAITING_FOR_COMMAND = 5, /**< Waiting for a command from the waypoint or
+        TAKING_OFF = 5, /**< Take off was triggered. Used to have a state where the UAV is still allowerd to be on ground while not accepting other commands */
+        WAITING_FOR_COMMAND = 6, /**< Waiting for a command from the waypoint or
                                     mission control node. */
         FLYING_MISSION =
-            6, /**< Currently a mission is running, waiting for it to finish */
-        LANDING = 7,        /**< Currently a trying to land */
-        RETURN_TO_HOME = 8, /**< Returning home. In this state no more commands
+            7, /**< Currently a mission is running, waiting for it to finish */
+        LANDING = 8,        /**< Currently a trying to land */
+        RETURN_TO_HOME = 9, /**< Returning home. In this state no more commands
                                are accepted. */
-        LANDED = 9, /**< The drone has landed and the node will shutdown */
+        LANDED = 10, /**< The drone has landed and the node will shutdown */
 
         ERROR =
             0xFF, /**< Error state to signal that an unrecoverable error has
@@ -458,7 +459,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Checks if the current flight state is adequate for the current
      * internal state
      *
-     * TODO: Currently just an empty function
+     * TODO: Check FlightMode & Armed
      *
      * Implemented in src/fcc_bridge_node_safety.cpp
      */

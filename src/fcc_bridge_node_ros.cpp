@@ -230,6 +230,7 @@ void FCCBridgeNode::uav_command_subscriber_cb(
                                  "Drone is still on ground. Exiting...");
                     this->set_internal_state(INTERNAL_STATE::ERROR);
                     this->exit_process_on_error();
+                case INTERNAL_STATE::TAKING_OFF:
                 case INTERNAL_STATE::WAITING_FOR_COMMAND:
                 case INTERNAL_STATE::FLYING_MISSION:
                 case INTERNAL_STATE::LANDING:
@@ -301,6 +302,7 @@ void FCCBridgeNode::mission_finished_cb(
                          "taken off! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
@@ -353,6 +355,7 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
                          "taken off! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
@@ -434,6 +437,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
         case INTERNAL_STATE::MAVSDK_SET_UP:
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
@@ -472,6 +476,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
             RCLCPP_INFO(this->get_internal_state_logger(),
                         "Not in a state to publish mission progress");
             break;
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
             // Send out mission progress
@@ -510,6 +515,7 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
         case INTERNAL_STATE::MAVSDK_SET_UP:
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:

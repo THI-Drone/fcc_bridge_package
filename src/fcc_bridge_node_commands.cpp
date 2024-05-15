@@ -42,6 +42,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
                          this->internal_state_to_str());
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
@@ -189,6 +190,7 @@ void FCCBridgeNode::start_flying_to_waypoint(
                          this->internal_state_to_str());
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
@@ -331,8 +333,8 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
         case INTERNAL_STATE::ROS_SET_UP:
         case INTERNAL_STATE::MAVSDK_SET_UP:
         case INTERNAL_STATE::WAITING_FOR_ARM:
-        case INTERNAL_STATE::LANDED:
         case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::LANDED:
             // The UAV is still or again on the ground so the only thing left is
             // to kill the process
             RCLCPP_FATAL(this->get_internal_state_logger(),
@@ -341,6 +343,7 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
                          this->internal_state_to_str());
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:

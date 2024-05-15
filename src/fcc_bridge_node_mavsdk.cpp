@@ -210,7 +210,6 @@ void FCCBridgeNode::verify_mavsdk_connection() {
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::LANDED:
             this->set_internal_state(INTERNAL_STATE::ERROR);
             [[fallthrough]];
         case INTERNAL_STATE::ERROR:
@@ -221,10 +220,12 @@ void FCCBridgeNode::verify_mavsdk_connection() {
         case INTERNAL_STATE::MAVSDK_SET_UP:
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::WAITING_FOR_COMMAND:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
+        case INTERNAL_STATE::LANDED:
             if (this->mavsdk_system->is_connected()) {
                 RCLCPP_INFO(this->get_mavsdk_interface_logger(),
                             "MAVSDK state is good");
@@ -482,6 +483,7 @@ bool FCCBridgeNode::execute_mission_plan(
 void FCCBridgeNode::trigger_rth() {
     // In case a mission is already running this store the result of canceling
     // the mission. Unused otherwise
+    // TODO: DO NOT!!! rely on the internal state
     mavsdk::Mission::Result mission_clear_result;
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::ERROR:
@@ -503,6 +505,7 @@ void FCCBridgeNode::trigger_rth() {
             RCLCPP_WARN(this->get_internal_state_logger(),
                         "Trying to trigger RTH while already returning home");
             return;
+        case INTERNAL_STATE::TAKING_OFF:
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
             // This means a mission is currently on going. Trying to clear the
