@@ -2,9 +2,11 @@
 // Created by Johan <job8197@thi.de> on 10.05.2024.
 //
 
-#include "test_header.hpp"
+#include "fcc_exit_exceptions.hpp"
+#include "safety/safety_fixtures.hpp"
+#include "test_logger.hpp"
 
-namespace fcc_bridge_test {
+namespace fcc_bridge::test::safety {
 
 using RES_TYPE = mavsdk::Action::Result;
 
@@ -60,4 +62,4 @@ TEST_F(BaseTestFixture, MAVSDKRTHCBSUCESS) {
 }
 
 // TODO: Test disarming once implemented
-}  // namespace fcc_bridge_test
+}  // namespace fcc_bridge::test::safety

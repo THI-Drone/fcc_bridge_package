@@ -185,14 +185,21 @@ if(BUILD_TESTING)
 
           # Test files:
           test/main.cpp
+          test/setup.cpp
+
+          # Geofence tests
+          test/geofence/setup.cpp
+          test/geofence/test_constructor.cpp
+          test/geofence/test_isEqual.cpp
 
           # Safety function tests
+          test/safety/setup.cpp
           test/safety/test_check_telemetry_result.cpp
           test/safety/test_mavsdk_rth_cb.cpp
   )
 
   target_compile_options(fcc_bridge_test PRIVATE
-          ${CXX_COMPILE_OPTIONS}
+          ${CXX_COMPILE_OPTIONS} -ggdb
   )
 
   target_compile_definitions(fcc_bridge_test PRIVATE
