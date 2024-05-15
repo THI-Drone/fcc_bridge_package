@@ -2,9 +2,125 @@
 // Created by Johan <job8197@thi.de> on 04.05.2024.
 //
 
+#include <map>
+#include <set>
+
 #include "fcc_bridge_node.hpp"
 
 namespace fcc_bridge {
+
+namespace {
+
+using INTERNAL_STATE = FCCBridgeNode::INTERNAL_STATE;
+
+using LandedState = mavsdk::Telemetry::LandedState;
+
+using FlightMode = mavsdk::Telemetry::FlightMode;
+
+template <typename T>
+struct state_action {
+    const std::set<T> ERROR_STATES;
+    const std::set<T> RTH_STATES;
+    const std::set<T> VALID_STATES;
+
+    state_action(const std::initializer_list<T> &error_states,
+                 const std::initializer_list<T> &rth_states,
+                 const std::initializer_list<T> &valid_states)
+        : ERROR_STATES(error_states),
+          RTH_STATES(rth_states),
+          VALID_STATES(valid_states) {}
+
+    state_action(const std::set<T> &error_states,
+                 const std::initializer_list<T> &rth_states,
+                 const std::initializer_list<T> &valid_states)
+        : ERROR_STATES(error_states),
+          RTH_STATES(rth_states),
+          VALID_STATES(valid_states) {}
+};
+
+const state_action<LandedState> uk_og_valid{
+    {},
+    {LandedState::TakingOff, LandedState::InAir, LandedState::Landing},
+    {LandedState::Unknown, LandedState::OnGround}};
+
+const state_action<LandedState> ia_valid{
+    {LandedState::OnGround},
+    {LandedState::Unknown, LandedState::TakingOff, LandedState::Landing},
+    {LandedState::InAir}};
+
+const state_action<LandedState> og_ia_la_valid{
+    {},
+    {LandedState::Unknown, LandedState::TakingOff},
+    {LandedState::OnGround, LandedState::InAir, LandedState::Landing}};
+
+// INTERNAL_STATE::ERROR -> Kill / INTERNAL_STATE::STARTING_UP &
+// INTERNAL_STATE::ROS_SET_UP -> exit expected to be handled explicitly
+const std::map<const INTERNAL_STATE, const state_action<LandedState>>
+    landed_state_actions{
+        {INTERNAL_STATE::MAVSDK_SET_UP, uk_og_valid},
+        {INTERNAL_STATE::WAITING_FOR_ARM, uk_og_valid},
+        {INTERNAL_STATE::ARMED,
+         {{},
+          {LandedState::Unknown, LandedState::TakingOff, LandedState::InAir,
+           LandedState::Landing},
+          {LandedState::OnGround}}},
+        {INTERNAL_STATE::TAKING_OFF,
+         {{},
+          {LandedState::Unknown, LandedState::Landing},
+          {LandedState::OnGround, LandedState::TakingOff, LandedState::InAir}}},
+        {INTERNAL_STATE::WAITING_FOR_COMMAND, ia_valid},
+        {INTERNAL_STATE::FLYING_MISSION, ia_valid},
+        {INTERNAL_STATE::LANDING, og_ia_la_valid},
+        {INTERNAL_STATE::RETURN_TO_HOME, og_ia_la_valid},
+        {INTERNAL_STATE::LANDED, uk_og_valid}};
+
+const std::set<FlightMode> exit_flight_modes{
+    FlightMode::Offboard,   FlightMode::FollowMe, FlightMode::Manual,
+    FlightMode::Altctl,     FlightMode::Posctl,   FlightMode::Acro,
+    FlightMode::Stabilized, FlightMode::Rattitude};
+
+// INTERNAL_STATE::ERROR -> Kill / INTERNAL_STATE::STARTING_UP &
+// INTERNAL_STATE::ROS_SET_UP -> exit / INTERNAL_STATE::MAVSDK_SET_UP &
+// INTERNAL_STATE::WAITING_FOR_ARM -> valid expected to be handled explicitly
+const std::map<const INTERNAL_STATE, const state_action<FlightMode>>
+    flight_mode_actions{
+        {INTERNAL_STATE::ARMED,
+         {exit_flight_modes,
+          {FlightMode::Unknown, FlightMode::Ready, FlightMode::Takeoff,
+           FlightMode::Mission, FlightMode::ReturnToLaunch, FlightMode::Land},
+          {FlightMode::Hold}}},
+        {INTERNAL_STATE::TAKING_OFF,
+         {exit_flight_modes,
+          {FlightMode::Unknown, FlightMode::Ready, FlightMode::Takeoff,
+           FlightMode::ReturnToLaunch, FlightMode::Land},
+          {FlightMode::Hold, FlightMode::Mission}}},
+        {INTERNAL_STATE::WAITING_FOR_COMMAND,
+         {exit_flight_modes,
+          {FlightMode::Unknown, FlightMode::Ready, FlightMode::Takeoff,
+           FlightMode::Mission, FlightMode::ReturnToLaunch, FlightMode::Land},
+          {FlightMode::Hold}}},
+        {INTERNAL_STATE::FLYING_MISSION,
+         {exit_flight_modes,
+          {FlightMode::Unknown, FlightMode::Ready, FlightMode::Takeoff,
+           FlightMode::Hold, FlightMode::ReturnToLaunch, FlightMode::Land},
+          {FlightMode::Mission}}},
+        {INTERNAL_STATE::LANDING,
+         {exit_flight_modes,
+          {FlightMode::Unknown, FlightMode::Ready, FlightMode::Takeoff,
+           FlightMode::ReturnToLaunch},
+          {FlightMode::Hold, FlightMode::Mission, FlightMode::Land}}},
+        {INTERNAL_STATE::RETURN_TO_HOME,
+         {exit_flight_modes,
+          {FlightMode::Unknown, FlightMode::Ready, FlightMode::Takeoff,
+           FlightMode::Land},
+          {FlightMode::Hold, FlightMode::Mission, FlightMode::ReturnToLaunch}}},
+        {INTERNAL_STATE::WAITING_FOR_COMMAND,
+         {exit_flight_modes,
+          {FlightMode::Unknown, FlightMode::Takeoff, FlightMode::Mission,
+           FlightMode::ReturnToLaunch, FlightMode::Land},
+          {FlightMode::Ready, FlightMode::Hold}}}};
+
+}  // namespace
 
 void FCCBridgeNode::check_telemetry_result(
     const mavsdk::Telemetry::Result &result, const char *const telemetry_type) {
@@ -200,204 +316,143 @@ void FCCBridgeNode::check_gps_state() {
 void FCCBridgeNode::check_flight_state() {
     RCLCPP_WARN_ONCE(this->get_safety_logger(),
                      "Flight State check not fully implemented!");
-    switch (this->get_internal_state()) {
-        case INTERNAL_STATE::ERROR:
-            // This should never happen, as the process exits on ERROR state
-            throw std::runtime_error(std::string(__func__) +
-                                     " called while in ERROR state");
-            // This function should never be called in these states
-        case INTERNAL_STATE::STARTING_UP:
-        case INTERNAL_STATE::ROS_SET_UP:
-            RCLCPP_FATAL(this->get_internal_state_logger(),
-                         "In an invalid state to check GPS! Exiting...");
-            this->exit_process_on_error();
-        case INTERNAL_STATE::MAVSDK_SET_UP:
-        case INTERNAL_STATE::WAITING_FOR_ARM:
-        case INTERNAL_STATE::LANDED:
-            if (!this->last_fcc_landed_state.has_value()) {
-                RCLCPP_FATAL(this->get_safety_logger(),
-                             "Got no cached landed state! Exiting...");
-                this->set_internal_state(INTERNAL_STATE::ERROR);
-                this->exit_process_on_error();
-            }
-            RCLCPP_DEBUG(this->get_safety_logger(),
-                         "Checking Landed state value: %s",
-                         FCCBridgeNode::mavsdk_landed_state_to_str(
-                             this->last_fcc_landed_state.value()));
-            switch (this->last_fcc_landed_state.value()) {
-                case mavsdk::Telemetry::LandedState::Unknown:
-                case mavsdk::Telemetry::LandedState::OnGround:
-                    // Unknown is acceptable as we should still be on ground
-                    break;
-                case mavsdk::Telemetry::LandedState::TakingOff:
-                case mavsdk::Telemetry::LandedState::InAir:
-                case mavsdk::Telemetry::LandedState::Landing:
-                    RCLCPP_ERROR(this->get_safety_logger(),
-                                 "UAV is airborne while in state %s! "
-                                 "Triggering RTH...",
-                                 this->internal_state_to_str());
-                    this->trigger_rth();
-                    return;
-                default:
-                    throw std::runtime_error(
-                        std::string("Got unknown "
-                                    "mavsdk::Telemetry::LandedState value: ") +
-                        std::to_string(static_cast<int>(this->last_fcc_landed_state.value())));
-            }
-            break;
-        case INTERNAL_STATE::ARMED:
-            if (!this->last_fcc_landed_state.has_value()) {
-                RCLCPP_FATAL(this->get_safety_logger(),
-                             "Got no cached landed state! Exiting...");
-                this->set_internal_state(INTERNAL_STATE::ERROR);
-                this->exit_process_on_error();
-            }
-            RCLCPP_DEBUG(this->get_safety_logger(),
-                         "Checking Landed state value: %s",
-                         FCCBridgeNode::mavsdk_landed_state_to_str(
-                             this->last_fcc_landed_state.value()));
-            switch (this->last_fcc_landed_state.value()) {
-                case mavsdk::Telemetry::LandedState::Unknown:
-                    RCLCPP_ERROR(this->get_safety_logger(),
-                                 "UAV does not know if it is airborne while in state %s! Triggering RTH...",
-                                 this->internal_state_to_str());
-                    this->trigger_rth();
-                    return;
-                case mavsdk::Telemetry::LandedState::OnGround:
-                    // Only OnGround is acceptable
-                    break;
-                case mavsdk::Telemetry::LandedState::TakingOff:
-                case mavsdk::Telemetry::LandedState::InAir:
-                case mavsdk::Telemetry::LandedState::Landing:
-                    RCLCPP_ERROR(this->get_safety_logger(),
-                                 "UAV is airborne while in state %s! "
-                                 "Triggering RTH...",
-                                 this->internal_state_to_str());
-                    this->trigger_rth();
-                    return;
-                default:
-                    throw std::runtime_error(
-                        std::string("Got unknown "
-                                    "mavsdk::Telemetry::LandedState value: ") +
-                        std::to_string(static_cast<int>(
-                            this->last_fcc_landed_state.value())));
-            }
-            break;
-        case INTERNAL_STATE::TAKING_OFF:
-            if (!this->last_fcc_landed_state.has_value()) {
-                RCLCPP_FATAL(this->get_safety_logger(),
-                             "Got no cached landed state! Exiting...");
-                this->set_internal_state(INTERNAL_STATE::ERROR);
-                this->exit_process_on_error();
-            }
-            RCLCPP_DEBUG(this->get_safety_logger(),
-                         "Checking Landed state value: %s",
-                         FCCBridgeNode::mavsdk_landed_state_to_str(
-                             this->last_fcc_landed_state.value()));
-            switch (this->last_fcc_landed_state.value()) {
-                case mavsdk::Telemetry::LandedState::Unknown:
-                case mavsdk::Telemetry::LandedState::Landing:
-                    RCLCPP_ERROR(this->get_safety_logger(),
-                                 "UAV does not know if it is landing while in state %s! Triggering RTH...",
-                                 this->internal_state_to_str());
-                    this->trigger_rth();
-                    return;
-                case mavsdk::Telemetry::LandedState::OnGround:
-                case mavsdk::Telemetry::LandedState::TakingOff:
-                case mavsdk::Telemetry::LandedState::InAir:
-                    // Only OnGround TakingOff and InAir are acceptable
-                    break;
-                    RCLCPP_ERROR(this->get_safety_logger(),
-                                 "Drone is not in a valid LandedState while in state %s! Triggering RTH...",
-                                 this->internal_state_to_str());
-                    this->trigger_rth();
-                    return;
-                default:
-                    throw std::runtime_error(
-                        std::string("Got unknown "
-                                    "mavsdk::Telemetry::LandedState value: ") +
-                        std::to_string(static_cast<int>(
-                            this->last_fcc_landed_state.value())));
-            }
-            break;
-        case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_MISSION:
-            if (!this->last_fcc_landed_state.has_value()) {
-                RCLCPP_FATAL(this->get_safety_logger(),
-                             "Got no cached landed state! Exiting...");
-                this->set_internal_state(INTERNAL_STATE::ERROR);
-                this->exit_process_on_error();
-            }
-            RCLCPP_DEBUG(this->get_safety_logger(),
-                         "Checking Landed state value: %s",
-                         FCCBridgeNode::mavsdk_landed_state_to_str(
-                             this->last_fcc_landed_state.value()));
-            switch (this->last_fcc_landed_state.value()) {
-                case mavsdk::Telemetry::LandedState::Unknown:
-                case mavsdk::Telemetry::LandedState::Landing:
-                case mavsdk::Telemetry::LandedState::TakingOff:
-                    RCLCPP_ERROR(this->get_safety_logger(),
-                                 "UAV is not fully airborne while in state %s! Triggering RTH...",
-                                 this->internal_state_to_str());
-                    this->trigger_rth();
-                    return;
-                case mavsdk::Telemetry::LandedState::OnGround:
-                    RCLCPP_ERROR(this->get_safety_logger(),
-                                 "UAV is on ground while in state %s! Exiting...",
-                                 this->internal_state_to_str());
-                    this->set_internal_state(INTERNAL_STATE::ERROR);
-                    this->exit_process_on_error();
-                case mavsdk::Telemetry::LandedState::InAir:
-                    // Only InAir is acceptable
-                    break;
-                default:
-                    throw std::runtime_error(
-                        std::string("Got unknown "
-                                    "mavsdk::Telemetry::LandedState value: ") +
-                        std::to_string(static_cast<int>(
-                            this->last_fcc_landed_state.value())));
-            }
-            break;
-        case INTERNAL_STATE::LANDING:
-        case INTERNAL_STATE::RETURN_TO_HOME:
-            if (!this->last_fcc_landed_state.has_value()) {
-                RCLCPP_FATAL(this->get_safety_logger(),
-                             "Got no cached landed state! Exiting...");
-                this->set_internal_state(INTERNAL_STATE::ERROR);
-                this->exit_process_on_error();
-            }
-            RCLCPP_DEBUG(this->get_safety_logger(),
-                         "Checking Landed state value: %s",
-                         FCCBridgeNode::mavsdk_landed_state_to_str(
-                             this->last_fcc_landed_state.value()));
-            switch (this->last_fcc_landed_state.value()) {
-                case mavsdk::Telemetry::LandedState::Unknown:
-                case mavsdk::Telemetry::LandedState::TakingOff:
-                    RCLCPP_ERROR(this->get_safety_logger(),
-                                 "UAV is not in a valid LandedState while in state %s! Triggering RTH...",
-                                 this->internal_state_to_str());
-                    this->trigger_rth();
-                    return;
-                case mavsdk::Telemetry::LandedState::OnGround:
-                case mavsdk::Telemetry::LandedState::InAir:
-                case mavsdk::Telemetry::LandedState::Landing:
-                    // Only OnGround InAir Landing is acceptable
-                    break;
-                default:
-                    throw std::runtime_error(
-                        std::string("Got unknown "
-                                    "mavsdk::Telemetry::LandedState value: ") +
-                        std::to_string(static_cast<int>(
-                            this->last_fcc_landed_state.value())));
-            }
-            break;
-        default:
-            throw std::runtime_error(
-                std::string("Got invalid value for internal_state: ") +
-                std::to_string(static_cast<int>(this->get_internal_state())));
+
+    if (!this->check_landed_state()) {
+        RCLCPP_ERROR(this->get_safety_logger(),
+                     "LandedState checking triggered an RTH");
+        return;
+    }
+
+    if (!this->check_flight_mode()) {
+        RCLCPP_ERROR(this->get_safety_logger(),
+                     "FlightMode checking triggered an RTH");
+        return;
     }
 
     RCLCPP_INFO(this->get_safety_logger(), "FlightState check successful");
+}
+
+bool FCCBridgeNode::check_landed_state() {
+    if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
+        // This should never happen, as the process exits on ERROR state
+        throw std::runtime_error(std::string(__func__) +
+                                 " called while in ERROR state");
+    }
+
+    if (this->get_internal_state() == INTERNAL_STATE::STARTING_UP ||
+        this->get_internal_state() == INTERNAL_STATE::ROS_SET_UP) {
+        RCLCPP_FATAL(this->get_internal_state_logger(),
+                     "In an invalid state to check LandedState! Exiting...");
+        this->exit_process_on_error();
+    }
+
+    if (!this->last_fcc_landed_state.has_value()) {
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "Found no cached LandedState! Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    }
+
+    const auto entry = landed_state_actions.find(this->get_internal_state());
+    if (entry == landed_state_actions.end()) {
+        throw std::runtime_error(
+            std::string("Got invalid value for internal_state: ") +
+            std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    const state_action<LandedState> &actions = entry->second;
+    if (actions.ERROR_STATES.find(this->last_fcc_landed_state.value()) !=
+        actions.ERROR_STATES.end()) {
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "LandedState %s while in %s! Exiting...",
+                     FCCBridgeNode::mavsdk_landed_state_to_str(
+                         this->last_fcc_landed_state.value()),
+                     this->internal_state_to_str());
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    } else if (actions.RTH_STATES.find(this->last_fcc_landed_state.value()) !=
+               actions.RTH_STATES.end()) {
+        RCLCPP_ERROR(this->get_safety_logger(),
+                     "LandedState %s while in %s! Triggering RTH...",
+                     FCCBridgeNode::mavsdk_landed_state_to_str(
+                         this->last_fcc_landed_state.value()),
+                     this->internal_state_to_str());
+        this->trigger_rth();
+        return false;
+    } else if (actions.VALID_STATES.find(this->last_fcc_landed_state.value()) !=
+               actions.VALID_STATES.end()) {
+        return true;
+    } else {
+        throw std::runtime_error(
+            std::string("Got unknown "
+                        "mavsdk::Telemetry::LandedState value: ") +
+            std::to_string(
+                static_cast<int>(this->last_fcc_landed_state.value())));
+    }
+}
+
+bool FCCBridgeNode::check_flight_mode() {
+    if (this->get_internal_state() == INTERNAL_STATE::ERROR) {
+        // This should never happen, as the process exits on ERROR state
+        throw std::runtime_error(std::string(__func__) +
+                                 " called while in ERROR state");
+    }
+
+    if (this->get_internal_state() == INTERNAL_STATE::STARTING_UP ||
+        this->get_internal_state() == INTERNAL_STATE::ROS_SET_UP) {
+        return true;
+    }
+
+    if (this->get_internal_state() == INTERNAL_STATE::MAVSDK_SET_UP ||
+        this->get_internal_state() == INTERNAL_STATE::WAITING_FOR_ARM) {
+        RCLCPP_FATAL(this->get_internal_state_logger(),
+                     "In an invalid state to check FlightMode! Exiting...");
+        this->exit_process_on_error();
+    }
+
+    if (!this->last_fcc_landed_state.has_value()) {
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "Found no cached FlightMode Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    }
+
+    const auto entry = flight_mode_actions.find(this->get_internal_state());
+    if (entry == flight_mode_actions.end()) {
+        throw std::runtime_error(
+            std::string("Got invalid value for internal_state: ") +
+            std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    const state_action<FlightMode> &actions = entry->second;
+    if (actions.ERROR_STATES.find(this->last_fcc_flight_mode.value()) !=
+        actions.ERROR_STATES.end()) {
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "FlightMode %s while in %s! Exiting...",
+                     FCCBridgeNode::mavsdk_flight_mode_to_str(
+                         this->last_fcc_flight_mode.value()),
+                     this->internal_state_to_str());
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    } else if (actions.RTH_STATES.find(this->last_fcc_flight_mode.value()) !=
+               actions.RTH_STATES.end()) {
+        RCLCPP_ERROR(this->get_safety_logger(),
+                     "FlightMode %s while in %s! Triggering RTH...",
+                     FCCBridgeNode::mavsdk_flight_mode_to_str(
+                         this->last_fcc_flight_mode.value()),
+                     this->internal_state_to_str());
+        this->trigger_rth();
+        return false;
+    } else if (actions.VALID_STATES.find(this->last_fcc_flight_mode.value()) !=
+               actions.VALID_STATES.end()) {
+        return true;
+    } else {
+        throw std::runtime_error(
+            std::string("Got unknown "
+                        "mavsdk::Telemetry::FlightMode value: ") +
+            std::to_string(
+                static_cast<int>(this->last_fcc_landed_state.value())));
+    }
 }
 
 void FCCBridgeNode::check_battery_state() {

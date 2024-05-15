@@ -108,7 +108,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @return The rclcpp::Logger
      */
-    inline rclcpp::Logger get_mavsdk_internal_logger() const {
+    inline const rclcpp::Logger get_mavsdk_internal_logger() const {
         return this->get_logger().get_child(MAVSDK_INTERNAL_LOGGER_NAME);
     }
 
@@ -117,7 +117,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @return The rclcpp::Logger
      */
-    inline rclcpp::Logger get_mavsdk_interface_logger() const {
+    inline const rclcpp::Logger get_mavsdk_interface_logger() const {
         return this->get_logger().get_child(MAVSDK_INTERFACE_LOGGER_NAME);
     }
 
@@ -126,7 +126,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @return The rclcpp::Logger
      */
-    inline rclcpp::Logger get_ros_interface_logger() const {
+    inline const rclcpp::Logger get_ros_interface_logger() const {
         return this->get_logger().get_child(ROS_INTERFACE_LOGGER_NAME);
     }
 
@@ -135,7 +135,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @return The rclcpp::Logger
      */
-    inline rclcpp::Logger get_fcc_telemetry_logger() const {
+    inline const rclcpp::Logger get_fcc_telemetry_logger() const {
         return this->get_logger().get_child(FCC_TELEMETRY_LOGGER_NAME);
     }
 
@@ -144,7 +144,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @return The rclcpp::Logger
      */
-    inline rclcpp::Logger get_internal_state_logger() const {
+    inline const rclcpp::Logger get_internal_state_logger() const {
         return this->get_logger().get_child(INTERNAL_STATE_LOGGER_NAME);
     }
 
@@ -153,7 +153,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @return The rclcpp::Logger
      */
-    inline rclcpp::Logger get_safety_logger() const {
+    inline const rclcpp::Logger get_safety_logger() const {
         return this->get_logger().get_child(SAFETY_LOGGER_NAME);
     }
 
@@ -162,7 +162,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @return The rclcpp::Logger
      */
-    inline rclcpp::Logger get_command_handler_logger() const {
+    inline const rclcpp::Logger get_command_handler_logger() const {
         return this->get_logger().get_child(COMMAND_HANDLER_LOGGER_NAME);
     }
 
@@ -170,7 +170,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                        Internal state members                        */
     /************************************************************************/
 
-   protected:
+   public:
     // Internal state enum and member to track the current state of the FCC
     // Bridge
     enum INTERNAL_STATE : u8 {
@@ -202,6 +202,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     INTERNAL_STATE
     internal_state; /**< Current internal state of the fcc_node */
 
+   protected:
     /**
      * @brief Set the internal state of this node
      *
@@ -459,11 +460,32 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Checks if the current flight state is adequate for the current
      * internal state
      *
-     * TODO: Check FlightMode & Armed
-     *
      * Implemented in src/fcc_bridge_node_safety.cpp
      */
     void check_flight_state();
+    /**
+     * @brief Checks if the cached LandedState is valid in the current
+     * internal_state
+     *
+     * @warning Triggers an exit if the state is invalid and the UAV is on
+     * ground
+     *
+     * @throws std::runtime_error If an unknown enum value is detected
+     *
+     * @returns true if the state is valid and false if an RTH was triggered
+     */
+    bool check_landed_state();
+    /**
+     * @brief Checks if the cached FlightMode is valid in the current
+     * internal_state
+     *
+     * @warning Triggers an exit if the mode is invalid and the UAV is on ground
+     *
+     * @throws std::runtime_error If an unknown enum value is detected
+     *
+     * @returns true if the mode is valid and false if an RTH was triggered
+     */
+    bool check_flight_mode();
     /**
      * @brief Checks if the current battery state is adequate for the current
      * internal state
@@ -1035,7 +1057,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
-    [[noreturn]] void exit_process_on_error();
+    [[noreturn]] void exit_process_on_error() const;
 
     /**************************************************************************/
     /*               MAVSDK <=> ROS "enum" conversion functions               */

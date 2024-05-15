@@ -550,7 +550,7 @@ void FCCBridgeNode::trigger_rth() {
     RCLCPP_DEBUG(this->get_mavsdk_interface_logger(), "Triggered RTH");
 }
 
-void FCCBridgeNode::exit_process_on_error() {
+void FCCBridgeNode::exit_process_on_error() const {
     RCLCPP_WARN(this->get_safety_logger(), "Exiting process with EXIT_FAILURE");
 
     if (this->get_internal_state() != INTERNAL_STATE::ERROR) {
