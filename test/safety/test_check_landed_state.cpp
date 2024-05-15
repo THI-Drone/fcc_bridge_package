@@ -10,6 +10,6 @@ namespace fcc_bridge::test::safety {
 
 using LandedState = mavsdk::Telemetry::LandedState;
 
-using ERRORStateFixture = ValueTestFixture<LandedState>;
+using ERRORStateFixture = ValuedTestFixture<LandedState>;
 
 }  // namespace fcc_bridge::test::safety
