@@ -20,6 +20,7 @@
 
 // rclcpp headers
 #include "rclcpp/node_options.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "rclcpp/timer.hpp"
 
 // interfaces headers

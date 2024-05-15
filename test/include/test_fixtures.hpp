@@ -12,7 +12,7 @@
 /**
  * @brief Namespace for testcases and related members for the fcc_bridge
  */
-namespace fcc_bridge_test {
+namespace fcc_bridge::test {
 
 /**
  * @brief Error to be thrown instead of exiting the process by

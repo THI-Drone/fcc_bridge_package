@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(fcc_bridge)
 
 set(CXX_COMPILE_OPTIONS
+        # Floating point math
+        -frounding-math
+        -fsignaling-nans
+
         # Compilation syntax and safety flags
         -Wall
         -Wextra
