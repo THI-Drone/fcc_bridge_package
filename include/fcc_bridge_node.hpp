@@ -184,7 +184,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
         WAITING_FOR_ARM =
             3,     /**< In this state the node waits for the FCC to be armed */
         ARMED = 4, /**< Waiting for TakeOff from mission control */
-        TAKING_OFF = 5, /**< Take off was triggered. Used to have a state where the UAV is still allowerd to be on ground while not accepting other commands */
+        TAKING_OFF = 5, /**< Take off was triggered. Used to have a state where
+                           the UAV is still allowerd to be on ground while not
+                           accepting other commands */
         WAITING_FOR_COMMAND = 6, /**< Waiting for a command from the waypoint or
                                     mission control node. */
         FLYING_MISSION =
