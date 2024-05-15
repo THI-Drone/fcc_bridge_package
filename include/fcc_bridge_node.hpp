@@ -197,7 +197,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
             0xFF, /**< Error state to signal that an unrecoverable error has
                      occurred and even an RTH is not possible any more. Shorty
                      after this state if taken the process will exit. */
-    };            /**< Possible internal states */
+    }; /**< Possible internal states */
     INTERNAL_STATE
     internal_state; /**< Current internal state of the fcc_node */
 

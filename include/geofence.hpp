@@ -82,7 +82,7 @@ class invalid_polygon_error : public std::runtime_error {
      * @param msg The error message to convey
      */
     explicit invalid_polygon_error(const std::string &msg)
-        : std::runtime_error(msg){
+        : std::runtime_error(msg) {
 
           };
 };
@@ -98,7 +98,7 @@ class invalid_point_error : public std::runtime_error {
      * @param msg The error message to convey
      */
     explicit invalid_point_error(const std::string &msg)
-        : std::runtime_error(msg){
+        : std::runtime_error(msg) {
 
           };
 };
@@ -238,7 +238,6 @@ class Geofence {
 
             ccw = [](const PointType &a, const PointType &b,
                      const PointType &c) -> T {
-
                 errno = 0;
                 const T res = (b[X] - a[X]) * (c[Y] - a[Y]) -
                               (b[Y] - a[Y]) * (c[X] - a[X]);
@@ -248,7 +247,6 @@ class Geofence {
                         "operations");
                 }
                 return res;
-
             };
 
         } else {
@@ -258,7 +256,6 @@ class Geofence {
 
             ccw = [](const PointType &a, const PointType &b,
                      const PointType &c) -> T {
-
                 /*
                  * return (b[X] - a[X]) * (c[Y] - a[Y]) - (b[Y] - a[Y]) * (c[X]
                  * - a[X]);
@@ -376,11 +373,12 @@ class Geofence {
                     // Transformed equation to get rid of the division
                     T cur_j_sub_i_x;  // cur_point_j[X] - cur_point_i[X]
                     T p_sub_cur_i_y;  // point[Y] - cur_point_i[Y]
-                    T prod1;           // (cur_point_j[X] - cur_point_i[X]) *
+                    T prod1;          // (cur_point_j[X] - cur_point_i[X]) *
                                       // (point[Y] - cur_point_i[Y])
                     T cur_j_sub_i_y;  // cur_point_j[Y] - cur_point_i[Y]
-                    T p_sub_cur_i_x; // point[X] - cur_point_i[X]
-                    T prod2; // (point[X] - cur_point_i[X]) * (cur_point_j[Y] - cur_point_i[Y])
+                    T p_sub_cur_i_x;  // point[X] - cur_point_i[X]
+                    T prod2;  // (point[X] - cur_point_i[X]) * (cur_point_j[Y] -
+                              // cur_point_i[Y])
 
                     if (__builtin_sub_overflow(cur_point_j[X], cur_point_i[X],
                                                &cur_j_sub_i_x) ||
@@ -390,24 +388,27 @@ class Geofence {
                                                &prod1) ||
                         __builtin_sub_overflow(cur_point_j[Y], cur_point_i[Y],
                                                &cur_j_sub_i_y) ||
-                        __builtin_sub_overflow(point[X], cur_point_i[X], &p_sub_cur_i_x) ||
-                        __builtin_mul_overflow(p_sub_cur_i_x, cur_j_sub_i_y, &prod2)) {
+                        __builtin_sub_overflow(point[X], cur_point_i[X],
+                                               &p_sub_cur_i_x) ||
+                        __builtin_mul_overflow(p_sub_cur_i_x, cur_j_sub_i_y,
+                                               &prod2)) {
                         throw invalid_polygon_error(
                             "There was an arithmetic error checking if the "
                             "point is inside the polygon");
                     }
-                    if(0 < cur_j_sub_i_y) {
+                    if (0 < cur_j_sub_i_y) {
                         if (prod2 < prod1) {
                             inside = !inside;
                         }
-                    } else if(cur_j_sub_i_y < 0) {
+                    } else if (cur_j_sub_i_y < 0) {
                         // Switch inequality if original divisor is negative
                         if (prod2 > prod1) {
                             inside = !inside;
                         }
                     } else {
                         throw invalid_polygon_error(
-                            "There was an arithmetic error checking if the point is inside the polygon");
+                            "There was an arithmetic error checking if the "
+                            "point is inside the polygon");
                     }
                 }
             }

@@ -35,7 +35,8 @@
 namespace fcc_bridge::test::geofence {
 
 using GeofenceConstructorTypes =
-    testing::Types<int8_t, int16_t, int32_t, int64_t, float, double, long double>;
+    testing::Types<int8_t, int16_t, int32_t, int64_t, float, double,
+                   long double>;
 TYPED_TEST_SUITE_P(GeofenceConstructor);
 
 TYPED_TEST_P(GeofenceConstructor, Default) {
