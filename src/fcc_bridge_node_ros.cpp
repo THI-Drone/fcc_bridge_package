@@ -385,6 +385,14 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
         RCLCPP_DEBUG(this->get_ros_interface_logger(),
                      "Got geofence point lat: %f°\tlon: %f°",
                      point.latitude_deg, point.longitude_deg);
+        if (!std::isfinite(point.latitude_deg) ||
+            !std::isfinite(point.longitude_deg)) {
+            RCLCPP_FATAL(this->get_ros_interface_logger(),
+                         "One of the geofence point contains non finite "
+                         "coordinates! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        }
         geofence_polygon.push_back({point.latitude_deg, point.longitude_deg});
     }
 
