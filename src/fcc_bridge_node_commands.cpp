@@ -154,7 +154,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
     }
 
     // Set state to waiting for mission
-    this->set_internal_state(INTERNAL_STATE::FLYING_MISSION);
+    this->set_internal_state(INTERNAL_STATE::TAKING_OFF);
 
     RCLCPP_INFO(
         this->get_command_handler_logger(),
