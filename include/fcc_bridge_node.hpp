@@ -333,7 +333,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
     /*                          Cached ROS messages                          */
     /*************************************************************************/
 
-    interfaces::msg::Heartbeat
+    std::optional<interfaces::msg::Heartbeat>
         last_mission_control_heartbeat; /**< The last received heartbeat from
                                           mission control */
 

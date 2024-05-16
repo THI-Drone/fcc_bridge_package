@@ -120,6 +120,8 @@ const std::map<const INTERNAL_STATE, const state_action<FlightMode>>
            FlightMode::ReturnToLaunch, FlightMode::Land},
           {FlightMode::Ready, FlightMode::Hold}}}};
 
+constexpr std::chrono::milliseconds MAX_MISSION_CONTROL_HEARTBEAT_AGE{600};
+
 }  // namespace
 
 void FCCBridgeNode::check_telemetry_result(
@@ -796,9 +798,69 @@ bool FCCBridgeNode::check_speed(const float speed_mps) {
 }
 
 void FCCBridgeNode::check_last_mission_control_heartbeat() {
-    RCLCPP_WARN_ONCE(this->get_safety_logger(),
-                     "Heartbeat check not implemented!");
-    // TODO: Check if last heartbeat is not too old.
+    RCLCPP_DEBUG(this->get_safety_logger(),
+                 "Checking last mission control heartbeat");
+
+    switch (this->get_internal_state()) {
+            // This function should never be called in these states
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+            RCLCPP_FATAL(
+                this->get_internal_state_logger(),
+                "In an invalid state for a uav health check! Exiting...");
+            this->exit_process_on_error();
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+            if (!this->last_mission_control_heartbeat.has_value()) {
+                RCLCPP_WARN(this->get_safety_logger(),
+                            "Got no cached mission control heartbeat. "
+                            "Acceptable while in state %s",
+                            this->internal_state_to_str());
+                return;
+            }
+            [[fallthrough]];
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::LANDED:
+            if (rclcpp::Duration(MAX_MISSION_CONTROL_HEARTBEAT_AGE) <
+                (this->now() -
+                 this->last_mission_control_heartbeat->time_stamp)) {
+                RCLCPP_FATAL(
+                    this->get_safety_logger(),
+                    "The last mission control heartbeat is older than: %" PRId64
+                    ". UAV is not airborne. Exiting...",
+                    MAX_MISSION_CONTROL_HEARTBEAT_AGE.count());
+                this->exit_process_on_error();
+            }
+            break;
+        case INTERNAL_STATE::TAKING_OFF:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            if (rclcpp::Duration(MAX_MISSION_CONTROL_HEARTBEAT_AGE) <
+                (this->now() -
+                 this->last_mission_control_heartbeat->time_stamp)) {
+                RCLCPP_FATAL(
+                    this->get_safety_logger(),
+                    "The last mission control heartbeat is older than: %" PRId64
+                    ". UAV is airborne. Triggering RTH...",
+                    MAX_MISSION_CONTROL_HEARTBEAT_AGE.count());
+                this->trigger_rth();
+                return;
+            }
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    RCLCPP_INFO(this->get_safety_logger(),
+                "Mission control heartbeat check successful");
 }
 
 }  // namespace fcc_bridge

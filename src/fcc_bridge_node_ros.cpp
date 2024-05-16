@@ -160,15 +160,21 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Received heartbeat from mission control");
 
-    // Check if the heartbeat tick has increased since last time or in the case
-    // of an overflow that is equal to 0
-    if (msg.tick <= this->last_mission_control_heartbeat.tick &&
-        msg.tick == 0 && this->last_mission_control_heartbeat.tick == 0) {
-        RCLCPP_ERROR(this->get_safety_logger(),
-                     "The received heartbeat is not newer than the last one! "
-                     "Triggering RTH...");
-        this->trigger_rth();
-        return;
+    if (this->last_mission_control_heartbeat.has_value()) {
+        // Check if the heartbeat tick has increased since last time or in the
+        // case of an overflow that is equal to 0
+        if (msg.tick <= this->last_mission_control_heartbeat->tick &&
+            msg.tick == 0 && this->last_mission_control_heartbeat->tick == 0) {
+            RCLCPP_ERROR(
+                this->get_safety_logger(),
+                "The received heartbeat is not newer than the last one! "
+                "Triggering RTH...");
+            this->trigger_rth();
+            return;
+        }
+    } else {
+        RCLCPP_INFO(this->get_ros_interface_logger(),
+                    "Got the first heartbeat from mission control");
     }
 
     // Set the cached heartbeat message to the current one
@@ -542,9 +548,6 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name,
                              const rclcpp::NodeOptions &node_options)
     : CommonNode(name, node_options),
       internal_state(INTERNAL_STATE::STARTING_UP) {
-    // Pre-populate the last mission control heartbeat
-    this->last_mission_control_heartbeat.time_stamp = this->now();
-    this->last_mission_control_heartbeat.tick = 0;
 
     // Setup ROS objects such as timer, publishers etc.
     this->setup_ros();
