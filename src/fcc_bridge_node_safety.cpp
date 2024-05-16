@@ -138,24 +138,6 @@ void FCCBridgeNode::check_telemetry_result(
                  telemetry_type);
 }
 
-void FCCBridgeNode::mavsdk_rth_cb(const mavsdk::Action::Result &result) {
-    RCLCPP_DEBUG(this->get_safety_logger(),
-                 "Return to launch action callback triggered");
-
-    if (result != mavsdk::Action::Result::Success) {
-        // In this case something went wrong. Nothing left but to exit.
-        RCLCPP_FATAL(this->get_safety_logger(),
-                     "Return to launch failed! Exiting...");
-        this->set_internal_state(INTERNAL_STATE::ERROR);
-        this->exit_process_on_error();
-    }
-
-    RCLCPP_INFO(this->get_safety_logger(), "Return to home successful!");
-    this->set_internal_state(INTERNAL_STATE::LANDED);
-
-    // TODO: Disarm
-}
-
 void FCCBridgeNode::validate_safety_limits() {
     RCLCPP_DEBUG(this->get_safety_logger(), "Validating safety limits");
     RCLCPP_WARN_ONCE(this->get_safety_logger(),

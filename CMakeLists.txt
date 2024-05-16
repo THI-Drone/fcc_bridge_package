@@ -196,7 +196,6 @@ if(BUILD_TESTING)
           test/safety/setup.cpp
           test/safety/test_check_landed_state.cpp
           test/safety/test_check_telemetry_result.cpp
-          test/safety/test_mavsdk_rth_cb.cpp
   )
 
   target_compile_options(fcc_bridge_test PRIVATE

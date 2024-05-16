@@ -74,6 +74,21 @@ void FCCBridgeNode::send_flight_state() {
     // Publish the message
     this->flight_state_publisher->publish(flight_state_msg);
 
+    if (this->get_internal_state() == INTERNAL_STATE::RETURN_TO_HOME &&
+        this->last_fcc_landed_state.value() ==
+            mavsdk::Telemetry::LandedState::OnGround) {
+        RCLCPP_INFO(this->get_safety_logger(),
+                    "LandedState indicates on ground. RTH successful");
+        this->set_internal_state(INTERNAL_STATE::LANDED);
+        this->disarm();
+        this->shutdown_timer = this->create_wall_timer(
+            std::chrono::seconds{60},
+            std::bind(&FCCBridgeNode::force_shutdown_node, this));
+        RCLCPP_WARN(this->get_safety_logger(),
+                    "Forced shutdown will occur in 60 seconds if no mission "
+                    "finished message is received");
+    }
+
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Published current flight state");
 }
@@ -212,9 +227,15 @@ void FCCBridgeNode::send_mission_progress() {
                 break;
             case INTERNAL_STATE::LANDING:
                 // This means we landed
+                RCLCPP_INFO(this->get_safety_logger(), "Landing complete");
                 this->set_internal_state(INTERNAL_STATE::LANDED);
-                // TODO: Trigger timer to end node after 1 minute
-                // TODO: Disarm
+                this->disarm();
+                this->shutdown_timer = this->create_wall_timer(
+                    std::chrono::seconds{60},
+                    std::bind(&FCCBridgeNode::force_shutdown_node, this));
+                RCLCPP_WARN(this->get_safety_logger(),
+                            "Forced shutdown will occur in 60 seconds if no "
+                            "mission finished message is received");
                 break;
             default:
                 throw std::runtime_error(

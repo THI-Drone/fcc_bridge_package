@@ -298,6 +298,9 @@ class FCCBridgeNode : public common_lib::CommonNode {
     rclcpp::TimerBase::SharedPtr
         fcc_telemetry_timer_10hz; /**< Timer for telemetry that is send out at
                                      10Hz */
+    rclcpp::TimerBase::SharedPtr
+        shutdown_timer; /**< Timer to trigger a callback after the UAV has
+                           landed to shutdown the node */
 
     /**************************************************************************/
     /*                          Cached FCC telemetry                          */
@@ -412,21 +415,6 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     void check_telemetry_result(const mavsdk::Telemetry::Result &result,
                                 char const *const telemetry_type);
-    /**
-     * @brief Callback function to be triggered when an asynchronous RTH mavsdk
-     * action finished
-     *
-     * @param result The result of the RTH
-     *
-     * @note Will exit the process if the result code does not indicate success
-     *
-     * Sets FCCBridgeNode::internal_state to
-     * FCCBridgeNode::INTERNAL_STATE::LANDED if result indicated success
-     *
-     * Implemented in src/fcc_bridge_node_safety.cpp
-     */
-    void mavsdk_rth_cb(const mavsdk::Action::Result &result);
-
     /**
      * @brief Validates that FCCBridgeNode::safety_limits contains safe values.
      *
@@ -1053,6 +1041,28 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
     void trigger_rth();
+    /**
+     * @brief Attempts to disarm the UAV
+     *
+     * Rejects the disarm if the UAV is airborne and will trigger an RTH
+     *
+     * @warning If the UAV has not yet taken off will exit the process
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
+     */
+    void disarm();
+    /**
+     * @brief Forcefully shuts down the node after the UAV has landed
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
+     */
+    void force_shutdown_node();
+    /**
+     * @brief Normally shuts down the node after the UAV has landed
+     *
+     * Implemented in src/fcc_bridge_node_mavsdk.cpp
+     */
+    void normal_shutdown_node();
     /**
      * @brief Exit the current process.
      *

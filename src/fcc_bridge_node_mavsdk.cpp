@@ -495,7 +495,7 @@ void FCCBridgeNode::trigger_rth() {
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::LANDED:
             // In this case the UAV is on the ground
-            RCLCPP_ERROR(this->get_internal_state_logger(),
+            RCLCPP_FATAL(this->get_internal_state_logger(),
                          "Attempted RTH while on ground! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
@@ -532,20 +532,160 @@ void FCCBridgeNode::trigger_rth() {
     // Verify MAVSDK
     this->verify_mavsdk_connection();
 
-    this->set_internal_state(INTERNAL_STATE::RETURN_TO_HOME);
-
     // Deactivate the node to signal mission control that something went wrong
     this->deactivate();
 
-    // Delete all subscribers
-    this->mission_control_heartbeat_subscriber.reset();
-    this->uav_command_subscriber.reset();
+    // Trigger RTH
+    if (this->mavsdk_action->return_to_launch() !=
+        mavsdk::Action::Result::Success) {
+        // In this case something went wrong. Nothing left but to exit.
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "Return to launch failed! Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        this->exit_process_on_error();
+    }
 
-    // Trigger return to home
-    this->mavsdk_action->return_to_launch_async(
-        std::bind(&FCCBridgeNode::mavsdk_rth_cb, this, std::placeholders::_1));
+    this->set_internal_state(INTERNAL_STATE::RETURN_TO_HOME);
 
     RCLCPP_DEBUG(this->get_mavsdk_interface_logger(), "Triggered RTH");
+}
+
+void FCCBridgeNode::disarm() {
+    RCLCPP_DEBUG(this->get_mavsdk_interface_logger(), "Attempting to disarm");
+    switch (this->get_internal_state()) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen as the process should have exited before
+            throw std::runtime_error(
+                "Received command to take of while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+            // In this case the UAV is on the ground
+            RCLCPP_FATAL(this->get_internal_state_logger(),
+                         "Attempted disarm while on ground! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        case INTERNAL_STATE::TAKING_OFF:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            // In this case the UAV is airborne
+            RCLCPP_ERROR(this->get_internal_state_logger(),
+                         "Attempted disarm while in air! Triggering RTH...");
+            this->trigger_rth();
+            return;
+        case INTERNAL_STATE::LANDED:
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    const mavsdk::Action::Result res = this->mavsdk_action->disarm();
+    if (res != mavsdk::Action::Result::Success) {
+        RCLCPP_FATAL(this->get_safety_logger(),
+                     "Failed to disarm UAV with result: %s! Exiting...",
+                     FCCBridgeNode::mavsdk_action_result_to_str(res));
+        this->exit_process_on_error();
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Successfully disarmed UAV");
+}
+
+void FCCBridgeNode::force_shutdown_node() {
+    // Disable timer
+    if (this->shutdown_timer) {
+        RCLCPP_INFO(this->get_ros_interface_logger(),
+                    "Disabling and deleting shutdown timer");
+        this->shutdown_timer->cancel();
+        this->shutdown_timer->reset();
+    }
+    switch (this->internal_state) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen as the process should have exited before
+            throw std::runtime_error(
+                "Received command to take of while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+            // In this case the UAV is on the ground
+            RCLCPP_FATAL(this->get_internal_state_logger(),
+                         "Attempted shutdown while on ground! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        case INTERNAL_STATE::TAKING_OFF:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            // In this case the UAV is airborne
+            RCLCPP_ERROR(this->get_internal_state_logger(),
+                         "Attempted shutdown while in air! Triggering RTH...");
+            this->trigger_rth();
+            return;
+        case INTERNAL_STATE::LANDED:
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+    RCLCPP_WARN(this->get_ros_interface_logger(),
+                "Forced shutdown due to missing mission finished message");
+    this->get_node_base_interface()->get_context()->shutdown(
+        "Forced shutdown on FCC land");
+}
+
+void FCCBridgeNode::normal_shutdown_node() {
+    // Disable timer
+    if (this->shutdown_timer) {
+        RCLCPP_INFO(this->get_ros_interface_logger(),
+                    "Disabling and deleting shutdown timer");
+        this->shutdown_timer->cancel();
+        this->shutdown_timer->reset();
+    }
+    switch (this->internal_state) {
+        case INTERNAL_STATE::ERROR:
+            // This should never happen as the process should have exited before
+            throw std::runtime_error(
+                "Received command to take of while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+            // In this case the UAV is on the ground
+            RCLCPP_FATAL(this->get_internal_state_logger(),
+                         "Attempted shutdown while on ground! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        case INTERNAL_STATE::TAKING_OFF:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            // In this case the UAV is airborne
+            RCLCPP_ERROR(this->get_internal_state_logger(),
+                         "Attempted shutdown while in air! Triggering RTH...");
+            this->trigger_rth();
+            return;
+        case INTERNAL_STATE::LANDED:
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+    RCLCPP_INFO(this->get_ros_interface_logger(),
+                "Shutting down node normally");
+    this->get_node_base_interface()->get_context()->shutdown(
+        "Normal shutdown on FCC land");
 }
 
 void FCCBridgeNode::exit_process_on_error() const {

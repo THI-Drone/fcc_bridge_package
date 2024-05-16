@@ -332,7 +332,9 @@ void FCCBridgeNode::mission_finished_cb(
         // Expected mission end
         RCLCPP_INFO(this->get_internal_state_logger(),
                     "Ended mission with success. Ending process in 5 seconds.");
-        // TODO: trigger callback to end node in 5 seconds
+        this->shutdown_timer = this->create_wall_timer(
+            std::chrono::seconds{5},
+            std::bind(&FCCBridgeNode::normal_shutdown_node, this));
     } else {
         RCLCPP_FATAL(this->get_safety_logger(),
                      "Ended mission with error code set! Exiting...");

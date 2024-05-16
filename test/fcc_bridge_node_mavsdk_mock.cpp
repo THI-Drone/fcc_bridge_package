@@ -38,6 +38,12 @@ bool FCCBridgeNode::execute_mission_plan(
 
 void FCCBridgeNode::trigger_rth() {}
 
+void FCCBridgeNode::disarm() {}
+
+void FCCBridgeNode::force_shutdown_node() {}
+
+void FCCBridgeNode::normal_shutdown_node() {}
+
 void FCCBridgeNode::exit_process_on_error() const {
     if (this->internal_state != INTERNAL_STATE::ERROR) {
         throw test::abnormal_fcc_exit(
