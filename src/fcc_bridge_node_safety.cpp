@@ -120,7 +120,7 @@ const std::map<const INTERNAL_STATE, const state_action<FlightMode>>
            FlightMode::ReturnToLaunch, FlightMode::Land},
           {FlightMode::Ready, FlightMode::Hold}}}};
 
-constexpr std::chrono::milliseconds MAX_MISSION_CONTROL_HEARTBEAT_AGE{600};
+constexpr std::chrono::milliseconds MAX_MISSION_CONTROL_HEARTBEAT_AGE{1000};
 
 }  // namespace
 
@@ -842,7 +842,7 @@ void FCCBridgeNode::check_last_mission_control_heartbeat() {
                 RCLCPP_FATAL(
                     this->get_safety_logger(),
                     "The last mission control heartbeat is older than: %" PRId64
-                    ". UAV is not airborne. Exiting...",
+                    "ms. UAV is not airborne. Exiting...",
                     MAX_MISSION_CONTROL_HEARTBEAT_AGE.count());
                 this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
@@ -859,7 +859,7 @@ void FCCBridgeNode::check_last_mission_control_heartbeat() {
                 RCLCPP_FATAL(
                     this->get_safety_logger(),
                     "The last mission control heartbeat is older than: %" PRId64
-                    ". UAV is airborne. Triggering RTH...",
+                    "ms. UAV is airborne. Triggering RTH...",
                     MAX_MISSION_CONTROL_HEARTBEAT_AGE.count());
                 this->trigger_rth();
                 return;
