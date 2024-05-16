@@ -489,7 +489,7 @@ void FCCBridgeNode::check_battery_state() {
         case INTERNAL_STATE::ROS_SET_UP:
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
-                "In an invalid state for a uav health check! Exiting...");
+                "In an invalid state for a batter check! Exiting...");
         case INTERNAL_STATE::MAVSDK_SET_UP:
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
