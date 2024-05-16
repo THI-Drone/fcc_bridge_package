@@ -167,7 +167,8 @@ void FCCBridgeNode::validate_safety_limits() {
     }
 
     // Check speed limit
-    if (this->safety_limits->max_speed_mps <= 0 ||
+    if (!std::isfinite(this->safety_limits->max_speed_mps) ||
+        this->safety_limits->max_speed_mps <= 0 ||
         SafetyLimits::HARD_MAX_SPEED_LIMIT_MPS <
             this->safety_limits->max_speed_mps) {
         RCLCPP_WARN(
@@ -182,7 +183,8 @@ void FCCBridgeNode::validate_safety_limits() {
     }
 
     // Check minimum state of charge
-    if (this->safety_limits->min_soc < SafetyLimits::HARD_MIN_SOC) {
+    if (!std::isfinite(this->safety_limits->min_soc) ||
+        this->safety_limits->min_soc < SafetyLimits::HARD_MIN_SOC) {
         RCLCPP_WARN(this->get_safety_logger(),
                     "Got invalid minimum state of charge: %f%%, Using Internal "
                     "limit: %f",
@@ -192,7 +194,8 @@ void FCCBridgeNode::validate_safety_limits() {
     }
 
     // Check maximum altitude
-    if (SafetyLimits::HARD_MAX_HEIGHT_M < this->safety_limits->max_height_m) {
+    if (!std::isfinite(this->safety_limits->max_height_m) ||
+        SafetyLimits::HARD_MAX_HEIGHT_M < this->safety_limits->max_height_m) {
         RCLCPP_WARN(this->get_safety_logger(),
                     "Got invalid maximum height: %fm, Using Internal limit: %f",
                     static_cast<double>(this->safety_limits->max_height_m),
@@ -201,6 +204,8 @@ void FCCBridgeNode::validate_safety_limits() {
     }
 
     // Check geofence
+    // No need to check if any of the polygon points are not finite because
+    // currently the geofence does not modify the points themselves
     if (this->safety_limits->geofence.get_polygon_point_count() < 3) {
         RCLCPP_ERROR(
             this->get_safety_logger(),
