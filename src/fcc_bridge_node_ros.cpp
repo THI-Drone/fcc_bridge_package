@@ -174,7 +174,11 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
         }
     } else {
         RCLCPP_INFO(this->get_ros_interface_logger(),
-                    "Got the first heartbeat from mission control");
+                    "Got the first heartbeat from mission control. Activating "
+                    "node to signal to mission control that the node is ready "
+                    "for the safety limits");
+        // Activating node to signal that it is ready for the safety limits
+        this->activate();
     }
 
     // Set the cached heartbeat message to the current one
@@ -569,9 +573,6 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name,
     }
 
     this->set_internal_state(INTERNAL_STATE::MAVSDK_SET_UP);
-
-    // Activating node to signal that it is ready for the safety limits
-    this->activate();
 
     RCLCPP_INFO(this->get_logger(), "Successfully created %s instance",
                 this->get_name());
