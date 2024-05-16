@@ -92,29 +92,12 @@ void FCCBridgeNode::setup_ros() {
 
     // Setup subscriber
 
-    // Create subscription options for heartbeat to only receive mission control
-    // heartbeats
-    rclcpp::SubscriptionOptions subscription_options;
-    subscription_options.content_filter_options.filter_expression =
-        "sender_id = '%0'";
-    subscription_options.content_filter_options.expression_parameters.push_back(
-        MISSION_CONTROL_NODE_NAME);
-
     // Create Heartbeat subscription
     this->mission_control_heartbeat_subscriber =
         this->create_subscription<interfaces::msg::Heartbeat>(
             common_lib::topic_names::Heartbeat, 1,
             std::bind(&FCCBridgeNode::mission_control_heartbeat_subscriber_cb,
-                      this, std::placeholders::_1),
-            subscription_options);
-
-    // Ensure that the filter is enabled. (Some DDS versions do not support it)
-    if (!this->mission_control_heartbeat_subscriber->is_cft_enabled()) {
-        RCLCPP_FATAL(this->get_ros_interface_logger(),
-                     "Content filtering is not enabled!");
-        this->set_internal_state(INTERNAL_STATE::ERROR);
-        return;
-    }
+                      this, std::placeholders::_1));
 
     // Create UAV command subscriber
     this->uav_command_subscriber =
@@ -159,6 +142,10 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     const interfaces::msg::Heartbeat &msg) {
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Received heartbeat from mission control");
+
+    if(msg.sender_id != MISSION_CONTROL_NODE_NAME) {
+        return;
+    }
 
     if (this->last_mission_control_heartbeat.has_value()) {
         // Check if the heartbeat tick has increased since last time or in the
