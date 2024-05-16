@@ -222,7 +222,7 @@ class Geofence {
 
         std::function<T(const PointType &, const PointType &,
                         const PointType &)>
-            ccw;
+            cross;
 
         if (polygon.size() < 3) {
             throw invalid_polygon_error(
@@ -236,12 +236,14 @@ class Geofence {
                 }
             }
 
+            // Floating point implementation
+
             isLeft = [](const PointType &a, const PointType &b) {
                 return (a[X] < b[X] || (!(b[X] < a[X]) && a[Y] < b[Y]));
             };
 
-            ccw = [](const PointType &a, const PointType &b,
-                     const PointType &c) -> T {
+            cross = [](const PointType &a, const PointType &b,
+                       const PointType &c) -> T {
                 errno = 0;
                 const T res = (b[X] - a[X]) * (c[Y] - a[Y]) -
                               (b[Y] - a[Y]) * (c[X] - a[X]);
@@ -254,12 +256,14 @@ class Geofence {
             };
 
         } else {
+            // Signed integer implementation
+
             isLeft = [](const PointType &a, const PointType &b) -> bool {
                 return (a[X] < b[X] || ((a[X] == b[X]) && a[Y] < b[Y]));
             };
 
-            ccw = [](const PointType &a, const PointType &b,
-                     const PointType &c) -> T {
+            cross = [](const PointType &a, const PointType &b,
+                       const PointType &c) -> T {
                 /*
                  * return (b[X] - a[X]) * (c[Y] - a[Y]) - (b[Y] - a[Y]) * (c[X]
                  * - a[X]);
@@ -299,8 +303,8 @@ class Geofence {
 
         // Lower hull
         for (typename PolygonType::size_type i = 0; i < polygon_size; ++i) {
-            while (k >= 2 && ccw(convex_hull[k - 2], convex_hull[k - 1],
-                                 polygon[i]) <= 0) {
+            while (k >= 2 && cross(convex_hull[k - 2], convex_hull[k - 1],
+                                   polygon[i]) <= 0) {
                 k--;
             }
             convex_hull[k++] = polygon[i];
@@ -309,8 +313,8 @@ class Geofence {
         // Upper hull
         for (typename PolygonType::size_type i = polygon_size - 1, t = k + 1;
              i > 0; --i) {
-            while (k >= t && ccw(convex_hull[k - 2], convex_hull[k - 1],
-                                 polygon[i - 1]) <= 0) {
+            while (k >= t && cross(convex_hull[k - 2], convex_hull[k - 1],
+                                   polygon[i - 1]) <= 0) {
                 k--;
             }
             convex_hull[k++] = polygon[i - 1];
