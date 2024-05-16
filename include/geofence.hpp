@@ -82,7 +82,7 @@ class invalid_polygon_error : public std::runtime_error {
      * @param msg The error message to convey
      */
     explicit invalid_polygon_error(const std::string &msg)
-        : std::runtime_error(msg) {
+        : std::runtime_error(msg){
 
           };
 };
@@ -98,7 +98,7 @@ class invalid_point_error : public std::runtime_error {
      * @param msg The error message to convey
      */
     explicit invalid_point_error(const std::string &msg)
-        : std::runtime_error(msg) {
+        : std::runtime_error(msg){
 
           };
 };
@@ -124,11 +124,13 @@ class Geofence {
         std::vector<PointType>; /**< The type of the polygon used */
 
    private:
-    const PolygonType convex_polygon; /**< The convex polygon that hold the
-                                         point of the geofence*/
+    const PolygonType convex_polygon; /**< The convex polygon that holds the
+                                         point of the geofence */
 
-    constexpr static uint8_t X{0};
-    constexpr static uint8_t Y{1};
+    constexpr static uint8_t X{
+        0}; /**< The index for the X coordinate in a point */
+    constexpr static uint8_t Y{
+        1}; /**< The index for the Y coordinate in a point */
 
    public:
     /**
@@ -159,7 +161,7 @@ class Geofence {
 
    protected:
     /**
-     * @brief Test if to values a and b are close enough to each other to be
+     * @brief Test if two values a and b are close enough to each other to be
      * considered equal
      *
      * @param a The first value
@@ -184,12 +186,14 @@ class Geofence {
                 throw invalid_point_error(
                     "Got a non finite float to check for equality");
             }
+            // Case if T is a floating point number
             constexpr T EPSILON = 1.0e-09f;
             return (std::abs(a - b) <= EPSILON)
                        ? true
                        : std::abs(a - b) <=
                              EPSILON * std::max(std::abs(a), std::abs(b));
         } else {
+            // Case if T is a signed integer
             return a == b;
         }
 
@@ -282,6 +286,8 @@ class Geofence {
             };
         }
 
+        // Copy the polygon and sort it using the isLeft function
+
         PolygonType sortedPolygon{polygon};
         std::sort(sortedPolygon.begin(), sortedPolygon.end(), isLeft);
 
@@ -318,7 +324,7 @@ class Geofence {
     /**
      * @brief Checks if the given point p is inside the geofence polygon
      *
-     * @param point point to test whether inside or not
+     * @param point The point to test whether inside or not
      *
      * @return true if p is inside the polygon OR when p is any vertex OR on an
      * edge of the convex hull
@@ -346,6 +352,7 @@ class Geofence {
             if (!std::isfinite(point[0]) || !std::isfinite(point[1])) {
                 throw invalid_point_error("Got an non finite float in a point");
             }
+            // Floating point case
             errno = 0;
             for (std::size_t i{0}, j{POINTS - 1}; i < POINTS; j = i++) {
                 const PointType &cur_point_i = this->convex_polygon[i];
@@ -365,6 +372,7 @@ class Geofence {
                     "inside the polygon");
             }
         } else {
+            // Signed inter case
             for (std::size_t i{0}, j{POINTS - 1}; i < POINTS; j = i++) {
                 const PointType &cur_point_i = this->convex_polygon[i];
                 const PointType &cur_point_j = this->convex_polygon[j];
@@ -396,6 +404,8 @@ class Geofence {
                             "There was an arithmetic error checking if the "
                             "point is inside the polygon");
                     }
+                    // Check if the original divisor is positive. In that case
+                    // the inequality does not have to flipped
                     if (0 < cur_j_sub_i_y) {
                         if (prod2 < prod1) {
                             inside = !inside;
