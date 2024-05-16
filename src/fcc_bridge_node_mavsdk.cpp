@@ -189,8 +189,6 @@ void FCCBridgeNode::setup_mavsdk() {
     // 5Hz Telemetry
     this->check_telemetry_result(this->mavsdk_telemtry->set_rate_battery(5.0),
                                  "BatteryState");
-    this->check_telemetry_result(this->mavsdk_telemtry->set_rate_rc_status(5.0),
-                                 "RCStatus");
     this->check_telemetry_result(this->mavsdk_telemtry->set_rate_home(5.0),
                                  "Home");
     this->check_telemetry_result(this->mavsdk_telemtry->set_rate_in_air(5.0),
