@@ -188,10 +188,9 @@ class Geofence {
             }
             // Case if T is a floating point number
             constexpr T EPSILON = 1.0e-09f;
-            return (std::abs(a - b) <= EPSILON)
-                       ? true
-                       : std::abs(a - b) <=
-                             EPSILON * std::max(std::abs(a), std::abs(b));
+            return (std::abs(a - b) <= EPSILON) ||
+                   (std::abs(a - b) <=
+                    EPSILON * std::max(std::abs(a), std::abs(b)));
         } else {
             // Case if T is a signed integer
             return a == b;
