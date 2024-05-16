@@ -550,7 +550,6 @@ FCCBridgeNode::FCCBridgeNode(const std::string &name,
                              const rclcpp::NodeOptions &node_options)
     : CommonNode(name, node_options),
       internal_state(INTERNAL_STATE::STARTING_UP) {
-
     // Setup ROS objects such as timer, publishers etc.
     this->setup_ros();
     if (this->get_internal_state() == INTERNAL_STATE::ERROR) {

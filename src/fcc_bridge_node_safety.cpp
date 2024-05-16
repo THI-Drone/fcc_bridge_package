@@ -478,9 +478,8 @@ void FCCBridgeNode::check_battery_state() {
                                      " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
-            RCLCPP_FATAL(
-                this->get_internal_state_logger(),
-                "In an invalid state for a batter check! Exiting...");
+            RCLCPP_FATAL(this->get_internal_state_logger(),
+                         "In an invalid state for a batter check! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::MAVSDK_SET_UP:
