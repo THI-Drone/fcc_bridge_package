@@ -493,7 +493,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Checks if the current battery state is adequate for the current
      * internal state
      *
-     * TODO: Currently just an empty function
+     * Ensures that the remaining battery percent is not less then the
+     * configured minimum state of charge
      *
      * Implemented in src/fcc_bridge_node_safety.cpp
      */

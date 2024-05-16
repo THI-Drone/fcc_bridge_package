@@ -472,8 +472,103 @@ bool FCCBridgeNode::check_flight_mode() {
 }
 
 void FCCBridgeNode::check_battery_state() {
-    RCLCPP_WARN_ONCE(this->get_safety_logger(),
-                     "Battery State check not implemented!");
+    RCLCPP_DEBUG(this->get_safety_logger(), "Checking battery state");
+
+    switch (this->get_internal_state()) {
+            // This function should never be called in these states
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+            RCLCPP_FATAL(
+                this->get_internal_state_logger(),
+                "In an invalid state for a uav health check! Exiting...");
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::LANDED:
+            if (!this->safety_limits.has_value()) {
+                RCLCPP_FATAL(
+                    this->get_safety_logger(),
+                    "Found no safety limits! UAV is not airborne. Exiting...");
+                this->exit_process_on_error();
+            }
+            if (!this->last_fcc_battery_state.has_value()) {
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "Found no cached battery state! UAV is not "
+                             "airborne. Exiting...");
+                this->exit_process_on_error();
+            }
+            if (this->last_fcc_battery_state->id != 0) {
+                RCLCPP_WARN(this->get_safety_logger(),
+                            "Got an unknown battery id: %" PRIu32,
+                            this->last_fcc_battery_state->id);
+            }
+            if (!std::isfinite(
+                    this->last_fcc_battery_state->remaining_percent)) {
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "Battery remaining percent is not finite! UAV is "
+                             "not airborne. Exiting...");
+                this->exit_process_on_error();
+            }
+            if (this->last_fcc_battery_state->remaining_percent <
+                this->safety_limits->min_soc) {
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "Battery remaining percent is below minimum state "
+                             "of charge! UAV is not airborne. Exiting...");
+                this->exit_process_on_error();
+            }
+            break;
+        case INTERNAL_STATE::TAKING_OFF:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            if (!this->safety_limits.has_value()) {
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "Found no safety limits! UAV is airborne. "
+                             "Triggering RTH...");
+                this->trigger_rth();
+                return;
+            }
+            if (!this->last_fcc_battery_state.has_value()) {
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "Found no cached battery state! UAV is airborne. "
+                             "Triggering RTH...");
+                this->trigger_rth();
+                return;
+            }
+            if (this->last_fcc_battery_state->id != 0) {
+                RCLCPP_WARN(this->get_safety_logger(),
+                            "Got an unknown battery id: %" PRIu32,
+                            this->last_fcc_battery_state->id);
+            }
+            if (!std::isfinite(
+                    this->last_fcc_battery_state->remaining_percent)) {
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "Battery remaining percent is not finite! UAV is "
+                             "airborne. Triggering RTH...");
+                this->trigger_rth();
+                return;
+            }
+            if (this->last_fcc_battery_state->remaining_percent <
+                this->safety_limits->min_soc) {
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "Battery remaining percent is below minimum state "
+                             "of charge! UAV is airborne. Triggering RTH...");
+                this->trigger_rth();
+                return;
+            }
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    RCLCPP_INFO(this->get_safety_logger(), "Battery check successful");
 }
 
 void FCCBridgeNode::check_rc_state() {
