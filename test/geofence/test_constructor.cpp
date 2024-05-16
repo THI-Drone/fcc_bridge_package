@@ -37,14 +37,17 @@ namespace fcc_bridge::test::geofence {
 using GeofenceConstructorTypes =
     testing::Types<int8_t, int16_t, int32_t, int64_t, float, double,
                    long double>;
+
 TYPED_TEST_SUITE_P(GeofenceConstructor);
 
+// Check the default constructor
 TYPED_TEST_P(GeofenceConstructor, Default) {
     TestGeofence<TypeParam> local_geofence;
     EXPECT_THROW(local_geofence.isIn({0, 0}), invalid_polygon_error);
     EXPECT_THROW(local_geofence.isIn({2, 123}), invalid_polygon_error);
 }
 
+// Check the constructor with only one point
 TYPED_TEST_P(GeofenceConstructor, OnePoint) {
     EXPECT_THROW((TestGeofence<TypeParam>{{0, 0}}), invalid_polygon_error);
     if constexpr (std::is_floating_point_v<TypeParam>) {
@@ -77,6 +80,7 @@ TYPED_TEST_P(GeofenceConstructor, OnePoint) {
     }
 }
 
+// Check the constructor with two points
 TYPED_TEST_P(GeofenceConstructor, TwoPoints) {
     EXPECT_THROW((TestGeofence<TypeParam>{{0, 0}, {0, 0}}),
                  invalid_polygon_error);
@@ -113,6 +117,7 @@ TYPED_TEST_P(GeofenceConstructor, TwoPoints) {
     }
 }
 
+// Check the constructor with three points
 TYPED_TEST_P(GeofenceConstructor, ThreePoints) {
     EXPECT_NO_THROW((TestGeofence<TypeParam>{{0, 0}, {0, 1}, {1, 0}}));
     EXPECT_NO_THROW((TestGeofence<TypeParam>{{0, 0}, {0, 0}, {1, 1}}));
