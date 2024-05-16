@@ -224,6 +224,7 @@ void FCCBridgeNode::check_gps_state() {
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
                 "In an invalid state for a gps state check! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::TAKING_OFF:
@@ -275,6 +276,7 @@ void FCCBridgeNode::check_gps_state() {
         case INTERNAL_STATE::ROS_SET_UP:
             RCLCPP_FATAL(this->get_internal_state_logger(),
                          "In an invalid state to check GPS! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::MAVSDK_SET_UP:
             break;
@@ -289,6 +291,7 @@ void FCCBridgeNode::check_gps_state() {
                 RCLCPP_FATAL(this->get_safety_logger(),
                              "The current position is not inside the geofence! "
                              "UAV is not airborne. Exiting...");
+                this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
             }
             break;
@@ -348,14 +351,16 @@ bool FCCBridgeNode::check_landed_state() {
         this->get_internal_state() == INTERNAL_STATE::ROS_SET_UP) {
         RCLCPP_FATAL(this->get_internal_state_logger(),
                      "In an invalid state to check LandedState! Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
     }
 
+    // Ensuring there is a valid LandedState present
     if (!this->last_fcc_landed_state.has_value()) {
-        RCLCPP_FATAL(this->get_safety_logger(),
-                     "Found no cached LandedState! Exiting...");
-        this->set_internal_state(INTERNAL_STATE::ERROR);
-        this->exit_process_on_error();
+        RCLCPP_DEBUG(
+            this->get_safety_logger(),
+            "No cached LandedState found, getting an update from the FCC");
+        this->get_flight_state();
     }
 
     const auto entry = landed_state_actions.find(this->get_internal_state());
@@ -407,6 +412,7 @@ bool FCCBridgeNode::check_flight_mode() {
         this->get_internal_state() == INTERNAL_STATE::ROS_SET_UP) {
         RCLCPP_FATAL(this->get_internal_state_logger(),
                      "In an invalid state to check FlightMode! Exiting...");
+        this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
     }
 
@@ -415,11 +421,12 @@ bool FCCBridgeNode::check_flight_mode() {
         return true;
     }
 
-    if (!this->last_fcc_landed_state.has_value()) {
-        RCLCPP_FATAL(this->get_safety_logger(),
-                     "Found no cached FlightMode Exiting...");
-        this->set_internal_state(INTERNAL_STATE::ERROR);
-        this->exit_process_on_error();
+    // Ensuring there is a valid LandedState present
+    if (!this->last_fcc_flight_mode.has_value()) {
+        RCLCPP_DEBUG(
+            this->get_safety_logger(),
+            "No cached FlightMode found, getting an update from the FCC");
+        this->get_flight_state();
     }
 
     const auto entry = flight_mode_actions.find(this->get_internal_state());
@@ -474,7 +481,12 @@ void FCCBridgeNode::check_battery_state() {
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
                 "In an invalid state for a batter check! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
         case INTERNAL_STATE::MAVSDK_SET_UP:
+            // Acceptable. In this state no safety limits are configured so a
+            // check is not possible
+            return;
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::LANDED:
@@ -482,13 +494,15 @@ void FCCBridgeNode::check_battery_state() {
                 RCLCPP_FATAL(
                     this->get_safety_logger(),
                     "Found no safety limits! UAV is not airborne. Exiting...");
+                this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
             }
+            // Ensuring there is a valid BatterState present
             if (!this->last_fcc_battery_state.has_value()) {
-                RCLCPP_FATAL(this->get_safety_logger(),
-                             "Found no cached battery state! UAV is not "
-                             "airborne. Exiting...");
-                this->exit_process_on_error();
+                RCLCPP_DEBUG(this->get_safety_logger(),
+                             "No cached BatteryState found, getting an update "
+                             "from the FCC");
+                this->get_flight_state();
             }
             if (this->last_fcc_battery_state->id != 0) {
                 RCLCPP_WARN(this->get_safety_logger(),
@@ -500,6 +514,7 @@ void FCCBridgeNode::check_battery_state() {
                 RCLCPP_FATAL(this->get_safety_logger(),
                              "Battery remaining percent is not finite! UAV is "
                              "not airborne. Exiting...");
+                this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
             }
             if (this->last_fcc_battery_state->remaining_percent <
@@ -507,6 +522,7 @@ void FCCBridgeNode::check_battery_state() {
                 RCLCPP_FATAL(this->get_safety_logger(),
                              "Battery remaining percent is below minimum state "
                              "of charge! UAV is not airborne. Exiting...");
+                this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
             }
             break;
@@ -522,12 +538,12 @@ void FCCBridgeNode::check_battery_state() {
                 this->trigger_rth();
                 return;
             }
+            // Ensuring there is a valid BatterState present
             if (!this->last_fcc_battery_state.has_value()) {
-                RCLCPP_FATAL(this->get_safety_logger(),
-                             "Found no cached battery state! UAV is airborne. "
-                             "Triggering RTH...");
-                this->trigger_rth();
-                return;
+                RCLCPP_DEBUG(this->get_safety_logger(),
+                             "No cached BatteryState found, getting an update "
+                             "from the FCC");
+                this->get_flight_state();
             }
             if (this->last_fcc_battery_state->id != 0) {
                 RCLCPP_WARN(this->get_safety_logger(),
@@ -574,6 +590,8 @@ void FCCBridgeNode::check_rc_state() {
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
                 "In an invalid state for a rc state check! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
         case INTERNAL_STATE::MAVSDK_SET_UP:
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
@@ -582,12 +600,14 @@ void FCCBridgeNode::check_rc_state() {
                 RCLCPP_FATAL(this->get_safety_logger(),
                              "Found no cached rc state! UAV is not airborne. "
                              "EXITING...");
+                this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
             }
             if (!this->last_fcc_rc_state->is_available) {
                 RCLCPP_FATAL(
                     this->get_logger(),
                     "UAV lost RC connection. UAV is not airborne. Exiting...");
+                this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
             }
             break;
@@ -623,13 +643,6 @@ void FCCBridgeNode::check_rc_state() {
 void FCCBridgeNode::check_uav_health() {
     RCLCPP_DEBUG(this->get_safety_logger(), "Checking UAV health state");
 
-    // Ensuring there is valid uav health present
-    if (!this->last_fcc_health.has_value()) {
-        RCLCPP_DEBUG(
-            this->get_safety_logger(),
-            "No cached uav health found, getting an update from the FCC");
-        this->get_uav_health();
-    }
     switch (this->get_internal_state()) {
             // This function should never be called in these states
         case INTERNAL_STATE::ERROR:
@@ -641,6 +654,7 @@ void FCCBridgeNode::check_uav_health() {
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
                 "In an invalid state for a uav health check! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::TAKING_OFF:
@@ -648,6 +662,13 @@ void FCCBridgeNode::check_uav_health() {
         case INTERNAL_STATE::FLYING_MISSION:
         case INTERNAL_STATE::LANDING:
         case INTERNAL_STATE::RETURN_TO_HOME:
+            // Ensuring there is valid uav health present
+            if (!this->last_fcc_health.has_value()) {
+                RCLCPP_DEBUG(this->get_safety_logger(),
+                             "No cached uav health found, getting an update "
+                             "from the FCC");
+                this->get_uav_health();
+            }
             // Verify that UAV position and home position are ok
             if (!this->last_fcc_health->is_local_position_ok ||
                 !this->last_fcc_health->is_global_position_ok ||
@@ -665,6 +686,13 @@ void FCCBridgeNode::check_uav_health() {
         case INTERNAL_STATE::MAVSDK_SET_UP:
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::LANDED:
+            // Ensuring there is valid uav health present
+            if (!this->last_fcc_health.has_value()) {
+                RCLCPP_DEBUG(this->get_safety_logger(),
+                             "No cached uav health found, getting an update "
+                             "from the FCC");
+                this->get_uav_health();
+            }
             // Verify that the base state of the drone is ok
             if (!this->last_fcc_health->is_gyrometer_calibration_ok ||
                 !this->last_fcc_health->is_accelerometer_calibration_ok ||
@@ -794,6 +822,7 @@ void FCCBridgeNode::check_last_mission_control_heartbeat() {
             RCLCPP_FATAL(
                 this->get_internal_state_logger(),
                 "In an invalid state for a uav health check! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::MAVSDK_SET_UP:
             if (!this->last_mission_control_heartbeat.has_value()) {
@@ -815,6 +844,7 @@ void FCCBridgeNode::check_last_mission_control_heartbeat() {
                     "The last mission control heartbeat is older than: %" PRId64
                     ". UAV is not airborne. Exiting...",
                     MAX_MISSION_CONTROL_HEARTBEAT_AGE.count());
+                this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
             }
             break;
