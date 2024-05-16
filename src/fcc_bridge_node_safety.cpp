@@ -290,18 +290,34 @@ void FCCBridgeNode::check_gps_state() {
         case INTERNAL_STATE::MAVSDK_SET_UP:
             break;
         case INTERNAL_STATE::ARMED:
-        case INTERNAL_STATE::TAKING_OFF:
-        case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_MISSION:
-        case INTERNAL_STATE::LANDING:
-        case INTERNAL_STATE::RETURN_TO_HOME:
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::LANDED:
             // Check that the current coordinate is inside the geofence.
             if (!this->check_point_in_geofence(
                     this->last_fcc_position.value())) {
-                // The current point is outside the geofence.
-                // TODO
+                // The current point is outside the geofence and the UAV is not
+                // airborne
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "The current position is not inside the geofence! "
+                             "UAV is not airborne. Exiting...");
+                this->exit_process_on_error();
+            }
+            break;
+        case INTERNAL_STATE::TAKING_OFF:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            // Check that the current coordinate is inside the geofence.
+            if (!this->check_point_in_geofence(
+                    this->last_fcc_position.value())) {
+                // The current point is outside the geofence and the UAV is
+                // airborne
+                RCLCPP_ERROR(this->get_safety_logger(),
+                             "The current position is not inside the geofence! "
+                             "UAV is airborne. Triggering RTH...");
+                this->trigger_rth();
+                return;
             }
             break;
         default:

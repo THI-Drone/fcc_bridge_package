@@ -448,7 +448,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * Exits if no GPS is installed.
      *
-     * TODO: Geofence check
+     * Checks whether the current UAV position is inside the geofence. Triggers
+     * an RTH if airborne and otherwise exits.
      *
      * @throws std::runtime_error If FCCBridgeNode::internal_state is
      * FCCBridgeNode::INTERNAL_STATE::STARTING_UP,
