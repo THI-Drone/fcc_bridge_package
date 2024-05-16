@@ -577,8 +577,63 @@ void FCCBridgeNode::check_battery_state() {
 }
 
 void FCCBridgeNode::check_rc_state() {
-    RCLCPP_WARN_ONCE(this->get_safety_logger(),
-                     "RC State check not implemented!");
+    RCLCPP_DEBUG(this->get_safety_logger(), "Checking RC state");
+
+    switch (this->get_internal_state()) {
+            // This function should never be called in these states
+        case INTERNAL_STATE::ERROR:
+            // This should never happen, as the process exits on ERROR state
+            throw std::runtime_error(std::string(__func__) +
+                                     " called while in ERROR state");
+        case INTERNAL_STATE::STARTING_UP:
+        case INTERNAL_STATE::ROS_SET_UP:
+            RCLCPP_FATAL(
+                this->get_internal_state_logger(),
+                "In an invalid state for a rc state check! Exiting...");
+        case INTERNAL_STATE::MAVSDK_SET_UP:
+        case INTERNAL_STATE::WAITING_FOR_ARM:
+        case INTERNAL_STATE::ARMED:
+        case INTERNAL_STATE::LANDED:
+            if (!this->last_fcc_rc_state.has_value()) {
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "Found no cached rc state! UAV is not airborne. "
+                             "EXITING...");
+                this->exit_process_on_error();
+            }
+            if (!this->last_fcc_rc_state->is_available) {
+                RCLCPP_FATAL(
+                    this->get_logger(),
+                    "UAV lost RC connection. UAV is not airborne. Exiting...");
+                this->exit_process_on_error();
+            }
+            break;
+        case INTERNAL_STATE::TAKING_OFF:
+        case INTERNAL_STATE::WAITING_FOR_COMMAND:
+        case INTERNAL_STATE::FLYING_MISSION:
+        case INTERNAL_STATE::LANDING:
+        case INTERNAL_STATE::RETURN_TO_HOME:
+            if (!this->last_fcc_rc_state.has_value()) {
+                RCLCPP_ERROR(this->get_safety_logger(),
+                             "Found no cached rc state! UAV is airborne. "
+                             "Triggering RTH...");
+                this->trigger_rth();
+                return;
+            }
+            if (!this->last_fcc_rc_state->is_available) {
+                RCLCPP_FATAL(this->get_logger(),
+                             "UAV lost RC connection. UAV is airborne. "
+                             "Triggering RTH...");
+                this->trigger_rth();
+                return;
+            }
+            break;
+        default:
+            throw std::runtime_error(
+                std::string("Got invalid value for internal_state: ") +
+                std::to_string(static_cast<int>(this->get_internal_state())));
+    }
+
+    RCLCPP_INFO(this->get_safety_logger(), "RC state check successful");
 }
 
 void FCCBridgeNode::check_uav_health() {

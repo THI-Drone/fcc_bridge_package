@@ -503,7 +503,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * @brief Checks if the current RC state is adequate for the current
      * internal state
      *
-     * TODO: Currently just an empty function
+     * Ensures that an RC is connected
      *
      * Implemented in src/fcc_bridge_node_safety.cpp
      */
