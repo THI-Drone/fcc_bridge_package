@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
     try {
         rclcpp::spin(std::make_shared<fcc_bridge::FCCBridgeNode>(
-            common_lib::node_names::MISSION_CONTROL));
+            common_lib::node_names::FCC_BRIDGE));
     } catch (const fcc_bridge::invalid_state_error &e) {
         RCLCPP_FATAL(rclcpp::get_logger("EMERGENCY"),
                      "A invalid state error was thrown by the fcc bridge: %s",
