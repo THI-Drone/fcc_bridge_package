@@ -25,6 +25,7 @@
 
 // interfaces headers
 #include "interfaces/msg/battery_state.hpp"
+#include "interfaces/msg/control.hpp"
 #include "interfaces/msg/flight_state.hpp"
 #include "interfaces/msg/gps_position.hpp"
 #include "interfaces/msg/heartbeat.hpp"
@@ -290,6 +291,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
                                         messages */
     rclcpp::Subscription<interfaces::msg::SafetyLimits>::SharedPtr
         safety_limits_subscriber; /**< Subscriber for safety limit messages */
+    rclcpp::Subscription<interfaces::msg::Control>::SharedPtr
+        control_subscriber; /**< Subscriber for active node changes */
 
     // ROS timer
     rclcpp::TimerBase::SharedPtr
@@ -339,6 +342,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
     std::optional<interfaces::msg::Heartbeat>
         last_mission_control_heartbeat; /**< The last received heartbeat from
                                           mission control */
+
+    std::optional<std::string> active_node; /**< Currently active node */
 
     /**************************************************************************/
     /*                             Safety members                             */
@@ -403,6 +408,23 @@ class FCCBridgeNode : public common_lib::CommonNode {
 
    protected:
     /**
+     * @brief Checks whether the provided sender is the expected one as well as
+     * that it is active
+     *
+     * @param actual_sender The sender in the message
+     *
+     * @param expected_sender The expected sender
+     *
+     * @return True if everything is as expected
+     *
+     * @warning Will trigger an RTH if the UAV is airborne or exit the the
+     * process if the UAV is on ground if there is an issue
+     *
+     * Implemented in src/fcc_bridge_node_safety.coo
+     */
+    bool check_sender(const std::string &actual_sender,
+                      char const *const expected_sender);
+    /**
      * @brief Checks whether setting the telemetry rate for telemetry_type was
      * successful
      *
@@ -411,7 +433,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      *
      * @warning Exits the process if result does not indicate a success
      *
-     * Implemented in src/fcc_bridge_node_safety.coo
+     * Implemented in src/fcc_bridge_node_safety.cpp
      */
     void check_telemetry_result(const mavsdk::Telemetry::Result &result,
                                 char const *const telemetry_type);
@@ -717,6 +739,15 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Implemented in src/fcc_bridge_node_ros.cpp
      */
     void safety_limits_cb(const interfaces::msg::SafetyLimits &msg);
+    /**
+     * @brief Callback function to be triggered when a new Control message is
+     * received
+     *
+     * @param msg The control message
+     *
+     * Implemented in src/fcc_bridge_node_ros.cpp
+     */
+    void control_cb(const interfaces::msg::Control &msg);
     /**
      * @brief Callback function for the 5Hz telemetry timer
      *

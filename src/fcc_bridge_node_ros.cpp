@@ -9,6 +9,7 @@
 #include <cinttypes>
 
 // CommonLib header
+#include "common_package/node_names.hpp"
 #include "common_package/topic_names.hpp"
 
 namespace fcc_bridge {
@@ -20,10 +21,6 @@ constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_5HZ{
     200}; /**< The period of the 5Hz telemetry timer */
 constexpr std::chrono::milliseconds FCC_TELEMETRY_PERIOD_10HZ{
     100}; /**< The period of the 10Hz telemetry timer */
-
-// Mission control node name
-constexpr char const *const MISSION_CONTROL_NODE_NAME =
-    "mission_control"; /**< Name of the mission control node */
 
 // Limits
 constexpr std::chrono::seconds MAX_UAV_COMMAND_AGE{
@@ -120,6 +117,12 @@ void FCCBridgeNode::setup_ros() {
             std::bind(&FCCBridgeNode::mission_finished_cb, this,
                       std::placeholders::_1));
 
+    // Create Control subscriber
+    this->control_subscriber =
+        this->create_subscription<interfaces::msg::Control>(
+            common_lib::topic_names::Control, 10,
+            std::bind(&FCCBridgeNode::control_cb, this, std::placeholders::_1));
+
     // Create SafetyLimits subscriber
     this->safety_limits_subscriber =
         this->create_subscription<interfaces::msg::SafetyLimits>(
@@ -143,7 +146,7 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Received heartbeat from mission control");
 
-    if (msg.sender_id != MISSION_CONTROL_NODE_NAME) {
+    if (msg.sender_id != common_lib::node_names::MISSION_CONTROL) {
         return;
     }
 
@@ -191,19 +194,41 @@ void FCCBridgeNode::uav_command_subscriber_cb(
         return;
     }
 
-    // TODO: Do check of sender
-
     switch (msg.type) {
         case interfaces::msg::UAVCommand::TAKE_OFF:
+            if (!this->check_sender(msg.sender_id,
+                                    common_lib::node_names::MISSION_CONTROL)) {
+                RCLCPP_ERROR(this->get_ros_interface_logger(),
+                             "Take off command sender was invalid!");
+                return;
+            }
             this->initiate_takeoff(msg.waypoint, msg.speed_m_s);
             break;
         case interfaces::msg::UAVCommand::FLY_TO_WAYPOINT:
+            if (!this->check_sender(msg.sender_id,
+                                    common_lib::node_names::WAYPOINT)) {
+                RCLCPP_ERROR(this->get_ros_interface_logger(),
+                             "Fly to waypoint command sender was invalid!");
+                return;
+            }
             this->start_flying_to_waypoint(msg.waypoint, msg.speed_m_s);
             break;
         case interfaces::msg::UAVCommand::LAND:
+            if (!this->check_sender(msg.sender_id,
+                                    common_lib::node_names::MISSION_CONTROL)) {
+                RCLCPP_ERROR(this->get_ros_interface_logger(),
+                             "LAND command sender was invalid!");
+                return;
+            }
             this->initiate_land(msg.waypoint, msg.speed_m_s);
             break;
         case interfaces::msg::UAVCommand::RTH:
+            if (!this->check_sender(msg.sender_id,
+                                    common_lib::node_names::MISSION_CONTROL)) {
+                RCLCPP_ERROR(this->get_ros_interface_logger(),
+                             "Return to home command sender was invalid!");
+                return;
+            }
             this->initiate_rth();
             break;
         default:
@@ -272,7 +297,7 @@ void FCCBridgeNode::mission_finished_cb(
                  "error_code: %" PRIu8 ", reason: %s",
                  msg.sender_id.c_str(), msg.error_code, msg.reason.c_str());
 
-    if (msg.sender_id != MISSION_CONTROL_NODE_NAME) {
+    if (msg.sender_id != common_lib::node_names::MISSION_CONTROL) {
         RCLCPP_ERROR(this->get_safety_logger(),
                      "Received a MissionFinished message from a non mission "
                      "control node! Triggering RTH...");
@@ -280,7 +305,7 @@ void FCCBridgeNode::mission_finished_cb(
         return;
     }
 
-    // TODO: Check if mission control is active
+    // Ignoring whether mission control is active
 
     // Verify that we are in the right state
     switch (this->get_internal_state()) {
@@ -350,8 +375,8 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
         case INTERNAL_STATE::LANDED:
             // The UAV has not yet taken off
             RCLCPP_FATAL(this->get_internal_state_logger(),
-                         "Received a MissionFinished while the UAV has not yet "
-                         "taken off! Exiting...");
+                         "Received SafetyLimits in an invalid state while the "
+                         "UAV has not yet taken off! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
         case INTERNAL_STATE::TAKING_OFF:
@@ -361,7 +386,7 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
         case INTERNAL_STATE::RETURN_TO_HOME:
             // The UAV is airborne. This will result in an RTH
             RCLCPP_WARN(this->get_internal_state_logger(),
-                        "Received a MissionFinished message while airborne. "
+                        "Received a SafetyLimits message while airborne. "
                         "Triggering an RTH...");
             this->trigger_rth();
             return;
@@ -372,11 +397,15 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
                 std::string("Got invalid value for internal_state: ") +
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
-    if (msg.sender_id != MISSION_CONTROL_NODE_NAME) {
+
+    // Ignoring whether mission control is active
+
+    if (msg.sender_id != common_lib::node_names::MISSION_CONTROL) {
         RCLCPP_FATAL(this->get_ros_interface_logger(),
                      "Got safety limits from invalid sender: %s (Expected: "
                      "%s)! Exiting...",
-                     msg.sender_id.c_str(), MISSION_CONTROL_NODE_NAME);
+                     msg.sender_id.c_str(),
+                     common_lib::node_names::MISSION_CONTROL);
         this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
     }
@@ -412,8 +441,81 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
 
     RCLCPP_INFO(this->get_ros_interface_logger(), "Set safety limits");
 
+    // Disable safety limits subscriber
+    this->safety_limits_subscriber.reset();
+
     // Go into WAITING_FOR_ARM state
     this->set_internal_state(INTERNAL_STATE::WAITING_FOR_ARM);
+}
+
+void FCCBridgeNode::control_cb(const interfaces::msg::Control &msg) {
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Got new control message with target: %s and active: %s",
+                 msg.target_id.c_str(), msg.active ? "true" : "false");
+
+    if (common_lib::node_names::VALID_CONTROL_NODE_NAMES.find(msg.target_id) ==
+        common_lib::node_names::VALID_CONTROL_NODE_NAMES.end()) {
+        switch (this->get_internal_state()) {
+            case INTERNAL_STATE::ERROR:
+                // This should never happen, as the process exits on ERROR state
+                throw std::runtime_error(std::string(__func__) +
+                                         " called while in ERROR state");
+            case INTERNAL_STATE::STARTING_UP:
+            case INTERNAL_STATE::ROS_SET_UP:
+            case INTERNAL_STATE::MAVSDK_SET_UP:
+            case INTERNAL_STATE::WAITING_FOR_ARM:
+            case INTERNAL_STATE::ARMED:
+            case INTERNAL_STATE::LANDED:
+                // UAV is on ground exiting
+                RCLCPP_FATAL(this->get_ros_interface_logger(),
+                             "Received a control message with an invalid "
+                             "target id %s! UAV is on ground. Exiting...",
+                             msg.target_id.c_str());
+                this->exit_process_on_error();
+            case INTERNAL_STATE::TAKING_OFF:
+            case INTERNAL_STATE::WAITING_FOR_COMMAND:
+            case INTERNAL_STATE::FLYING_MISSION:
+            case INTERNAL_STATE::LANDING:
+            case INTERNAL_STATE::RETURN_TO_HOME:
+                // UAV is airborne. RTH is triggered
+                RCLCPP_ERROR(this->get_ros_interface_logger(),
+                             "Received a control message with an invalid "
+                             "target id %s! UAV is airborne. Triggering RTH...",
+                             msg.target_id.c_str());
+                this->trigger_rth();
+                return;
+            default:
+                throw std::runtime_error(
+                    std::string("Got invalid value for internal_state: ") +
+                    std::to_string(
+                        static_cast<int>(this->get_internal_state())));
+        }
+    }
+    if (msg.active) {
+        if (this->active_node.has_value()) {
+            RCLCPP_WARN(
+                this->get_ros_interface_logger(),
+                "Already got an active node: %s. Switching anyway to: %s",
+                this->active_node->c_str(), msg.target_id.c_str());
+        }
+        this->active_node = msg.target_id;
+    } else {
+        if (!this->active_node.has_value()) {
+            RCLCPP_WARN(this->get_ros_interface_logger(),
+                        "Got a control message to deactivate node %s while "
+                        "there was no active node configured",
+                        msg.target_id.c_str());
+        } else if (this->active_node.value() != msg.target_id) {
+            RCLCPP_WARN(this->get_ros_interface_logger(),
+                        "Got a control message to deactivate node %s while "
+                        "node %s is active. Ignoring...",
+                        msg.target_id.c_str(), this->active_node->c_str());
+        } else {
+            this->active_node.reset();
+        }
+    }
+    RCLCPP_DEBUG(this->get_ros_interface_logger(),
+                 "Handling of control message complete");
 }
 
 void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
