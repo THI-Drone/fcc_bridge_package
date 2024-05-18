@@ -2,8 +2,6 @@
 // Created by Johan <job8197@thi.de> on 30.04.2024.
 //
 
-#include "fcc_bridge_node.hpp"
-
 // Libc header
 #include <chrono>
 #include <cinttypes>
@@ -11,6 +9,9 @@
 // CommonLib header
 #include "common_package/node_names.hpp"
 #include "common_package/topic_names.hpp"
+
+// FCC Bridge header
+#include "fcc_bridge_node.hpp"
 
 namespace fcc_bridge {
 
@@ -30,12 +31,13 @@ constexpr std::chrono::seconds MAX_UAV_COMMAND_AGE{
 
 void FCCBridgeNode::set_internal_state(
     const fcc_bridge::FCCBridgeNode::INTERNAL_STATE new_state) {
+    char const *const old_state = this->internal_state_to_str();
     // Actually set the state.
     this->internal_state = new_state;
 
     RCLCPP_INFO(this->get_internal_state_logger(),
-                "Switching to new internal_state: %s",
-                this->internal_state_to_str());
+                "Switching old internal state: %s to new internal_state: %s",
+                old_state, this->internal_state_to_str());
 }
 
 void FCCBridgeNode::setup_ros() {
@@ -198,6 +200,7 @@ void FCCBridgeNode::uav_command_subscriber_cb(
         case interfaces::msg::UAVCommand::TAKE_OFF:
             if (!this->check_sender(msg.sender_id,
                                     common_lib::node_names::MISSION_CONTROL)) {
+                // RTH should have been triggered
                 RCLCPP_ERROR(this->get_ros_interface_logger(),
                              "Take off command sender was invalid!");
                 return;
@@ -207,6 +210,7 @@ void FCCBridgeNode::uav_command_subscriber_cb(
         case interfaces::msg::UAVCommand::FLY_TO_WAYPOINT:
             if (!this->check_sender(msg.sender_id,
                                     common_lib::node_names::WAYPOINT)) {
+                // RTH should have been triggered
                 RCLCPP_ERROR(this->get_ros_interface_logger(),
                              "Fly to waypoint command sender was invalid!");
                 return;
@@ -216,6 +220,7 @@ void FCCBridgeNode::uav_command_subscriber_cb(
         case interfaces::msg::UAVCommand::LAND:
             if (!this->check_sender(msg.sender_id,
                                     common_lib::node_names::MISSION_CONTROL)) {
+                // RTH should have been triggered
                 RCLCPP_ERROR(this->get_ros_interface_logger(),
                              "LAND command sender was invalid!");
                 return;
@@ -225,6 +230,7 @@ void FCCBridgeNode::uav_command_subscriber_cb(
         case interfaces::msg::UAVCommand::RTH:
             if (!this->check_sender(msg.sender_id,
                                     common_lib::node_names::MISSION_CONTROL)) {
+                // RTH should have been triggered
                 RCLCPP_ERROR(this->get_ros_interface_logger(),
                              "Return to home command sender was invalid!");
                 return;
@@ -232,40 +238,22 @@ void FCCBridgeNode::uav_command_subscriber_cb(
             this->initiate_rth();
             break;
         default:
-            RCLCPP_ERROR(this->get_safety_logger(),
-                         "Got unknown UAVCommand type %d", msg.type);
-            switch (this->get_internal_state()) {
-                case INTERNAL_STATE::ERROR:
-                    // This should never happen as the process should have
-                    // exited before
-                    throw std::runtime_error(
-                        "Received unknown command while in ERROR state");
-                case INTERNAL_STATE::STARTING_UP:
-                case INTERNAL_STATE::ROS_SET_UP:
-                case INTERNAL_STATE::MAVSDK_SET_UP:
-                case INTERNAL_STATE::WAITING_FOR_ARM:
-                case INTERNAL_STATE::ARMED:
-                case INTERNAL_STATE::LANDED:
-                    // In these cases the UAV is not airborne so the process
-                    // will exit
-                    RCLCPP_FATAL(this->get_safety_logger(),
-                                 "Drone is still on ground. Exiting...");
-                    this->set_internal_state(INTERNAL_STATE::ERROR);
-                    this->exit_process_on_error();
-                case INTERNAL_STATE::TAKING_OFF:
-                case INTERNAL_STATE::WAITING_FOR_COMMAND:
-                case INTERNAL_STATE::FLYING_MISSION:
-                case INTERNAL_STATE::LANDING:
-                case INTERNAL_STATE::RETURN_TO_HOME:
-                    RCLCPP_ERROR(this->get_safety_logger(),
-                                 "Triggering RTH...");
-                    this->trigger_rth();
-                    return;
-                default:
-                    throw std::runtime_error(
-                        std::string("Got invalid value for internal_state: ") +
-                        std::to_string(
-                            static_cast<int>(this->get_internal_state())));
+            if (this->is_airborne()) {
+                RCLCPP_ERROR(this->get_safety_logger(),
+                             "Got unknown UAVCommand type %" PRIu8
+                             "! Triggering RTH...",
+                             msg.type);
+                this->trigger_rth();
+                return;
+            } else {
+                // In these cases the UAV is not airborne so the process
+                // will exit
+                RCLCPP_FATAL(this->get_safety_logger(),
+                             "Got unknown UAVCommand type %" PRIu8
+                             "!Drone is still on ground. Exiting...",
+                             msg.type);
+                this->set_internal_state(INTERNAL_STATE::ERROR);
+                this->exit_process_on_error();
             }
     }
 
@@ -308,39 +296,21 @@ void FCCBridgeNode::mission_finished_cb(
     // Ignoring whether mission control is active
 
     // Verify that we are in the right state
-    switch (this->get_internal_state()) {
-        case INTERNAL_STATE::ERROR:
-            // This should never happen, as the process exits on ERROR state
-            throw std::runtime_error(std::string(__func__) +
-                                     " called while in ERROR state");
-        case INTERNAL_STATE::STARTING_UP:
-        case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::MAVSDK_SET_UP:
-        case INTERNAL_STATE::WAITING_FOR_ARM:
-        case INTERNAL_STATE::ARMED:
+    if (this->get_internal_state() != INTERNAL_STATE::LANDED) {
+        if (this->is_airborne()) {
+            // The UAV is airborne. This will result in an RTH
+            RCLCPP_WARN(this->get_internal_state_logger(),
+                        "Received a MissionFinished message while airborne. "
+                        "Triggering an RTH...");
+            this->trigger_rth();
+        } else {
             // The UAV has not yet taken off
             RCLCPP_FATAL(this->get_internal_state_logger(),
                          "Received a MissionFinished while the UAV has not yet "
                          "taken off! Exiting...");
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
-        case INTERNAL_STATE::TAKING_OFF:
-        case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_MISSION:
-        case INTERNAL_STATE::LANDING:
-        case INTERNAL_STATE::RETURN_TO_HOME:
-            // The UAV is airborne. This will result in an RTH
-            RCLCPP_WARN(this->get_internal_state_logger(),
-                        "Received a MissionFinished message while airborne. "
-                        "Triggering an RTH...");
-            this->trigger_rth();
-            return;
-        case INTERNAL_STATE::LANDED:
-            break;
-        default:
-            throw std::runtime_error(
-                std::string("Got invalid value for internal_state: ") +
-                std::to_string(static_cast<int>(this->get_internal_state())));
+        }
     }
 
     // This means we have landed
@@ -363,39 +333,22 @@ void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Received a new SafetyLimits message");
 
-    switch (this->get_internal_state()) {
-        case INTERNAL_STATE::ERROR:
-            // This should never happen, as the process exits on ERROR state
-            throw std::runtime_error(std::string(__func__) +
-                                     " called while in ERROR state");
-        case INTERNAL_STATE::STARTING_UP:
-        case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::WAITING_FOR_ARM:
-        case INTERNAL_STATE::ARMED:
-        case INTERNAL_STATE::LANDED:
-            // The UAV has not yet taken off
-            RCLCPP_FATAL(this->get_internal_state_logger(),
-                         "Received SafetyLimits in an invalid state while the "
-                         "UAV has not yet taken off! Exiting...");
-            this->set_internal_state(INTERNAL_STATE::ERROR);
-            this->exit_process_on_error();
-        case INTERNAL_STATE::TAKING_OFF:
-        case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_MISSION:
-        case INTERNAL_STATE::LANDING:
-        case INTERNAL_STATE::RETURN_TO_HOME:
+    if (this->get_internal_state() != INTERNAL_STATE::MAVSDK_SET_UP) {
+        if (this->is_airborne()) {
             // The UAV is airborne. This will result in an RTH
             RCLCPP_WARN(this->get_internal_state_logger(),
                         "Received a SafetyLimits message while airborne. "
                         "Triggering an RTH...");
             this->trigger_rth();
             return;
-        case INTERNAL_STATE::MAVSDK_SET_UP:
-            break;
-        default:
-            throw std::runtime_error(
-                std::string("Got invalid value for internal_state: ") +
-                std::to_string(static_cast<int>(this->get_internal_state())));
+        } else {
+            // The UAV has not yet taken off
+            RCLCPP_FATAL(this->get_internal_state_logger(),
+                         "Received SafetyLimits in an invalid state while the "
+                         "UAV has not yet taken off! Exiting...");
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        }
     }
 
     // Ignoring whether mission control is active
@@ -455,42 +408,24 @@ void FCCBridgeNode::control_cb(const interfaces::msg::Control &msg) {
 
     if (common_lib::node_names::VALID_CONTROL_NODE_NAMES.find(msg.target_id) ==
         common_lib::node_names::VALID_CONTROL_NODE_NAMES.end()) {
-        switch (this->get_internal_state()) {
-            case INTERNAL_STATE::ERROR:
-                // This should never happen, as the process exits on ERROR state
-                throw std::runtime_error(std::string(__func__) +
-                                         " called while in ERROR state");
-            case INTERNAL_STATE::STARTING_UP:
-            case INTERNAL_STATE::ROS_SET_UP:
-            case INTERNAL_STATE::MAVSDK_SET_UP:
-            case INTERNAL_STATE::WAITING_FOR_ARM:
-            case INTERNAL_STATE::ARMED:
-            case INTERNAL_STATE::LANDED:
-                // UAV is on ground exiting
-                RCLCPP_FATAL(this->get_ros_interface_logger(),
-                             "Received a control message with an invalid "
-                             "target id %s! UAV is on ground. Exiting...",
-                             msg.target_id.c_str());
-                this->exit_process_on_error();
-            case INTERNAL_STATE::TAKING_OFF:
-            case INTERNAL_STATE::WAITING_FOR_COMMAND:
-            case INTERNAL_STATE::FLYING_MISSION:
-            case INTERNAL_STATE::LANDING:
-            case INTERNAL_STATE::RETURN_TO_HOME:
-                // UAV is airborne. RTH is triggered
-                RCLCPP_ERROR(this->get_ros_interface_logger(),
-                             "Received a control message with an invalid "
-                             "target id %s! UAV is airborne. Triggering RTH...",
-                             msg.target_id.c_str());
-                this->trigger_rth();
-                return;
-            default:
-                throw std::runtime_error(
-                    std::string("Got invalid value for internal_state: ") +
-                    std::to_string(
-                        static_cast<int>(this->get_internal_state())));
+        if (this->is_airborne()) {
+            // UAV is airborne. RTH is triggered
+            RCLCPP_ERROR(this->get_ros_interface_logger(),
+                         "Received a control message with an invalid "
+                         "target id %s! UAV is airborne. Triggering RTH...",
+                         msg.target_id.c_str());
+            this->trigger_rth();
+            return;
+        } else {
+            // UAV is on ground exiting
+            RCLCPP_FATAL(this->get_ros_interface_logger(),
+                         "Received a control message with an invalid "
+                         "target id %s! UAV is on ground. Exiting...",
+                         msg.target_id.c_str());
+            this->exit_process_on_error();
         }
     }
+
     if (msg.active) {
         if (this->active_node.has_value()) {
             RCLCPP_WARN(
@@ -525,8 +460,8 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::ERROR:
             // This should never happen, as the process exits on ERROR state
-            throw std::runtime_error(std::string(__func__) +
-                                     " called while in ERROR state");
+            throw invalid_state_error(std::string(__func__) +
+                                      " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
             RCLCPP_WARN(this->get_internal_state_logger(),
@@ -546,7 +481,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
         case INTERNAL_STATE::LANDED:
             break;
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid value for internal_state: ") +
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
@@ -564,8 +499,8 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::ERROR:
             // This should never happen, as the process exits on ERROR state
-            throw std::runtime_error(std::string(__func__) +
-                                     " called while in ERROR state");
+            throw invalid_state_error(std::string(__func__) +
+                                      " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
         case INTERNAL_STATE::MAVSDK_SET_UP:
@@ -584,7 +519,7 @@ void FCCBridgeNode::fcc_telemetry_timer_5hz_cb() {
             this->send_mission_progress();
             break;
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid value for internal_state: ") +
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
@@ -603,8 +538,8 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::ERROR:
             // This should never happen, as the process exits on ERROR state
-            throw std::runtime_error(std::string(__func__) +
-                                     " called while in ERROR state");
+            throw invalid_state_error(std::string(__func__) +
+                                      " called while in ERROR state");
         case INTERNAL_STATE::STARTING_UP:
         case INTERNAL_STATE::ROS_SET_UP:
             RCLCPP_WARN(this->get_internal_state_logger(),
@@ -624,7 +559,7 @@ void FCCBridgeNode::fcc_telemetry_timer_10hz_cb() {
         case INTERNAL_STATE::LANDED:
             break;
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid value for internal_state: ") +
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }

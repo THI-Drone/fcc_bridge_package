@@ -2,6 +2,7 @@
 // Created by Johan <job8197@thi.de> on 05.05.2024.
 //
 
+// FCC Bridge header
 #include "fcc_bridge_node.hpp"
 
 namespace fcc_bridge {
@@ -187,11 +188,25 @@ void FCCBridgeNode::send_mission_progress() {
     // Verify of getting the mission progress was successful
     if (this->last_mission_progress->first !=
         mavsdk::Mission::Result::Success) {
-        // Trigger an RTH on any error
-        RCLCPP_ERROR(this->get_safety_logger(),
-                     "Failed to get mission progress! Triggering RTH...");
-        this->trigger_rth();
-        return;
+        if (this->is_airborne()) {
+            // Trigger an RTH on any error
+            RCLCPP_ERROR(this->get_safety_logger(),
+                         "Failed to get mission progress with error: %s! "
+                         "Triggering RTH...",
+                         FCCBridgeNode::mavsdk_mission_result_to_str(
+                             this->last_mission_progress->first));
+            this->trigger_rth();
+            return;
+        } else {
+            // Exit on any error
+            RCLCPP_FATAL(
+                this->get_safety_logger(),
+                "Failed to get mission progress with error: %s! Exiting...",
+                FCCBridgeNode::mavsdk_mission_result_to_str(
+                    this->last_mission_progress->first));
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        }
     }
 
     // In this case retrieving the mission progress was successful meaning that
@@ -205,8 +220,8 @@ void FCCBridgeNode::send_mission_progress() {
         switch (this->get_internal_state()) {
             case INTERNAL_STATE::ERROR:
                 // This should never happen, as the process exits on ERROR state
-                throw std::runtime_error(std::string(__func__) +
-                                         " called while in ERROR state");
+                throw invalid_state_error(std::string(__func__) +
+                                          " called while in ERROR state");
             case INTERNAL_STATE::STARTING_UP:
             case INTERNAL_STATE::ROS_SET_UP:
             case INTERNAL_STATE::MAVSDK_SET_UP:
@@ -238,7 +253,7 @@ void FCCBridgeNode::send_mission_progress() {
                             "mission finished message is received");
                 break;
             default:
-                throw std::runtime_error(
+                throw unknown_enum_value_error(
                     std::string("Got invalid value for internal_state: ") +
                     std::to_string(
                         static_cast<int>(this->get_internal_state())));

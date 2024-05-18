@@ -2,6 +2,7 @@
 // Created by Johan <job8197@thi.de> on 05.05.2024.
 //
 
+// FCC Bridge header
 #include "fcc_bridge_node.hpp"
 
 namespace fcc_bridge {
@@ -24,16 +25,16 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
         static_cast<double>(speed_mps));
 
     // Verify that the uav is in the right state
-    switch (this->get_internal_state()) {
-        case INTERNAL_STATE::ERROR:
-            // This should never happen as the process should have exited before
-            throw std::runtime_error(
-                "Received command to take off while in ERROR state");
-        case INTERNAL_STATE::STARTING_UP:
-        case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::MAVSDK_SET_UP:
-        case INTERNAL_STATE::WAITING_FOR_ARM:
-        case INTERNAL_STATE::LANDED:
+    if (this->get_internal_state() != INTERNAL_STATE::ARMED) {
+        if (this->is_airborne()) {
+            // If the UAV is airborne and another takeoff command is received
+            // something must have gone wrong so an RTH is triggered
+            RCLCPP_ERROR(this->get_internal_state_logger(),
+                         "Received a take off command while airborne! "
+                         "Triggering RTH...");
+            this->trigger_rth();
+            return;
+        } else {
             // The UAV is still or again on the ground so the only thing left is
             // to kill the process
             RCLCPP_FATAL(this->get_internal_state_logger(),
@@ -42,24 +43,7 @@ void FCCBridgeNode::initiate_takeoff(const interfaces::msg::Waypoint &waypoint,
                          this->internal_state_to_str());
             this->set_internal_state(INTERNAL_STATE::ERROR);
             this->exit_process_on_error();
-        case INTERNAL_STATE::TAKING_OFF:
-        case INTERNAL_STATE::WAITING_FOR_COMMAND:
-        case INTERNAL_STATE::FLYING_MISSION:
-        case INTERNAL_STATE::LANDING:
-        case INTERNAL_STATE::RETURN_TO_HOME:
-            // If the UAV is airborne and another takeoff command is received
-            // something must have gone wrong so an RTH is triggered
-            RCLCPP_ERROR(this->get_internal_state_logger(),
-                         "Received a take off command while airborne! "
-                         "Triggering RTH...");
-            this->trigger_rth();
-            return;
-        case INTERNAL_STATE::ARMED:
-            break;
-        default:
-            throw std::runtime_error(
-                std::string("Got invalid value for internal_state: ") +
-                std::to_string(static_cast<int>(this->get_internal_state())));
+        }
     }
 
     // Check that the speed is valid
@@ -171,29 +155,8 @@ void FCCBridgeNode::start_flying_to_waypoint(
                 static_cast<double>(speed_mps));
 
     // Verify that the uav is in the right state
-    switch (this->get_internal_state()) {
-        case INTERNAL_STATE::ERROR:
-            // This should never happen as the process should have exited before
-            throw std::runtime_error(
-                "Received command to fly to waypoint while in ERROR state");
-        case INTERNAL_STATE::STARTING_UP:
-        case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::MAVSDK_SET_UP:
-        case INTERNAL_STATE::WAITING_FOR_ARM:
-        case INTERNAL_STATE::LANDED:
-        case INTERNAL_STATE::ARMED:
-            // The UAV is still or again on the ground so the only thing left is
-            // to kill the process
-            RCLCPP_FATAL(this->get_internal_state_logger(),
-                         "Received a fly to waypoint command in an invalid "
-                         "state %s! Exiting...",
-                         this->internal_state_to_str());
-            this->set_internal_state(INTERNAL_STATE::ERROR);
-            this->exit_process_on_error();
-        case INTERNAL_STATE::TAKING_OFF:
-        case INTERNAL_STATE::FLYING_MISSION:
-        case INTERNAL_STATE::LANDING:
-        case INTERNAL_STATE::RETURN_TO_HOME:
+    if (this->get_internal_state() != INTERNAL_STATE::WAITING_FOR_COMMAND) {
+        if (this->is_airborne()) {
             // If the UAV is already waiting on a UAVCommand and another
             // waypoint command is received something must have gone wrong so an
             // RTH is triggered
@@ -203,12 +166,16 @@ void FCCBridgeNode::start_flying_to_waypoint(
                 "command in progress! Triggering RTH...");
             this->trigger_rth();
             return;
-        case INTERNAL_STATE::WAITING_FOR_COMMAND:
-            break;
-        default:
-            throw std::runtime_error(
-                std::string("Got invalid value for internal_state: ") +
-                std::to_string(static_cast<int>(this->get_internal_state())));
+        } else {
+            // The UAV is still or again on the ground so the only thing left is
+            // to kill the process
+            RCLCPP_FATAL(this->get_internal_state_logger(),
+                         "Received a fly to waypoint command in an invalid "
+                         "state %s! Exiting...",
+                         this->internal_state_to_str());
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        }
     }
 
     // Check that the speed is valid
@@ -324,29 +291,8 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
                 static_cast<double>(speed_mps));
 
     // Verify that the uav is in the right state
-    switch (this->get_internal_state()) {
-        case INTERNAL_STATE::ERROR:
-            // This should never happen as the process should have exited before
-            throw std::runtime_error(
-                "Received command to land at waypoint while in ERROR state");
-        case INTERNAL_STATE::STARTING_UP:
-        case INTERNAL_STATE::ROS_SET_UP:
-        case INTERNAL_STATE::MAVSDK_SET_UP:
-        case INTERNAL_STATE::WAITING_FOR_ARM:
-        case INTERNAL_STATE::ARMED:
-        case INTERNAL_STATE::LANDED:
-            // The UAV is still or again on the ground so the only thing left is
-            // to kill the process
-            RCLCPP_FATAL(this->get_internal_state_logger(),
-                         "Received a land at waypoint command in an invalid "
-                         "state %s! Exiting...",
-                         this->internal_state_to_str());
-            this->set_internal_state(INTERNAL_STATE::ERROR);
-            this->exit_process_on_error();
-        case INTERNAL_STATE::TAKING_OFF:
-        case INTERNAL_STATE::FLYING_MISSION:
-        case INTERNAL_STATE::LANDING:
-        case INTERNAL_STATE::RETURN_TO_HOME:
+    if (this->get_internal_state() != INTERNAL_STATE::WAITING_FOR_COMMAND) {
+        if (this->is_airborne()) {
             // If the UAV is already waiting on a UAVCommand and another
             // command is received something must have gone wrong so an RTH is
             // triggered
@@ -355,12 +301,16 @@ void FCCBridgeNode::initiate_land(const interfaces::msg::Waypoint &waypoint,
                          "already a command in progress! Triggering RTH...");
             this->trigger_rth();
             return;
-        case INTERNAL_STATE::WAITING_FOR_COMMAND:
-            break;
-        default:
-            throw std::runtime_error(
-                std::string("Got invalid value for internal_state: ") +
-                std::to_string(static_cast<int>(this->get_internal_state())));
+        } else {
+            // The UAV is still or again on the ground so the only thing left is
+            // to kill the process
+            RCLCPP_FATAL(this->get_internal_state_logger(),
+                         "Received a land at waypoint command in an invalid "
+                         "state %s! Exiting...",
+                         this->internal_state_to_str());
+            this->set_internal_state(INTERNAL_STATE::ERROR);
+            this->exit_process_on_error();
+        }
     }
 
     // Check that the speed is valid

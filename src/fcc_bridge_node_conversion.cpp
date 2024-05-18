@@ -2,6 +2,7 @@
 // Created by Johan <job8197@thi.de> on 01.05.2024.
 //
 
+// FCC Bridge header
 #include "fcc_bridge_node.hpp"
 
 // Helper define to create a switch case to turn an enum meber to a string
@@ -36,7 +37,7 @@ bool FCCBridgeNode::mavsdk_log_callback(const mavsdk::log::Level level,
                          file.c_str(), line, message.c_str());
             break;
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got an unknown MAVSDK::log::Level value: ") +
                 std::to_string(static_cast<int>(level)));
     }
@@ -64,7 +65,7 @@ FCCBridgeNode::fix_type_mavsdk_to_ros(
         case mavsdk::Telemetry::FixType::RtkFixed:
             return interfaces::msg::GPSPosition::RTK_FIXED;
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid mavsdk::Telemetry::FixType value ") +
                 std::to_string(static_cast<int>(fix_type)));
     }
@@ -105,7 +106,7 @@ FCCBridgeNode::flight_mode_mavsdk_to_ros(
         case mavsdk::Telemetry::FlightMode::Rattitude:
             return interfaces::msg::FlightState::_mode_type::RATTITUDE;
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string(
                     "Got invalid mavsdk::Telemetry::FlightMode value ") +
                 std::to_string(static_cast<int>(flight_mode)));
@@ -127,7 +128,7 @@ FCCBridgeNode::landed_state_mavsdk_to_ros(
         case mavsdk::Telemetry::LandedState::Landing:
             return interfaces::msg::FlightState::_state_type::LANDING;
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string(
                     "Got invalid mavsdk::Telemetry::LandedState value ") +
                 std::to_string(static_cast<int>(landed_state)));
@@ -152,7 +153,7 @@ const char *FCCBridgeNode::mavsdk_connection_result_to_str(
         ENUM_TO_STR(mavsdk::ConnectionResult, ConnectionUrlInvalid);
         ENUM_TO_STR(mavsdk::ConnectionResult, BaudrateUnknown);
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid mavsdk::ConnectionResult value ") +
                 std::to_string(static_cast<int>(result)));
     }
@@ -177,7 +178,7 @@ const char *FCCBridgeNode::mavsdk_flight_mode_to_str(
         ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Stabilized);
         ENUM_TO_STR(mavsdk::Telemetry::FlightMode, Rattitude);
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string(
                     "Got invalid mavsdk::Telemetry::FlightMode value ") +
                 std::to_string(static_cast<int>(flight_mode)));
@@ -193,7 +194,7 @@ const char *FCCBridgeNode::mavsdk_landed_state_to_str(
         ENUM_TO_STR(mavsdk::Telemetry::LandedState, TakingOff);
         ENUM_TO_STR(mavsdk::Telemetry::LandedState, Landing);
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string(
                     "Got invalid mavsdk::Telemetry::LandedState value ") +
                 std::to_string(static_cast<int>(landed_state)));
@@ -220,7 +221,7 @@ const char *FCCBridgeNode::mavsdk_mission_result_to_str(
         ENUM_TO_STR(mavsdk::Mission::Result, ProtocolError);
         ENUM_TO_STR(mavsdk::Mission::Result, IntMessagesNotSupported);
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid mavsdk::Mission::Result value: ") +
                 std::to_string(static_cast<int>(result)));
     }
@@ -245,7 +246,7 @@ const char *FCCBridgeNode::mavsdk_action_result_to_str(
         ENUM_TO_STR(mavsdk::Action::Result, Failed);
         ENUM_TO_STR(mavsdk::Action::Result, InvalidArgument);
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid mavsdk::Action::Result value: ") +
                 std::to_string(static_cast<int>(result)));
     }
@@ -262,7 +263,7 @@ const char *FCCBridgeNode::mavsdk_fix_type_to_str(
         ENUM_TO_STR(mavsdk::Telemetry::FixType, RtkFloat);
         ENUM_TO_STR(mavsdk::Telemetry::FixType, RtkFixed);
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid mavsdk::Telemetry::FixType value: ") +
                 std::to_string(static_cast<int>(fix_type)));
     }
@@ -280,7 +281,7 @@ const char *FCCBridgeNode::mavsdk_telemetry_result_to_str(
         ENUM_TO_STR(mavsdk::Telemetry::Result, Timeout);
         ENUM_TO_STR(mavsdk::Telemetry::Result, Unsupported);
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid mavsdk::Telemetry::Result value: ") +
                 std::to_string(static_cast<int>(result)));
     }
@@ -301,7 +302,7 @@ const char *FCCBridgeNode::internal_state_to_str() const {
         ENUM_TO_STR(INTERNAL_STATE, LANDED);
         ENUM_TO_STR(INTERNAL_STATE, ERROR);
         default:
-            throw std::runtime_error(
+            throw unknown_enum_value_error(
                 std::string("Got invalid INTERNAL_STATE value: ") +
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
