@@ -143,7 +143,7 @@ void FCCBridgeNode::mission_control_heartbeat_subscriber_cb(
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Received heartbeat from mission control");
 
-    if(msg.sender_id != MISSION_CONTROL_NODE_NAME) {
+    if (msg.sender_id != MISSION_CONTROL_NODE_NAME) {
         return;
     }
 
