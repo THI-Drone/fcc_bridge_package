@@ -21,7 +21,7 @@ class FCCBridgeNodeWrapper : public FCCBridgeNode {
      * @brief Constructor creates an instance of fcc_bridge::FCCBridgeNode with
      * name test_mavsdk_rth_fcc_bridge
      */
-    FCCBridgeNodeWrapper() : FCCBridgeNode("test_mavsdk_rth_fcc_bridge") {}
+    FCCBridgeNodeWrapper() : FCCBridgeNode("test_fcc_bridge") {}
 };
 
 }  // namespace fcc_bridge::test

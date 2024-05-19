@@ -16,6 +16,19 @@ class FCCBridgeNodeWrapper : public ::fcc_bridge::test::FCCBridgeNodeWrapper {
     FRIEND_TEST(TestMAVSDKRTelemetryRateFailure, TelemetryRateSetFailure);
     FRIEND_TEST(BaseTestFixture, TelemetryRateSetSucess);
 
+    // check_sender test cases implemented in
+    // test/safety/test_check_sender.cpp
+    FRIEND_TEST(FailureInAirborneStates, NoActiveNode);
+    FRIEND_TEST(FailureInAirborneStates, ExpectedNodeNotActive);
+    FRIEND_TEST(FailureInAirborneStates, ActualSenderNotExpected);
+    FRIEND_TEST(FailureInOnGroundStates, NoActiveNode);
+    FRIEND_TEST(FailureInOnGroundStates, ExpectedNodeNotActive);
+    FRIEND_TEST(FailureInOnGroundStates, ActualSenderNotExpected);
+    FRIEND_TEST(FailureInErrorState, NoActiveNode);
+    FRIEND_TEST(FailureInErrorState, ExpectedNodeNotActive);
+    FRIEND_TEST(FailureInErrorState, ActualSenderNotExpected);
+    FRIEND_TEST(SuccessInAllStates, ValidSender);
+
     // mavsdk_rth_cb test cases implemented in
     // test/safety/test_mavsdk_rth_cb.cpp
     FRIEND_TEST(TestMAVSDKRTHCBFAILURE, RTHFailure);
