@@ -6,7 +6,7 @@
 #include <common_package/node_names.hpp>
 
 // FCC Bridge header
-#include "fcc_bridge_node.hpp"
+#include "fcc_bridge/fcc_bridge_node.hpp"
 
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);

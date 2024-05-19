@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "geofence.hpp"
+#include "fcc_bridge/geofence.hpp"
 
 namespace fcc_bridge::test::geofence {
 

@@ -3,7 +3,7 @@
 //
 
 // FCC Bridge header
-#include "fcc_bridge_node.hpp"
+#include "fcc_bridge/fcc_bridge_node.hpp"
 
 // Helper define to create a switch case to turn an enum meber to a string
 #define ENUM_TO_STR(parent_namespace, member) \

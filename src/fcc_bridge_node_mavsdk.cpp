@@ -7,7 +7,7 @@
 #include <map>
 
 // FCC bridge header
-#include "fcc_bridge_node.hpp"
+#include "fcc_bridge/fcc_bridge_node.hpp"
 
 namespace fcc_bridge {
 namespace {
