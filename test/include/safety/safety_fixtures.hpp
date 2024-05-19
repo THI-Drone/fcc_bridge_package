@@ -13,8 +13,8 @@ namespace fcc_bridge::test::safety {
 class FCCBridgeNodeWrapper : public ::fcc_bridge::test::FCCBridgeNodeWrapper {
     // check_telemetry_result test cases implemented in
     // test/safety/test_check_telemetry_result.cpp
-    FRIEND_TEST(TestMAVSDKRTelemetryRateFailure, TelemetryRateSetFailure);
-    FRIEND_TEST(BaseTestFixture, TelemetryRateSetSucess);
+    FRIEND_TEST(TelemetryRateSetFailure, TelemetryRateSetFailure);
+    FRIEND_TEST(TelemetryRateSetSucess, TelemetryRateSetSucess);
 
     // check_sender test cases implemented in
     // test/safety/test_check_sender.cpp
