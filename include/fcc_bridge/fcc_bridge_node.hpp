@@ -435,10 +435,21 @@ class FCCBridgeNode : public common_lib::CommonNode {
               max_height_m(max_height_m_p),
               geofence(geofence_polygon_p) {}
     }; /**< struct to hold all currently active safety limits */
-
     std::optional<struct SafetyLimits>
         safety_limits; /**< Safety limits to be enforced such as geofence and
                           max speed */
+   public:
+    using SafetyLimits = struct SafetyLimits;
+
+   protected:
+    /**
+     * @brief Getter for the stored safety limits
+     *
+     * @return The stored safety limits
+     */
+    constexpr const std::optional<SafetyLimits> &get_safety_limits() {
+        return this->safety_limits;
+    }
 
     /**************************************************************************/
     /*                            Safety functions                            */

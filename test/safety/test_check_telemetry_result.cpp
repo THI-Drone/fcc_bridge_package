@@ -4,7 +4,6 @@
 
 #include "fcc_exit_exceptions.hpp"
 #include "safety/safety_fixtures.hpp"
-#include "test_logger.hpp"
 
 namespace fcc_bridge::test::safety {
 
