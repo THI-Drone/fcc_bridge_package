@@ -37,7 +37,6 @@ bool FCCBridgeNode::execute_mission_plan(
 }
 
 void FCCBridgeNode::trigger_rth() {
-
     this->set_internal_state(INTERNAL_STATE::RETURN_TO_HOME);
 }
 
