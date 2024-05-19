@@ -50,7 +50,7 @@ TEST_P(TelemetryRateSetFailure, TelemetryRateSetFailure) {
     EXPECT_THROW(this->fcc_bridge_node_wrapper->check_telemetry_result(
                      std::get<RES_TYPE>(param), testing::UnitTest::GetInstance()
                                                     ->current_test_info()
-                                     ->test_case_name()),
+                                                    ->test_case_name()),
                  normal_fcc_exit);
     ASSERT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
               INTERNAL_STATE::ERROR)
@@ -63,8 +63,7 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Combine(ALL_STATES,
                      testing::Values(RES_TYPE::Unknown, RES_TYPE::NoSystem,
                                      RES_TYPE::ConnectionError, RES_TYPE::Busy,
-                                         RES_TYPE::CommandDenied,
-                                         RES_TYPE::Timeout,
+                                     RES_TYPE::CommandDenied, RES_TYPE::Timeout,
                                      RES_TYPE::Unsupported)),
     [](const testing::TestParamInfo<std::tuple<INTERNAL_STATE, RES_TYPE>>
            &param_info) -> std::string {
