@@ -482,7 +482,6 @@ bool FCCBridgeNode::execute_mission_plan(
 void FCCBridgeNode::trigger_rth() {
     // In case a mission is already running this store the result of canceling
     // the mission. Unused otherwise
-    // TODO: DO NOT!!! rely on the internal state
     mavsdk::Mission::Result mission_clear_result;
     switch (this->get_internal_state()) {
         case INTERNAL_STATE::ERROR:
@@ -495,11 +494,9 @@ void FCCBridgeNode::trigger_rth() {
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::LANDED:
-            // In this case the UAV is on the ground
-            RCLCPP_FATAL(this->get_internal_state_logger(),
-                         "Attempted RTH while on ground! Exiting...");
-            this->set_internal_state(INTERNAL_STATE::ERROR);
-            this->exit_process_on_error();
+            // Ignore that the UAV is om ground and try an RTH anyway. This is
+            // so that if the UAV is unexpectedly airborne the RTH still works
+            break;
         case INTERNAL_STATE::RETURN_TO_HOME:
             RCLCPP_WARN(this->get_internal_state_logger(),
                         "Trying to trigger RTH while already returning home");
