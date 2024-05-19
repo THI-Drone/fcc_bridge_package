@@ -10,6 +10,32 @@ namespace fcc_bridge::test::safety {
 
 using RES_TYPE = mavsdk::Telemetry::Result;
 
+namespace {
+
+#define ENUM_TO_STR(parent_namespace, member) \
+    case parent_namespace::member:            \
+        return #parent_namespace "_" #member
+
+std::string res_type_to_suffix(const testing::TestParamInfo<RES_TYPE> &info) {
+    switch (info.param) {
+        ENUM_TO_STR(RES_TYPE, Unknown);
+        ENUM_TO_STR(RES_TYPE, Success);
+        ENUM_TO_STR(RES_TYPE, NoSystem);
+        ENUM_TO_STR(RES_TYPE, ConnectionError);
+        ENUM_TO_STR(RES_TYPE, Busy);
+        ENUM_TO_STR(RES_TYPE, CommandDenied);
+        ENUM_TO_STR(RES_TYPE, Timeout);
+        ENUM_TO_STR(RES_TYPE, Unsupported);
+        default:
+            throw unknown_enum_value_error(
+                std::string(
+                    "Got an unknown mavsdk::Telemetry::Result value: ") +
+                std::to_string(static_cast<int>(info.param)));
+    }
+}
+
+}  // namespace
+
 using TestMAVSDKRTelemetryRateFailure = ValuedTestFixture<RES_TYPE>;
 
 /**
@@ -17,9 +43,6 @@ using TestMAVSDKRTelemetryRateFailure = ValuedTestFixture<RES_TYPE>;
  * code and tries to exit the process
  */
 TEST_P(TestMAVSDKRTelemetryRateFailure, TelemetryRateSetFailure) {
-    RCLCPP_DEBUG(TEST_LOGGER, "Testing: %s",
-                 ::fcc_bridge::FCCBridgeNode::mavsdk_telemetry_result_to_str(
-                     GetParam()));
     ASSERT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
               FCCBridgeNodeWrapper::INTERNAL_STATE::MAVSDK_SET_UP)
         << "Value of internal_state: "
@@ -41,14 +64,13 @@ INSTANTIATE_TEST_SUITE_P(, TestMAVSDKRTelemetryRateFailure,
                                          RES_TYPE::Busy,
                                          RES_TYPE::CommandDenied,
                                          RES_TYPE::Timeout,
-                                         RES_TYPE::Unsupported));
+                                         RES_TYPE::Unsupported),
+                         res_type_to_suffix);
 
 /**
  * @brief Test that a successful telemetry rate setting does not create an exit
  * */
 TEST_F(BaseTestFixture, TelemetryRateSetSucess) {
-    RCLCPP_DEBUG(TEST_LOGGER,
-                 "Testing telemetry rate checker with success result");
     ASSERT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
               FCCBridgeNodeWrapper::INTERNAL_STATE::MAVSDK_SET_UP)
         << "Value of internal_state: "

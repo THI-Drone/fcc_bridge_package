@@ -189,6 +189,7 @@ if(BUILD_TESTING)
           # Test files:
           test/main.cpp
           test/setup.cpp
+          test/test_fixtures.cpp
 
           # Geofence tests
           test/geofence/setup.cpp
@@ -200,6 +201,7 @@ if(BUILD_TESTING)
           test/safety/test_check_landed_state.cpp
           test/safety/test_check_sender.cpp
           test/safety/test_check_telemetry_result.cpp
+          test/safety/test_validate_safety_limits.cpp
   )
 
   target_compile_options(fcc_bridge_test PRIVATE

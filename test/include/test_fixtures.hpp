@@ -83,6 +83,9 @@ const inline auto ON_GROUND_STATES = testing::Values<INTERNAL_STATE>(
 const inline auto ERROR_STATE =
     testing::Values<INTERNAL_STATE>(INTERNAL_STATE::ERROR);
 
+std::string internal_state_suffix_gen(
+    const testing::TestParamInfo<INTERNAL_STATE>& info);
+
 }  // namespace fcc_bridge::test
 
 #endif  // THI_DRONE_WS_TEST_FIXTURES_HPP

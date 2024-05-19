@@ -24,7 +24,9 @@ TEST_P(FailureInAirborneStates, NoActiveNode) {
         FailureInAirborneStates::GetParam());
     EXPECT_FALSE(this->fcc_bridge_node_wrapper->check_sender("", ""));
     EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
-              INTERNAL_STATE::RETURN_TO_HOME);
+              INTERNAL_STATE::RETURN_TO_HOME)
+        << "Value of internal_state: "
+        << this->fcc_bridge_node_wrapper->internal_state_to_str();
 }
 
 TEST_P(FailureInAirborneStates, ExpectedNodeNotActive) {
@@ -38,7 +40,9 @@ TEST_P(FailureInAirborneStates, ExpectedNodeNotActive) {
         FailureInAirborneStates::GetParam());
     EXPECT_FALSE(this->fcc_bridge_node_wrapper->check_sender("", ""));
     EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
-              INTERNAL_STATE::RETURN_TO_HOME);
+              INTERNAL_STATE::RETURN_TO_HOME)
+        << "Value of internal_state: "
+        << this->fcc_bridge_node_wrapper->internal_state_to_str();
 }
 
 TEST_P(FailureInAirborneStates, ActualSenderNotExpected) {
@@ -53,10 +57,13 @@ TEST_P(FailureInAirborneStates, ActualSenderNotExpected) {
     EXPECT_FALSE(
         this->fcc_bridge_node_wrapper->check_sender("", active_node.c_str()));
     EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
-              INTERNAL_STATE::RETURN_TO_HOME);
+              INTERNAL_STATE::RETURN_TO_HOME)
+        << "Value of internal_state: "
+        << this->fcc_bridge_node_wrapper->internal_state_to_str();
 }
 
-INSTANTIATE_TEST_SUITE_P(, FailureInAirborneStates, AIRBORNE_STATES);
+INSTANTIATE_TEST_SUITE_P(, FailureInAirborneStates, AIRBORNE_STATES,
+                         internal_state_suffix_gen);
 
 /*
  * Checks the correct behaviour for an invalid sender if the UAV is not airborne
@@ -98,7 +105,8 @@ TEST_P(FailureInOnGroundStates, ActualSenderNotExpected) {
         normal_fcc_exit);
 }
 
-INSTANTIATE_TEST_SUITE_P(, FailureInOnGroundStates, ON_GROUND_STATES);
+INSTANTIATE_TEST_SUITE_P(, FailureInOnGroundStates, ON_GROUND_STATES,
+                         internal_state_suffix_gen);
 
 /*
  * Checks the correct behaviour for an invalid sender if the UAV is in the Error
@@ -141,7 +149,8 @@ TEST_P(FailureInErrorState, ActualSenderNotExpected) {
         invalid_state_error);
 }
 
-INSTANTIATE_TEST_SUITE_P(, FailureInErrorState, ERROR_STATE);
+INSTANTIATE_TEST_SUITE_P(, FailureInErrorState, ERROR_STATE,
+                         internal_state_suffix_gen);
 
 /*
  * Checks the correct behaviour for a valid sender if the UAV is in any state
@@ -161,9 +170,12 @@ TEST_P(SuccessInAllStates, ValidSender) {
     EXPECT_TRUE(this->fcc_bridge_node_wrapper->check_sender(
         active_node, active_node.c_str()));
     EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
-              SuccessInAllStates::GetParam());
+              SuccessInAllStates::GetParam())
+        << "Value of internal_state: "
+        << this->fcc_bridge_node_wrapper->internal_state_to_str();
 }
 
-INSTANTIATE_TEST_SUITE_P(, SuccessInAllStates, ALL_STATES);
+INSTANTIATE_TEST_SUITE_P(, SuccessInAllStates, ALL_STATES,
+                         internal_state_suffix_gen);
 
 }  // namespace fcc_bridge::test::safety
