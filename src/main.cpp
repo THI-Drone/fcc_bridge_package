@@ -3,7 +3,7 @@
 #include <rclcpp/utilities.hpp>
 
 // CommonLib header
-#include "common_package/node_names.hpp"
+#include <common_package/node_names.hpp>
 
 // FCC Bridge header
 #include "fcc_bridge_node.hpp"

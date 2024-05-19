@@ -287,6 +287,38 @@ const char *FCCBridgeNode::mavsdk_telemetry_result_to_str(
     }
 }
 
+char const *FCCBridgeNode::mavsdk_info_result_to_str(
+    const mavsdk::Info::Result &result) {
+    switch (result) {
+        ENUM_TO_STR(mavsdk::Info::Result, Unknown);
+        ENUM_TO_STR(mavsdk::Info::Result, Success);
+        ENUM_TO_STR(mavsdk::Info::Result, InformationNotReceivedYet);
+        ENUM_TO_STR(mavsdk::Info::Result, NoSystem);
+        default:
+            throw unknown_enum_value_error(
+                std::string("Got invalid mavsdk::Info::Result value: ") +
+                std::to_string(static_cast<int>(result)));
+    }
+}
+
+const char *FCCBridgeNode::mavsdk_info_version_flight_sw_version_to_str(
+    const mavsdk::Info::Version::FlightSoftwareVersionType &type) {
+    switch (type) {
+        ENUM_TO_STR(mavsdk::Info::Version::FlightSoftwareVersionType, Unknown);
+        ENUM_TO_STR(mavsdk::Info::Version::FlightSoftwareVersionType, Dev);
+        ENUM_TO_STR(mavsdk::Info::Version::FlightSoftwareVersionType, Alpha);
+        ENUM_TO_STR(mavsdk::Info::Version::FlightSoftwareVersionType, Beta);
+        ENUM_TO_STR(mavsdk::Info::Version::FlightSoftwareVersionType, Rc);
+        ENUM_TO_STR(mavsdk::Info::Version::FlightSoftwareVersionType, Release);
+        default:
+            throw unknown_enum_value_error(
+                std::string("Got invalid "
+                            "mavsdk::Info::Version::FlightSoftwareVersionType "
+                            "value: ") +
+                std::to_string(static_cast<int>(type)));
+    }
+}
+
 const char *FCCBridgeNode::internal_state_to_str() const {
     switch (this->get_internal_state()) {
         ENUM_TO_STR(INTERNAL_STATE, STARTING_UP);

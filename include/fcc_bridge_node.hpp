@@ -11,36 +11,37 @@
 #include <optional>
 
 // Mavsdk headers
-#include "mavsdk/log_callback.h"
-#include "mavsdk/mavsdk.h"
-#include "mavsdk/plugins/action/action.h"
-#include "mavsdk/plugins/mission/mission.h"
-#include "mavsdk/plugins/telemetry/telemetry.h"
-#include "mavsdk/system.h"
+#include <mavsdk/log_callback.h>
+#include <mavsdk/mavsdk.h>
+#include <mavsdk/plugins/action/action.h>
+#include <mavsdk/plugins/info/info.h>
+#include <mavsdk/plugins/mission/mission.h>
+#include <mavsdk/plugins/telemetry/telemetry.h>
+#include <mavsdk/system.h>
 
 // rclcpp headers
-#include "rclcpp/node_options.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "rclcpp/timer.hpp"
+#include <rclcpp/node_options.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/timer.hpp>
 
 // interfaces headers
-#include "interfaces/msg/battery_state.hpp"
-#include "interfaces/msg/control.hpp"
-#include "interfaces/msg/flight_state.hpp"
-#include "interfaces/msg/gps_position.hpp"
-#include "interfaces/msg/heartbeat.hpp"
-#include "interfaces/msg/mission_finished.hpp"
-#include "interfaces/msg/mission_progress.hpp"
-#include "interfaces/msg/mission_start.hpp"
-#include "interfaces/msg/pose.hpp"
-#include "interfaces/msg/rc_state.hpp"
-#include "interfaces/msg/safety_limits.hpp"
-#include "interfaces/msg/uav_command.hpp"
-#include "interfaces/msg/uav_health.hpp"
-#include "interfaces/msg/uav_waypoint_command.hpp"
+#include <interfaces/msg/battery_state.hpp>
+#include <interfaces/msg/control.hpp>
+#include <interfaces/msg/flight_state.hpp>
+#include <interfaces/msg/gps_position.hpp>
+#include <interfaces/msg/heartbeat.hpp>
+#include <interfaces/msg/mission_finished.hpp>
+#include <interfaces/msg/mission_progress.hpp>
+#include <interfaces/msg/mission_start.hpp>
+#include <interfaces/msg/pose.hpp>
+#include <interfaces/msg/rc_state.hpp>
+#include <interfaces/msg/safety_limits.hpp>
+#include <interfaces/msg/uav_command.hpp>
+#include <interfaces/msg/uav_health.hpp>
+#include <interfaces/msg/uav_waypoint_command.hpp>
 
 // CommonLib headers
-#include "common_package/common_node.hpp"
+#include <common_package/common_node.hpp>
 
 // Geofence header
 #include "geofence.hpp"
@@ -726,7 +727,7 @@ class FCCBridgeNode : public common_lib::CommonNode {
      * Triggers an RTH if the command is deemed invalid such as when
      * 1. The time stamp in the message is older than one second.
      * 2. sender_id is not the active node
-     * TODO: Work out
+     * 3. The sender is not permitted to issue the received command
      *
      * @throws std::runtime_error If FCCBridgeNode::internal_state is
      * FCCBridgeNode::INTERNAL_STATE::ERROR
@@ -1274,6 +1275,32 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     static char const *mavsdk_telemetry_result_to_str(
         const mavsdk::Telemetry::Result &result);
+    /**
+     * @brief Conversion function to get the string representation of a
+     * mavsdk::Info::Result
+     *
+     * @param result The Result to convert
+     * @return The string representation of the Result
+     *
+     * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
+     */
+    static char const *mavsdk_info_result_to_str(
+        const mavsdk::Info::Result &result);
+    /**
+     * @brief Conversion function to get the string representation of a
+     * mavsdk::Info::Version::FlightSoftwareVersionType
+     *
+     * @param result The type to convert
+     * @return The string representation of the type
+     *
+     * @throws std::runtime_error If the value is unknown
+     *
+     * Implemented in src/fcc_bridge_node_conversion.cpp
+     */
+    static char const *mavsdk_info_version_flight_sw_version_to_str(
+        const mavsdk::Info::Version::FlightSoftwareVersionType &type);
     /**
      * @brief Conversion function to get the string representation of the
      * current value of FCCBridgeNode::internal_state

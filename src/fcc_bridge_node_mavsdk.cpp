@@ -6,6 +6,7 @@
 #include <cinttypes>
 #include <map>
 
+// FCC bridge header
 #include "fcc_bridge_node.hpp"
 
 namespace fcc_bridge {
@@ -196,10 +197,108 @@ void FCCBridgeNode::setup_mavsdk() {
     this->check_telemetry_result(
         this->mavsdk_telemtry->set_rate_landed_state(5.0), "LandedState");
 
+    const mavsdk::Info info{this->mavsdk_system};
+
+    const std::pair<mavsdk::Info::Result, mavsdk::Info::FlightInfo> flight_info{
+        info.get_flight_information()};
+
+    if (flight_info.first != mavsdk::Info::Result::Success) {
+        RCLCPP_FATAL(
+            this->get_mavsdk_interface_logger(),
+            "Failed to get flight info from FCC with error: %s",
+            FCCBridgeNode::mavsdk_info_result_to_str(flight_info.first));
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        return;
+    }
+
+    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                "Got flight info from FCC: boot time: %" PRIu32
+                "ms\tFlight uid: %" PRIu64,
+                flight_info.second.time_boot_ms, flight_info.second.flight_uid);
+
+    const std::pair<mavsdk::Info::Result, mavsdk::Info::Identification>
+        identification{info.get_identification()};
+
+    if (identification.first != mavsdk::Info::Result::Success) {
+        RCLCPP_FATAL(
+            this->get_mavsdk_interface_logger(),
+            "Failed to get identification from FCC with error: %s",
+            FCCBridgeNode::mavsdk_info_result_to_str(identification.first));
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        return;
+    }
+
+    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                "Got identification from FCC: hardware uid: %s\t legacy uid: "
+                "%#016" PRIX64,
+                identification.second.hardware_uid.c_str(),
+                identification.second.legacy_uid);
+
+    const std::pair<mavsdk::Info::Result, mavsdk::Info::Product> product{
+        info.get_product()};
+
+    if (product.first != mavsdk::Info::Result::Success) {
+        RCLCPP_FATAL(this->get_mavsdk_interface_logger(),
+                     "Failed to get product from FCC with error: %s",
+                     FCCBridgeNode::mavsdk_info_result_to_str(product.first));
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        return;
+    }
+
+    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                "Got product info from FCC: vendor id: %" PRId32
+                "\tvendor name: %s\t product id: %" PRId32 "\tproduct name: %s",
+                product.second.vendor_id, product.second.vendor_name.c_str(),
+                product.second.product_id, product.second.product_name.c_str());
+
+    const std::pair<mavsdk::Info::Result, mavsdk::Info::Version> version{
+        info.get_version()};
+
+    if (version.first != mavsdk::Info::Result::Success) {
+        RCLCPP_FATAL(this->get_mavsdk_interface_logger(),
+                     "Failed to get version from FCC with error: %s",
+                     FCCBridgeNode::mavsdk_info_result_to_str(version.first));
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        return;
+    }
+
+    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                "Got version info from FCC: Flight SW major: %" PRId32
+                "\tFlight SW minor: %" PRId32 "\tFlight SW patch: %" PRId32
+                "\tFlight SW git hash: %s\tFlight SW type: %s\tFlight SW "
+                "vendor major: %" PRId32 "\tFlight SW vendor minor: %" PRId32
+                "\tFlight SW vendor patch: %" PRId32 "\tOS SW major: %" PRId32
+                "\tOS SW minor: %" PRId32 "\tOS SW patch: %" PRId32
+                "\tOs SW git hash: %s",
+                version.second.flight_sw_major, version.second.flight_sw_minor,
+                version.second.flight_sw_patch,
+                version.second.flight_sw_git_hash.c_str(),
+                FCCBridgeNode::mavsdk_info_version_flight_sw_version_to_str(
+                    version.second.flight_sw_version_type),
+                version.second.flight_sw_vendor_major,
+                version.second.flight_sw_vendor_minor,
+                version.second.flight_sw_vendor_patch,
+                version.second.os_sw_major, version.second.os_sw_minor,
+                version.second.os_sw_patch,
+                version.second.os_sw_git_hash.c_str());
+
+    const std::pair<mavsdk::Info::Result, double> speed_factor{
+        info.get_speed_factor()};
+
+    if (speed_factor.first != mavsdk::Info::Result::Success) {
+        RCLCPP_FATAL(
+            this->get_mavsdk_interface_logger(),
+            "Failed to get speed factor from FCC with error: %s",
+            FCCBridgeNode::mavsdk_info_result_to_str(speed_factor.first));
+        this->set_internal_state(INTERNAL_STATE::ERROR);
+        return;
+    }
+
+    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                "Got speed factor from FCC: %f", speed_factor.second);
+
     RCLCPP_INFO(this->get_mavsdk_interface_logger(),
                 "Successfully set up MAVSDK components");
-
-    // TODO: Log Autopilot hardware id and flight number
 }
 
 void FCCBridgeNode::verify_mavsdk_connection() {
