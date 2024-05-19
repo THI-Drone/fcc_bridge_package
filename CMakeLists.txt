@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(fcc_bridge)
 
+# Compiler flags courtesy of https://airbus-seclab.github.io/c-compiler-security/
 set(CXX_COMPILE_OPTIONS
         # Floating point math
         -frounding-math
@@ -28,6 +29,9 @@ set(CXX_COMPILE_OPTIONS
         -Wswitch-enum
         -Wvla
 
+        # Link time optimization
+        -flto=1
+
         # Flags to support ASLR and stack canaries
         -fstack-protector-strong
         -fstack-clash-protection
@@ -40,7 +44,6 @@ set(CXX_COMPILE_OPTIONS
         -Wl,-z,separate-code
 )
 
-# Compiler flags courtesy of https://airbus-seclab.github.io/c-compiler-security/
 if(CMAKE_COMPILER_IS_GNUCXX)
   list(APPEND CXX_COMPILE_OPTIONS
 
