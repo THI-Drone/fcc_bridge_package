@@ -29,11 +29,6 @@ class FCCBridgeNodeWrapper : public ::fcc_bridge::test::FCCBridgeNodeWrapper {
     FRIEND_TEST(FailureInErrorState, ActualSenderNotExpected);
     FRIEND_TEST(SuccessInAllStates, ValidSender);
 
-    // mavsdk_rth_cb test cases implemented in
-    // test/safety/test_mavsdk_rth_cb.cpp
-    FRIEND_TEST(TestMAVSDKRTHCBFAILURE, RTHFailure);
-    FRIEND_TEST(BaseTestFixture, MAVSDKRTHCBSUCESS);
-
     // validate_safety_limits test cases implemented in
     // test/safety/test_validate_safety_limits.cpp
     FRIEND_TEST(SafetyLimit, NoSafetyLimit);
