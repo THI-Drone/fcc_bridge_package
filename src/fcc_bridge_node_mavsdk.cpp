@@ -593,7 +593,7 @@ void FCCBridgeNode::trigger_rth() {
         case INTERNAL_STATE::WAITING_FOR_ARM:
         case INTERNAL_STATE::ARMED:
         case INTERNAL_STATE::LANDED:
-            // Ignore that the UAV is om ground and try an RTH anyway. This is
+            // Ignore that the UAV is on ground and try an RTH anyway. This is
             // so that if the UAV is unexpectedly airborne the RTH still works
             break;
         case INTERNAL_STATE::RETURN_TO_HOME:
@@ -623,6 +623,13 @@ void FCCBridgeNode::trigger_rth() {
                 std::string("Got invalid value for internal_state: ") +
                 std::to_string(static_cast<int>(this->get_internal_state())));
     }
+
+    // Deactivate all subscriber apart from the heartbeat subscriber
+    this->control_subscriber.reset();
+    this->safety_limits_subscriber.reset();
+    this->mission_finished_subscriber.reset();
+    this->uav_waypoint_command_subscriber.reset();
+    this->uav_command_subscriber.reset();
 
     RCLCPP_WARN(this->get_mavsdk_interface_logger(), "Triggering RTH");
 

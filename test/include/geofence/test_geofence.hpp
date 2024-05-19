@@ -17,8 +17,7 @@ class TestGeofence : public Geofence<T> {
     using PointType = typename Geofence<T>::PointType;
     using PolygonType = typename Geofence<T>::PolygonType;
 
-    constexpr explicit TestGeofence(
-        const std::initializer_list<PointType> &init)
+    constexpr TestGeofence(const std::initializer_list<PointType> &init)
         : Geofence<T>(PolygonType(init)) {}
 
     constexpr explicit TestGeofence(const PolygonType &polygon)

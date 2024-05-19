@@ -809,6 +809,14 @@ void FCCBridgeNode::check_last_mission_control_heartbeat() {
 
     if (rclcpp::Duration(MAX_MISSION_CONTROL_HEARTBEAT_AGE) <
         (this->now() - this->last_mission_control_heartbeat->time_stamp)) {
+        if (this->get_internal_state() == INTERNAL_STATE::RETURN_TO_HOME ||
+            this->get_internal_state() == INTERNAL_STATE::LANDED) {
+            RCLCPP_WARN(
+                this->get_safety_logger(),
+                "Mission control timed out while in state %s. Ignoring...",
+                this->internal_state_to_str());
+            return;
+        }
         if (this->is_airborne()) {
             RCLCPP_FATAL(
                 this->get_safety_logger(),
