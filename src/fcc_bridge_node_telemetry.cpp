@@ -83,11 +83,10 @@ void FCCBridgeNode::send_flight_state() {
         this->set_internal_state(INTERNAL_STATE::LANDED);
         this->disarm();
         this->shutdown_timer = this->create_wall_timer(
-            std::chrono::seconds{60},
-            std::bind(&FCCBridgeNode::force_shutdown_node, this));
+            std::chrono::seconds{10},
+            std::bind(&FCCBridgeNode::shutdown_node, this));
         RCLCPP_WARN(this->get_safety_logger(),
-                    "Forced shutdown will occur in 60 seconds if no mission "
-                    "finished message is received");
+                    "Node shutdown will occur in 10 seconds");
     }
 
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
@@ -246,11 +245,10 @@ void FCCBridgeNode::send_mission_progress() {
                 this->set_internal_state(INTERNAL_STATE::LANDED);
                 this->disarm();
                 this->shutdown_timer = this->create_wall_timer(
-                    std::chrono::seconds{60},
-                    std::bind(&FCCBridgeNode::force_shutdown_node, this));
+                    std::chrono::seconds{10},
+                    std::bind(&FCCBridgeNode::shutdown_node, this));
                 RCLCPP_WARN(this->get_safety_logger(),
-                            "Forced shutdown will occur in 60 seconds if no "
-                            "mission finished message is received");
+                            "Node shutdown will occur in 10 seconds");
                 break;
             default:
                 throw unknown_enum_value_error(

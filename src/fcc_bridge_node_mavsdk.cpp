@@ -578,7 +578,7 @@ void FCCBridgeNode::disarm() {
     RCLCPP_INFO(this->get_logger(), "Successfully disarmed UAV");
 }
 
-void FCCBridgeNode::force_shutdown_node() {
+void FCCBridgeNode::shutdown_node() {
     // Disable timer
     if (this->shutdown_timer) {
         RCLCPP_INFO(this->get_ros_interface_logger(),
@@ -603,41 +603,9 @@ void FCCBridgeNode::force_shutdown_node() {
         }
     }
 
-    RCLCPP_WARN(this->get_ros_interface_logger(),
-                "Forced shutdown due to missing mission finished message");
+    RCLCPP_INFO(this->get_ros_interface_logger(), "Shutting down node");
     this->get_node_base_interface()->get_context()->shutdown(
-        "Forced shutdown on FCC land");
-}
-
-void FCCBridgeNode::normal_shutdown_node() {
-    // Disable timer
-    if (this->shutdown_timer) {
-        RCLCPP_INFO(this->get_ros_interface_logger(),
-                    "Disabling and deleting shutdown timer");
-        this->shutdown_timer->cancel();
-        this->shutdown_timer->reset();
-    }
-
-    if (this->get_internal_state() != INTERNAL_STATE::LANDED) {
-        if (this->is_airborne()) {
-            // In this case the UAV is airborne
-            RCLCPP_ERROR(this->get_internal_state_logger(),
-                         "Attempted shutdown while in air! Triggering RTH...");
-            this->trigger_rth();
-            return;
-        } else {
-            // In this case the UAV is on the ground
-            RCLCPP_FATAL(this->get_internal_state_logger(),
-                         "Attempted shutdown while on ground! Exiting...");
-            this->set_internal_state(INTERNAL_STATE::ERROR);
-            this->exit_process_on_error();
-        }
-    }
-
-    RCLCPP_INFO(this->get_ros_interface_logger(),
-                "Shutting down node normally");
-    this->get_node_base_interface()->get_context()->shutdown(
-        "Normal shutdown on FCC land");
+        "Shutdown on FCC land");
 }
 
 void FCCBridgeNode::exit_process_on_error() const {

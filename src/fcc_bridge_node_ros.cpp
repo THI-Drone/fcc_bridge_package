@@ -295,8 +295,10 @@ void FCCBridgeNode::mission_finished_cb(
 
     // Ignoring whether mission control is active
 
-    // Verify that we are in the right state
-    if (this->get_internal_state() != INTERNAL_STATE::LANDED) {
+    // Ignoring mission finished if we are in RTH and no error is indicated
+
+    if (this->get_internal_state() != INTERNAL_STATE::RETURN_TO_HOME ||
+        msg.error_code != EXIT_SUCCESS) {
         if (this->is_airborne()) {
             // The UAV is airborne. This will result in an RTH
             RCLCPP_WARN(this->get_internal_state_logger(),
@@ -313,20 +315,9 @@ void FCCBridgeNode::mission_finished_cb(
         }
     }
 
-    // This means we have landed
-    if (msg.error_code == 0) {
-        // Expected mission end
-        RCLCPP_INFO(this->get_internal_state_logger(),
-                    "Ended mission with success. Ending process in 5 seconds.");
-        this->shutdown_timer = this->create_wall_timer(
-            std::chrono::seconds{5},
-            std::bind(&FCCBridgeNode::normal_shutdown_node, this));
-    } else {
-        RCLCPP_FATAL(this->get_safety_logger(),
-                     "Ended mission with error code set! Exiting...");
-        this->set_internal_state(INTERNAL_STATE::ERROR);
-        this->exit_process_on_error();
-    }
+    RCLCPP_INFO(this->get_ros_interface_logger(),
+                "Ignored Mission finished message with no indicated error "
+                "while in RTH state");
 }
 
 void FCCBridgeNode::safety_limits_cb(const interfaces::msg::SafetyLimits &msg) {

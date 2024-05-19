@@ -1120,17 +1120,11 @@ class FCCBridgeNode : public common_lib::CommonNode {
      */
     void disarm();
     /**
-     * @brief Forcefully shuts down the node after the UAV has landed
+     * @brief Shuts down the node after the UAV has landed
      *
      * Implemented in src/fcc_bridge_node_mavsdk.cpp
      */
-    void force_shutdown_node();
-    /**
-     * @brief Normally shuts down the node after the UAV has landed
-     *
-     * Implemented in src/fcc_bridge_node_mavsdk.cpp
-     */
-    void normal_shutdown_node();
+    void shutdown_node();
     /**
      * @brief Exit the current process.
      *
