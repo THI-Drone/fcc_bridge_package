@@ -32,10 +32,30 @@ class FCCBridgeNodeWrapper : public ::fcc_bridge::test::FCCBridgeNodeWrapper {
     // validate_safety_limits test cases implemented in
     // test/safety/test_validate_safety_limits.cpp
     FRIEND_TEST(SafetyLimit, NoSafetyLimit);
-    FRIEND_TEST(SafetyLimit, SpeedLimit);
-    FRIEND_TEST(SafetyLimit, StateOfCharge);
-    FRIEND_TEST(SafetyLimit, MaxHeight);
-    FRIEND_TEST(SafetyLimit, Geofence);
+    FRIEND_TEST(SafetyLimit, ValidSpeedLimit);
+    FRIEND_TEST(SafetyLimit, MinimumSpeedLimit);
+    FRIEND_TEST(SafetyLimit, NegativeSpeedLimit);
+    FRIEND_TEST(SafetyLimit, TooLargeSpeedLimit);
+    FRIEND_TEST(SafetyLimit, PositiveInfinitySpeedLimit);
+    FRIEND_TEST(SafetyLimit, NegativeInfinitySpeedLimit);
+    FRIEND_TEST(SafetyLimit, QuietNaNSpeedLimit);
+    FRIEND_TEST(SafetyLimit, SignalingNaNSpeedLimit);
+    FRIEND_TEST(SafetyLimit, ValidStateOfCharge);
+    FRIEND_TEST(SafetyLimit, MinimumStateOfCharge);
+    FRIEND_TEST(SafetyLimit, NegativeStateOfCharge);
+    FRIEND_TEST(SafetyLimit, PositiveInfinityStateOfCharge);
+    FRIEND_TEST(SafetyLimit, NegativeInfinityStateOfCharge);
+    FRIEND_TEST(SafetyLimit, QuietNaNStateOfCharge);
+    FRIEND_TEST(SafetyLimit, SignalingNaNStateOfCharge);
+    FRIEND_TEST(SafetyLimit, ValidMaxHeight);
+    FRIEND_TEST(SafetyLimit, TooLargeMaxHeight);
+    FRIEND_TEST(SafetyLimit, PositiveInfinityMaxHeight);
+    FRIEND_TEST(SafetyLimit, NegativeInfinityMaxHeight);
+    FRIEND_TEST(SafetyLimit, QuietNaNMaxHeight);
+    FRIEND_TEST(SafetyLimit, SignalingNaNMaxHeight);
+    FRIEND_TEST(SafetyLimit, ValidGeofence);
+    FRIEND_TEST(SafetyLimit, InvalidGeofence);
+    FRIEND_TEST(SafetyLimit, AllInvalid);
 };
 
 using BaseTestFixture =

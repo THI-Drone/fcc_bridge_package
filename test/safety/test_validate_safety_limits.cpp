@@ -53,7 +53,7 @@ TEST_P(SafetyLimit, NoSafetyLimit) {
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
 }
 
-TEST_P(SafetyLimit, SpeedLimit) {
+TEST_P(SafetyLimit, ValidSpeedLimit) {
     // Test allowed value
     this->dummy_safety_limits.max_speed_m_s = 2;
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
@@ -68,9 +68,10 @@ TEST_P(SafetyLimit, SpeedLimit) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, MinimumSpeedLimit) {
     // Test to minimum value
-    this->fcc_bridge_node_wrapper->set_internal_state(
-        INTERNAL_STATE::MAVSDK_SET_UP);
     this->dummy_safety_limits.max_speed_m_s =
         FCCBridgeNodeWrapper::SafetyLimits::MIN_SPEED_LIMIT_MPS;
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
@@ -85,9 +86,10 @@ TEST_P(SafetyLimit, SpeedLimit) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, NegativeSpeedLimit) {
     // Test negative value
-    this->fcc_bridge_node_wrapper->set_internal_state(
-        INTERNAL_STATE::MAVSDK_SET_UP);
     this->dummy_safety_limits.max_speed_m_s = -1;
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
     this->fcc_bridge_node_wrapper->set_internal_state(SafetyLimit::GetParam());
@@ -101,9 +103,10 @@ TEST_P(SafetyLimit, SpeedLimit) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, TooLargeSpeedLimit) {
     // Test too large value
-    this->fcc_bridge_node_wrapper->set_internal_state(
-        INTERNAL_STATE::MAVSDK_SET_UP);
     this->dummy_safety_limits.max_speed_m_s =
         StructLimits::HARD_MAX_SPEED_LIMIT_MPS + 1;
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
@@ -118,10 +121,12 @@ TEST_P(SafetyLimit, SpeedLimit) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    if constexpr (std::numeric_limits<float>::has_infinity) {
-        // Test positive infinity
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
+}
+
+TEST_P(SafetyLimit, PositiveInfinitySpeedLimit) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_infinity)
+        << "The Platform does not support float infinities";
+    // Test positive infinity
         this->dummy_safety_limits.max_speed_m_s =
             std::numeric_limits<float>::infinity();
         this->fcc_bridge_node_wrapper->safety_limits_cb(
@@ -141,33 +146,32 @@ TEST_P(SafetyLimit, SpeedLimit) {
                   SafetyLimit::GetParam())
             << "Value of internal_state: "
             << this->fcc_bridge_node_wrapper->internal_state_to_str();
-        // Test negative infinity
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
-        this->dummy_safety_limits.max_speed_m_s =
-            -std::numeric_limits<float>::infinity();
-        this->fcc_bridge_node_wrapper->safety_limits_cb(
-            this->dummy_safety_limits);
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            SafetyLimit::GetParam());
-        this->fcc_bridge_node_wrapper->validate_safety_limits();
-        ASSERT_TRUE(
-            this->fcc_bridge_node_wrapper->get_safety_limits().has_value());
-        EXPECT_EQ(
-            this->fcc_bridge_node_wrapper->get_safety_limits()->max_speed_mps,
-            StructLimits::HARD_MAX_SPEED_LIMIT_MPS)
-            << "Actual max_speed value: "
-            << this->fcc_bridge_node_wrapper->get_safety_limits()
-                   ->max_speed_mps;
-        EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
-                  SafetyLimit::GetParam())
-            << "Value of internal_state: "
-            << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    }
-    if constexpr (std::numeric_limits<float>::has_quiet_NaN) {
-        // Test quiet NaN
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
+}
+
+TEST_P(SafetyLimit, NegativeInfinitySpeedLimit) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_infinity)
+        << "The Platform does not support float infinities";
+    // Test negative infinity
+    this->dummy_safety_limits.max_speed_m_s =
+        -std::numeric_limits<float>::infinity();
+    this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
+    this->fcc_bridge_node_wrapper->set_internal_state(SafetyLimit::GetParam());
+    this->fcc_bridge_node_wrapper->validate_safety_limits();
+    ASSERT_TRUE(this->fcc_bridge_node_wrapper->get_safety_limits().has_value());
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_safety_limits()->max_speed_mps,
+              StructLimits::HARD_MAX_SPEED_LIMIT_MPS)
+        << "Actual max_speed value: "
+        << this->fcc_bridge_node_wrapper->get_safety_limits()->max_speed_mps;
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
+              SafetyLimit::GetParam())
+        << "Value of internal_state: "
+        << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, QuietNaNSpeedLimit) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_quiet_NaN)
+        << "The Platform does not support quiet NaNs";
+    // Test quiet NaN
         this->dummy_safety_limits.max_speed_m_s =
             std::numeric_limits<float>::quiet_NaN();
         this->fcc_bridge_node_wrapper->safety_limits_cb(
@@ -187,11 +191,12 @@ TEST_P(SafetyLimit, SpeedLimit) {
                   SafetyLimit::GetParam())
             << "Value of internal_state: "
             << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    }
-    if constexpr (std::numeric_limits<float>::has_signaling_NaN) {
-        // Test signaling NaN
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
+}
+
+TEST_P(SafetyLimit, SignalingNaNSpeedLimit) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_signaling_NaN)
+        << "The platform does not support signaling NaNs";
+    // Test signaling NaN
         this->dummy_safety_limits.max_speed_m_s =
             std::numeric_limits<float>::signaling_NaN();
         this->fcc_bridge_node_wrapper->safety_limits_cb(
@@ -211,10 +216,9 @@ TEST_P(SafetyLimit, SpeedLimit) {
                   SafetyLimit::GetParam())
             << "Value of internal_state: "
             << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    }
 }
 
-TEST_P(SafetyLimit, StateOfCharge) {
+TEST_P(SafetyLimit, ValidStateOfCharge) {
     // Test allowed value
     this->dummy_safety_limits.min_soc = 80;
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
@@ -228,9 +232,10 @@ TEST_P(SafetyLimit, StateOfCharge) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, MinimumStateOfCharge) {
     // Test to minimum value
-    this->fcc_bridge_node_wrapper->set_internal_state(
-        INTERNAL_STATE::MAVSDK_SET_UP);
     this->dummy_safety_limits.min_soc =
         FCCBridgeNodeWrapper::SafetyLimits::HARD_MIN_SOC;
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
@@ -245,9 +250,10 @@ TEST_P(SafetyLimit, StateOfCharge) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, NegativeStateOfCharge) {
     // Test negative value
-    this->fcc_bridge_node_wrapper->set_internal_state(
-        INTERNAL_STATE::MAVSDK_SET_UP);
     this->dummy_safety_limits.min_soc = -1;
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
     this->fcc_bridge_node_wrapper->set_internal_state(SafetyLimit::GetParam());
@@ -261,10 +267,12 @@ TEST_P(SafetyLimit, StateOfCharge) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    if constexpr (std::numeric_limits<float>::has_infinity) {
-        // Test positive infinity
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
+}
+
+TEST_P(SafetyLimit, PositiveInfinityStateOfCharge) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_infinity)
+        << "The Platform does not support float infinities";
+    // Test positive infinity
         this->dummy_safety_limits.min_soc =
             std::numeric_limits<float>::infinity();
         this->fcc_bridge_node_wrapper->safety_limits_cb(
@@ -282,31 +290,31 @@ TEST_P(SafetyLimit, StateOfCharge) {
                   SafetyLimit::GetParam())
             << "Value of internal_state: "
             << this->fcc_bridge_node_wrapper->internal_state_to_str();
-        // Test negative infinity
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
-        this->dummy_safety_limits.min_soc =
-            -std::numeric_limits<float>::infinity();
-        this->fcc_bridge_node_wrapper->safety_limits_cb(
-            this->dummy_safety_limits);
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            SafetyLimit::GetParam());
-        this->fcc_bridge_node_wrapper->validate_safety_limits();
-        ASSERT_TRUE(
-            this->fcc_bridge_node_wrapper->get_safety_limits().has_value());
-        EXPECT_EQ(this->fcc_bridge_node_wrapper->get_safety_limits()->min_soc,
-                  StructLimits::HARD_MIN_SOC)
-            << "Actual min_soc value: "
-            << this->fcc_bridge_node_wrapper->get_safety_limits()->min_soc;
-        EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
-                  SafetyLimit::GetParam())
-            << "Value of internal_state: "
-            << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    }
-    if constexpr (std::numeric_limits<float>::has_quiet_NaN) {
-        // Test quiet NaN
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
+}
+
+TEST_P(SafetyLimit, NegativeInfinityStateOfCharge) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_infinity)
+        << "The Platform does not support float infinities";
+    // Test negative infinity
+    this->dummy_safety_limits.min_soc = -std::numeric_limits<float>::infinity();
+    this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
+    this->fcc_bridge_node_wrapper->set_internal_state(SafetyLimit::GetParam());
+    this->fcc_bridge_node_wrapper->validate_safety_limits();
+    ASSERT_TRUE(this->fcc_bridge_node_wrapper->get_safety_limits().has_value());
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_safety_limits()->min_soc,
+              StructLimits::HARD_MIN_SOC)
+        << "Actual min_soc value: "
+        << this->fcc_bridge_node_wrapper->get_safety_limits()->min_soc;
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
+              SafetyLimit::GetParam())
+        << "Value of internal_state: "
+        << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, QuietNaNStateOfCharge) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_quiet_NaN)
+        << "The platform does not support quiet NaNs";
+    // Test quiet NaN
         this->dummy_safety_limits.min_soc =
             std::numeric_limits<float>::quiet_NaN();
         this->fcc_bridge_node_wrapper->safety_limits_cb(
@@ -324,11 +332,12 @@ TEST_P(SafetyLimit, StateOfCharge) {
                   SafetyLimit::GetParam())
             << "Value of internal_state: "
             << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    }
-    if constexpr (std::numeric_limits<float>::has_signaling_NaN) {
-        // Test signaling NaN
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
+}
+
+TEST_P(SafetyLimit, SignalingNaNStateOfCharge) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_signaling_NaN)
+        << "The platform does not support signaling NaNs";
+    // Test signaling NaN
         this->dummy_safety_limits.min_soc =
             std::numeric_limits<float>::signaling_NaN();
         this->fcc_bridge_node_wrapper->safety_limits_cb(
@@ -346,10 +355,9 @@ TEST_P(SafetyLimit, StateOfCharge) {
                   SafetyLimit::GetParam())
             << "Value of internal_state: "
             << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    }
 }
 
-TEST_P(SafetyLimit, MaxHeight) {
+TEST_P(SafetyLimit, ValidMaxHeight) {
     // Test allowed value
     this->dummy_safety_limits.max_height_m = 25;
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
@@ -364,9 +372,10 @@ TEST_P(SafetyLimit, MaxHeight) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, TooLargeMaxHeight) {
     // Test too large value
-    this->fcc_bridge_node_wrapper->set_internal_state(
-        INTERNAL_STATE::MAVSDK_SET_UP);
     this->dummy_safety_limits.max_height_m =
         FCCBridgeNodeWrapper::SafetyLimits::HARD_MAX_HEIGHT_M + 1;
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
@@ -381,10 +390,12 @@ TEST_P(SafetyLimit, MaxHeight) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    if constexpr (std::numeric_limits<float>::has_infinity) {
-        // Test positive infinity
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
+}
+
+TEST_P(SafetyLimit, PositiveInfinityMaxHeight) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_infinity)
+        << "The Platform does not support float infinities";
+    // Test positive infinity
         this->dummy_safety_limits.max_height_m =
             std::numeric_limits<float>::infinity();
         this->fcc_bridge_node_wrapper->safety_limits_cb(
@@ -403,32 +414,32 @@ TEST_P(SafetyLimit, MaxHeight) {
                   SafetyLimit::GetParam())
             << "Value of internal_state: "
             << this->fcc_bridge_node_wrapper->internal_state_to_str();
-        // Test negative infinity
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
-        this->dummy_safety_limits.max_height_m =
-            -std::numeric_limits<float>::infinity();
-        this->fcc_bridge_node_wrapper->safety_limits_cb(
-            this->dummy_safety_limits);
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            SafetyLimit::GetParam());
-        this->fcc_bridge_node_wrapper->validate_safety_limits();
-        ASSERT_TRUE(
-            this->fcc_bridge_node_wrapper->get_safety_limits().has_value());
-        EXPECT_EQ(
-            this->fcc_bridge_node_wrapper->get_safety_limits()->max_height_m,
-            StructLimits::HARD_MAX_HEIGHT_M)
-            << "Actual max_height_m value: "
-            << this->fcc_bridge_node_wrapper->get_safety_limits()->max_height_m;
-        EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
-                  SafetyLimit::GetParam())
-            << "Value of internal_state: "
-            << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    }
-    if constexpr (std::numeric_limits<float>::has_quiet_NaN) {
-        // Test quiet NaN
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
+}
+
+TEST_P(SafetyLimit, NegativeInfinityMaxHeight) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_infinity)
+        << "The Platform does not support float infinities";
+    // Test negative infinity
+    this->dummy_safety_limits.max_height_m =
+        -std::numeric_limits<float>::infinity();
+    this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
+    this->fcc_bridge_node_wrapper->set_internal_state(SafetyLimit::GetParam());
+    this->fcc_bridge_node_wrapper->validate_safety_limits();
+    ASSERT_TRUE(this->fcc_bridge_node_wrapper->get_safety_limits().has_value());
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_safety_limits()->max_height_m,
+              StructLimits::HARD_MAX_HEIGHT_M)
+        << "Actual max_height_m value: "
+        << this->fcc_bridge_node_wrapper->get_safety_limits()->max_height_m;
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
+              SafetyLimit::GetParam())
+        << "Value of internal_state: "
+        << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, QuietNaNMaxHeight) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_quiet_NaN)
+        << "The platform does not support quiet NaNs";
+    // Test quiet NaN
         this->dummy_safety_limits.max_height_m =
             std::numeric_limits<float>::quiet_NaN();
         this->fcc_bridge_node_wrapper->safety_limits_cb(
@@ -447,11 +458,12 @@ TEST_P(SafetyLimit, MaxHeight) {
                   SafetyLimit::GetParam())
             << "Value of internal_state: "
             << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    }
-    if constexpr (std::numeric_limits<float>::has_signaling_NaN) {
-        // Test signaling NaN
-        this->fcc_bridge_node_wrapper->set_internal_state(
-            INTERNAL_STATE::MAVSDK_SET_UP);
+}
+
+TEST_P(SafetyLimit, SignalingNaNMaxHeight) {
+    ASSERT_TRUE(std::numeric_limits<float>::has_signaling_NaN)
+        << "The platform does not support signaling NaNs";
+    // Test signaling NaN
         this->dummy_safety_limits.max_height_m =
             std::numeric_limits<float>::signaling_NaN();
         this->fcc_bridge_node_wrapper->safety_limits_cb(
@@ -470,10 +482,9 @@ TEST_P(SafetyLimit, MaxHeight) {
                   SafetyLimit::GetParam())
             << "Value of internal_state: "
             << this->fcc_bridge_node_wrapper->internal_state_to_str();
-    }
 }
 
-TEST_P(SafetyLimit, Geofence) {
+TEST_P(SafetyLimit, ValidGeofence) {
     // Pass valid geofence
     this->fcc_bridge_node_wrapper->safety_limits_cb(this->dummy_safety_limits);
     this->fcc_bridge_node_wrapper->set_internal_state(SafetyLimit::GetParam());
@@ -486,9 +497,10 @@ TEST_P(SafetyLimit, Geofence) {
               SafetyLimit::GetParam())
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, InvalidGeofence) {
     // Invalid geofence
-    this->fcc_bridge_node_wrapper->set_internal_state(
-        INTERNAL_STATE::MAVSDK_SET_UP);
     this->dummy_safety_limits.geofence_points[1].longitude_deg = 0;
     EXPECT_THROW(this->fcc_bridge_node_wrapper->safety_limits_cb(
                      this->dummy_safety_limits),
@@ -496,6 +508,40 @@ TEST_P(SafetyLimit, Geofence) {
     this->fcc_bridge_node_wrapper->set_internal_state(SafetyLimit::GetParam());
     this->fcc_bridge_node_wrapper->validate_safety_limits();
     ASSERT_TRUE(this->fcc_bridge_node_wrapper->get_safety_limits().has_value());
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_safety_limits()
+                  ->geofence.get_polygon_point_count(),
+              2);
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
+              INTERNAL_STATE::ERROR)
+        << "Value of internal_state: "
+        << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+TEST_P(SafetyLimit, AllInvalid) {
+    this->dummy_safety_limits.max_speed_m_s =
+        StructLimits::HARD_MAX_SPEED_LIMIT_MPS + 1;
+    this->dummy_safety_limits.min_soc = StructLimits::HARD_MIN_SOC - 1;
+    this->dummy_safety_limits.max_height_m =
+        StructLimits::HARD_MAX_HEIGHT_M + 1;
+    this->dummy_safety_limits.geofence_points[1].longitude_deg = 0;
+    EXPECT_THROW(this->fcc_bridge_node_wrapper->safety_limits_cb(
+                     this->dummy_safety_limits),
+                 normal_fcc_exit);
+    this->fcc_bridge_node_wrapper->set_internal_state(SafetyLimit::GetParam());
+    this->fcc_bridge_node_wrapper->validate_safety_limits();
+    ASSERT_TRUE(this->fcc_bridge_node_wrapper->get_safety_limits().has_value());
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_safety_limits()->max_speed_mps,
+              StructLimits::HARD_MAX_SPEED_LIMIT_MPS)
+        << "Actual max_speed value: "
+        << this->fcc_bridge_node_wrapper->get_safety_limits()->max_speed_mps;
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_safety_limits()->min_soc,
+              StructLimits::HARD_MIN_SOC)
+        << "Actual min_soc value: "
+        << this->fcc_bridge_node_wrapper->get_safety_limits()->min_soc;
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_safety_limits()->max_height_m,
+              StructLimits::HARD_MAX_HEIGHT_M)
+        << "Actual max_height_m value: "
+        << this->fcc_bridge_node_wrapper->get_safety_limits()->max_height_m;
     EXPECT_EQ(this->fcc_bridge_node_wrapper->get_safety_limits()
                   ->geofence.get_polygon_point_count(),
               2);
