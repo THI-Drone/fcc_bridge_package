@@ -2,6 +2,12 @@
 // Created by Johan <job8197@thi.de> on 19.05.2024.
 //
 
+/**
+ * @brief This file checks the function
+ * fcc_bridge::FCCBridgeNode::validate_safety_limits in all possible internal
+ * states in all failure and success cases
+ */
+
 // Libc header
 #include <limits>
 
@@ -17,6 +23,9 @@
 
 namespace fcc_bridge::test::safety {
 
+/**
+ * @brief Test fixture instantiated before every test case in this file
+ */
 class SafetyLimit : public ValuedTestFixture<INTERNAL_STATE> {
    protected:
     using StructLimits = FCCBridgeNodeWrapper::SafetyLimits;
