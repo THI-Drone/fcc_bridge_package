@@ -514,7 +514,7 @@ void FCCBridgeNode::check_battery_state() {
         }
     }
 
-    // Ensuring there is a valid BatterState present
+    // Ensuring there is a valid BatteryState present
     if (!this->last_fcc_battery_state.has_value()) {
         RCLCPP_DEBUG(this->get_safety_logger(),
                      "No cached BatteryState found, getting an update "
