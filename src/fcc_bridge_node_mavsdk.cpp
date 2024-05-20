@@ -282,21 +282,6 @@ void FCCBridgeNode::setup_mavsdk() {
                 version.second.os_sw_patch,
                 version.second.os_sw_git_hash.c_str());
 
-    const std::pair<mavsdk::Info::Result, double> speed_factor{
-        info.get_speed_factor()};
-
-    if (speed_factor.first != mavsdk::Info::Result::Success) {
-        RCLCPP_FATAL(
-            this->get_mavsdk_interface_logger(),
-            "Failed to get speed factor from FCC with error: %s",
-            FCCBridgeNode::mavsdk_info_result_to_str(speed_factor.first));
-        this->set_internal_state(INTERNAL_STATE::ERROR);
-        return;
-    }
-
-    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
-                "Got speed factor from FCC: %f", speed_factor.second);
-
     RCLCPP_INFO(this->get_mavsdk_interface_logger(),
                 "Successfully set up MAVSDK components");
 }
