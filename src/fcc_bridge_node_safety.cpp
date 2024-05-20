@@ -80,9 +80,10 @@ const std::set<FlightMode> exit_flight_modes{
     FlightMode::Altctl,     FlightMode::Posctl,   FlightMode::Acro,
     FlightMode::Stabilized, FlightMode::Rattitude};
 
-// INTERNAL_STATE::ERROR -> Kill / INTERNAL_STATE::STARTING_UP &
-// INTERNAL_STATE::ROS_SET_UP -> exit / INTERNAL_STATE::MAVSDK_SET_UP &
-// INTERNAL_STATE::WAITING_FOR_ARM -> valid expected to be handled explicitly
+// INTERNAL_STATE::ERROR -> Kill
+// INTERNAL_STATE::STARTING_UP & INTERNAL_STATE::ROS_SET_UP -> exit
+// INTERNAL_STATE::MAVSDK_SET_UP & INTERNAL_STATE::WAITING_FOR_ARM -> valid
+// expected to be handled explicitly
 const std::map<const INTERNAL_STATE, const state_action<FlightMode>>
     flight_mode_actions{
         {INTERNAL_STATE::ARMED,
@@ -115,7 +116,7 @@ const std::map<const INTERNAL_STATE, const state_action<FlightMode>>
           {FlightMode::Unknown, FlightMode::Ready, FlightMode::Takeoff,
            FlightMode::Land},
           {FlightMode::Hold, FlightMode::Mission, FlightMode::ReturnToLaunch}}},
-        {INTERNAL_STATE::WAITING_FOR_COMMAND,
+        {INTERNAL_STATE::LANDED,
          {exit_flight_modes,
           {FlightMode::Unknown, FlightMode::Takeoff, FlightMode::Mission,
            FlightMode::ReturnToLaunch, FlightMode::Land},
