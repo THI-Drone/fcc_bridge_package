@@ -324,6 +324,9 @@ void FCCBridgeNode::check_gps_state() {
                 this->set_internal_state(INTERNAL_STATE::ERROR);
                 this->exit_process_on_error();
             }
+        } else {
+            RCLCPP_DEBUG(this->get_safety_logger(),
+                         "Current UAV position is inside the geofence");
         }
     }
 
