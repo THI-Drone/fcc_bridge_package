@@ -485,7 +485,9 @@ void FCCBridgeNode::check_battery_state() {
     if (this->get_internal_state() == INTERNAL_STATE::STARTING_UP ||
         this->get_internal_state() == INTERNAL_STATE::ROS_SET_UP) {
         RCLCPP_FATAL(this->get_internal_state_logger(),
-                     "In an invalid state for a battery check! Exiting...");
+                     "Current state %s is an invalid state for a battery "
+                     "check! Exiting..",
+                     this->internal_state_to_str());
         this->set_internal_state(INTERNAL_STATE::ERROR);
         this->exit_process_on_error();
     }
