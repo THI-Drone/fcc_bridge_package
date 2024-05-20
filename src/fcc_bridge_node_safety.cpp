@@ -119,8 +119,8 @@ const std::map<const INTERNAL_STATE, const state_action<FlightMode>>
         {INTERNAL_STATE::LANDED,
          {exit_flight_modes,
           {FlightMode::Unknown, FlightMode::Takeoff, FlightMode::Mission,
-           FlightMode::Land},
-          {FlightMode::Ready, FlightMode::Hold, FlightMode::ReturnToLaunch}}}};
+           FlightMode::ReturnToLaunch, FlightMode::Land},
+          {FlightMode::Ready, FlightMode::Hold}}}};
 
 constexpr std::chrono::milliseconds MAX_MISSION_CONTROL_HEARTBEAT_AGE{1000};
 
