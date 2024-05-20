@@ -82,7 +82,7 @@ class invalid_polygon_error : public std::runtime_error {
      * @param msg The error message to convey
      */
     explicit invalid_polygon_error(const std::string &msg)
-        : std::runtime_error(msg){
+        : std::runtime_error(msg) {
 
           };
 };
@@ -98,7 +98,7 @@ class invalid_point_error : public std::runtime_error {
      * @param msg The error message to convey
      */
     explicit invalid_point_error(const std::string &msg)
-        : std::runtime_error(msg){
+        : std::runtime_error(msg) {
 
           };
 };
