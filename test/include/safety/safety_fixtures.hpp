@@ -22,6 +22,7 @@ class FCCBridgeNodeWrapper : public ::fcc_bridge::test::FCCBridgeNodeWrapper {
     FRIEND_TEST(PosInGeofence, Test);
     FRIEND_TEST(GeofenceViolationAirborne, Test);
     FRIEND_TEST(GeofenceViolationOnGround, Test);
+    FRIEND_TEST(NoGeofence, MAVSDK_SET_UP);
 
     // check_telemetry_result test cases implemented in
     // test/safety/test_check_telemetry_result.cpp

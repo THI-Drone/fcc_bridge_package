@@ -61,7 +61,7 @@ const char *fix_type_to_suffix(const FixType &fix_type) {
     }
 }
 
-std::string suffix_gen(
+std::string combined_suffix_gen(
     const testing::TestParamInfo<std::tuple<INTERNAL_STATE, FixType>>
         &param_info) {
     const testing::TestParamInfo<INTERNAL_STATE> state_info(
@@ -165,12 +165,12 @@ TEST_P(GPSValidFixTypeTestFixture, Test) {
 INSTANTIATE_TEST_SUITE_P(HardCheck, GPSValidFixTypeTestFixture,
                          testing::Combine(HARD_CHECK_STATES,
                                           VALID_HARD_CHECK_FIX_TYPES),
-                         suffix_gen);
+                         combined_suffix_gen);
 
 INSTANTIATE_TEST_SUITE_P(SoftCheck, GPSValidFixTypeTestFixture,
                          testing::Combine(SOFT_CHECK_STATES,
                                           VALID_SOFT_CHECK_FIX_TYPES),
-                         suffix_gen);
+                         combined_suffix_gen);
 
 using GPSInValidFixTypeTestFixture =
     GPSTestFixture<std::tuple<INTERNAL_STATE, FixType>>;
@@ -191,12 +191,12 @@ TEST_P(GPSInValidFixTypeTestFixture, Test) {
 INSTANTIATE_TEST_SUITE_P(HardCheck, GPSInValidFixTypeTestFixture,
                          testing::Combine(HARD_CHECK_STATES,
                                           INVALID_HARD_CHECK_FIX_TYPES),
-                         suffix_gen);
+                         combined_suffix_gen);
 
 INSTANTIATE_TEST_SUITE_P(SoftCheck, GPSInValidFixTypeTestFixture,
                          testing::Combine(SOFT_CHECK_STATES,
                                           INVALID_SOFT_CHECK_FIX_TYPES),
-                         suffix_gen);
+                         combined_suffix_gen);
 
 using PosInGeofence = GPSTestFixture<INTERNAL_STATE>;
 
@@ -236,6 +236,27 @@ TEST_P(GeofenceViolationOnGround, Test) {
                  normal_fcc_exit);
     EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
               INTERNAL_STATE::ERROR)
+        << "Value of internal_state: "
+        << this->fcc_bridge_node_wrapper->internal_state_to_str();
+}
+
+INSTANTIATE_TEST_SUITE_P(, GeofenceViolationOnGround,
+                         testing::Values(INTERNAL_STATE::WAITING_FOR_ARM,
+                                         INTERNAL_STATE::ARMED,
+                                         INTERNAL_STATE::LANDED),
+                         internal_state_suffix_gen);
+
+using NoGeofence = GPSTestFixture<INTERNAL_STATE>;
+
+TEST_F(NoGeofence, MAVSDK_SET_UP) {
+    this->fcc_bridge_node_wrapper->set_internal_state(
+        INTERNAL_STATE::MAVSDK_SET_UP);
+    fake_gps_position->longitude_deg = -1;
+    EXPECT_NO_THROW(this->fcc_bridge_node_wrapper->check_gps_state())
+
+        ;
+    EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
+              INTERNAL_STATE::MAVSDK_SET_UP)
         << "Value of internal_state: "
         << this->fcc_bridge_node_wrapper->internal_state_to_str();
 }
