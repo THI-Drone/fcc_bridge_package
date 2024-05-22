@@ -17,6 +17,8 @@ extern std::optional<mavsdk::Telemetry::GpsInfo> fake_gps_info;
 
 extern std::optional<mavsdk::Telemetry::Position> fake_gps_position;
 
+extern std::optional<mavsdk::Telemetry::LandedState> fake_landed_state;
+
 }  // namespace fcc_bridge::test
 
 #endif  // THI_DRONE_WS_FCC_BRIDGE_NODE_MAVSDK_MOCK_HPP

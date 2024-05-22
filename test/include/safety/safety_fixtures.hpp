@@ -24,6 +24,11 @@ class FCCBridgeNodeWrapper : public ::fcc_bridge::test::FCCBridgeNodeWrapper {
     FRIEND_TEST(GeofenceViolationOnGround, Test);
     FRIEND_TEST(NoGeofence, MAVSDK_SET_UP);
 
+    // check_landed_state test cases implemented in
+    // test/safety/test_check_landed_state.cpp
+    FRIEND_TEST(ErrorInternalState, Test);
+    FRIEND_TEST(InvalidInternalState, Test);
+
     // check_telemetry_result test cases implemented in
     // test/safety/test_check_telemetry_result.cpp
     FRIEND_TEST(TelemetryRateSetFailure, TelemetryRateSetFailure);

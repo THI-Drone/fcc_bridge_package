@@ -21,6 +21,8 @@ std::optional<mavsdk::Telemetry::GpsInfo> fake_gps_info;
 
 std::optional<mavsdk::Telemetry::Position> fake_gps_position;
 
+std::optional<mavsdk::Telemetry::LandedState> fake_landed_state;
+
 }  // namespace test
 
 void FCCBridgeNode::setup_mavsdk() {}
@@ -32,7 +34,9 @@ void FCCBridgeNode::get_gps_telemetry() {
     this->last_fcc_position = test::fake_gps_position;
 }
 
-void FCCBridgeNode::get_flight_state() {}
+void FCCBridgeNode::get_flight_state() {
+    this->last_fcc_landed_state = test::fake_landed_state;
+}
 
 void FCCBridgeNode::get_battery_state() {}
 
