@@ -11,6 +11,18 @@
 namespace fcc_bridge::test::safety {
 
 class FCCBridgeNodeWrapper : public ::fcc_bridge::test::FCCBridgeNodeWrapper {
+    // check_gps_state test cases implemented in
+    // test/safety/test_check_gps_state.cpp
+    template <typename>
+    friend class GPSTestFixture;
+    FRIEND_TEST(GPSErrorTestFixture, ErrorState);
+    FRIEND_TEST(GPSInvalidStateTestFixture, InvalidState);
+    FRIEND_TEST(GPSValidFixTypeTestFixture, Test);
+    FRIEND_TEST(GPSInValidFixTypeTestFixture, Test);
+    FRIEND_TEST(PosInGeofence, Test);
+    FRIEND_TEST(GeofenceViolationAirborne, Test);
+    FRIEND_TEST(GeofenceViolationOnGround, Test);
+
     // check_telemetry_result test cases implemented in
     // test/safety/test_check_telemetry_result.cpp
     FRIEND_TEST(TelemetryRateSetFailure, TelemetryRateSetFailure);

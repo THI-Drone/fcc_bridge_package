@@ -7,16 +7,30 @@
  * MAVLink network and an autopilot
  */
 
+#include "fcc_bridge_node_mavsdk_mock.hpp"
+
+#include "fcc_bridge/fcc_bridge_node.hpp"
 #include "fcc_exit_exceptions.hpp"
 #include "test_fixtures.hpp"
 
 namespace fcc_bridge {
 
+namespace test {
+
+std::optional<mavsdk::Telemetry::GpsInfo> fake_gps_info;
+
+std::optional<mavsdk::Telemetry::Position> fake_gps_position;
+
+}  // namespace test
+
 void FCCBridgeNode::setup_mavsdk() {}
 
 void FCCBridgeNode::verify_mavsdk_connection() {}
 
-void FCCBridgeNode::get_gps_telemetry() {}
+void FCCBridgeNode::get_gps_telemetry() {
+    this->last_fcc_gps_info = test::fake_gps_info;
+    this->last_fcc_position = test::fake_gps_position;
+}
 
 void FCCBridgeNode::get_flight_state() {}
 

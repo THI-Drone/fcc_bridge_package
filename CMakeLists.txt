@@ -198,6 +198,7 @@ if(BUILD_TESTING)
 
           # Safety function tests
           test/safety/setup.cpp
+          test/safety/test_check_gps_state.cpp
           test/safety/test_check_landed_state.cpp
           test/safety/test_check_sender.cpp
           test/safety/test_check_telemetry_result.cpp
