@@ -252,9 +252,7 @@ TEST_F(NoGeofence, MAVSDK_SET_UP) {
     this->fcc_bridge_node_wrapper->set_internal_state(
         INTERNAL_STATE::MAVSDK_SET_UP);
     fake_gps_position->longitude_deg = -1;
-    EXPECT_NO_THROW(this->fcc_bridge_node_wrapper->check_gps_state())
-
-        ;
+    EXPECT_NO_THROW(this->fcc_bridge_node_wrapper->check_gps_state());
     EXPECT_EQ(this->fcc_bridge_node_wrapper->get_internal_state(),
               INTERNAL_STATE::MAVSDK_SET_UP)
         << "Value of internal_state: "
