@@ -328,6 +328,11 @@ void FCCBridgeNode::check_gps_state() {
             RCLCPP_DEBUG(this->get_safety_logger(),
                          "Current UAV position is inside the geofence");
         }
+    } else {
+        RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                         "Cannot check current UAV position as safety limits "
+                         "are not configured in state: %s",
+                         this->internal_state_to_str());
     }
 
     RCLCPP_INFO(this->get_safety_logger(), "GPS state is O.K.");
