@@ -495,6 +495,10 @@ void FCCBridgeNode::check_battery_state() {
     if (this->get_internal_state() == INTERNAL_STATE::MAVSDK_SET_UP) {
         // Acceptable. In this state no safety limits are configured so a
         // check is not possible
+        RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                         "Cannot check battery state, as no safety limits are "
+                         "configured. Ignoring in state: %s",
+                         this->internal_state_to_str());
         return;
     }
 
