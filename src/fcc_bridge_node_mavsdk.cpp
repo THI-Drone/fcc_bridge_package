@@ -51,7 +51,7 @@ const std::map<const std::string, const struct sys_id_map_entry> SYS_ID_MAP{
     {"SIMULATOR", {1, true}}};
 
 // Timeout for the autopilot to be discovered
-constexpr double AUTOPILOT_DISCOVERY_TIMEOUT_S = 1;
+constexpr double AUTOPILOT_DISCOVERY_TIMEOUT_S = 5;
 
 }  // namespace
 
