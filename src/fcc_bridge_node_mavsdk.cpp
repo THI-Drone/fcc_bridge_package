@@ -44,9 +44,10 @@ struct sys_id_map_entry {
 // Map to get the MAVLink System id for the selected
 // {TEAM_ID : {MAVLINK_SYS_ID, IS_SIMULATOR_TARGET}}
 const std::map<const std::string, const struct sys_id_map_entry> SYS_ID_MAP{
-    {"UAV_TEAM_RED", {21, false}},
-    {"UAV_TEAM_GREEN", {22, false}},
-    {"UAV_TEAM_BLUE", {23, false}},
+    {"UAV_FFI_1", {1, false}},       {"UAV_FFI_2", {2, false}},
+    {"UAV_FFI_3", {3, false}},       {"UAV_FFI_4", {4, false}},
+    {"UAV_FFI_5", {5, false}},       {"UAV_TEAM_RED", {21, false}},
+    {"UAV_TEAM_GREEN", {22, false}}, {"UAV_TEAM_BLUE", {23, false}},
     {"SIMULATOR", {1, true}}};
 
 // Timeout for the autopilot to be discovered
