@@ -15,7 +15,7 @@ namespace {
 constexpr char const *const UART_DEVICE_PATH = "/dev/serial0";
 
 // Baud rate to use for uart connection
-constexpr int UART_BAUD_RATE = 57600;
+constexpr int UART_BAUD_RATE = 115200;
 
 // Simulator IP address
 constexpr char const *const SIMULATOR_IP_ADDRESS = "127.0.0.1";
