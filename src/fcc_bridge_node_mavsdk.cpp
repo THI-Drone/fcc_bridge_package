@@ -5,22 +5,24 @@
 // Libc header
 #include <cinttypes>
 #include <map>
+#include <thread>
 
 // FCC bridge header
 #include "fcc_bridge/fcc_bridge_node.hpp"
 
 namespace fcc_bridge {
 namespace {
-// Path to uart device on Raspberry PI
-constexpr char const *const UART_DEVICE_PATH = "/dev/serial0";
 
-// Baud rate to use for uart connection
-constexpr int UART_BAUD_RATE = 115200;
+constexpr char const *const UART_DEVICE_PATH =
+    "/dev/serial0"; /**< Path to uart device on Raspberry PI */
 
-// Simulator IP address
-constexpr char const *const SIMULATOR_IP_ADDRESS = "127.0.0.1";
-// Simulator UDP Port number
-constexpr int SIMULATOR_PORT_NUMBER = 14540;
+constexpr int UART_BAUD_RATE =
+    115200; /**< Baud rate to use for uart connection */
+
+constexpr char const *const SIMULATOR_IP_ADDRESS =
+    "127.0.0.1"; /**< Simulator IP address */
+
+constexpr int SIMULATOR_PORT_NUMBER = 14540; /**< Simulator UDP Port number */
 
 /**
  * @brief Struct to hold an entry in @ref fcc_bridge::SYS_ID_MAP
@@ -50,8 +52,12 @@ const std::map<const std::string, const struct sys_id_map_entry> SYS_ID_MAP{
     {"UAV_TEAM_GREEN", {22, false}}, {"UAV_TEAM_BLUE", {23, false}},
     {"SIMULATOR", {1, true}}};
 
-// Timeout for the autopilot to be discovered
-constexpr double AUTOPILOT_DISCOVERY_TIMEOUT_S = 5;
+constexpr double AUTOPILOT_DISCOVERY_TIMEOUT_S =
+    5; /**< Timeout for the autopilot to be discovered */
+
+constexpr std::chrono::milliseconds MAVSDK_WAIT_TIME{
+    2500}; /**< Time to wait after MAVSDK has been set up and connected to the
+              FCC to let the system collect all telemetery values */
 
 }  // namespace
 
@@ -197,6 +203,9 @@ void FCCBridgeNode::setup_mavsdk() {
                                  "In Air");
     this->check_telemetry_result(
         this->mavsdk_telemtry->set_rate_landed_state(5.0), "LandedState");
+
+    // Wait so that MAVSDK can get correct values
+    std::this_thread::sleep_for(MAVSDK_WAIT_TIME);
 
     const mavsdk::Info info{this->mavsdk_system};
 
