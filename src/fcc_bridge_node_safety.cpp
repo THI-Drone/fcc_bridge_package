@@ -69,7 +69,10 @@ const std::map<const INTERNAL_STATE, const state_action<LandedState>>
          {{},
           {LandedState::Unknown, LandedState::Landing},
           {LandedState::OnGround, LandedState::TakingOff, LandedState::InAir}}},
-        {INTERNAL_STATE::WAITING_FOR_COMMAND, ia_valid},
+        {INTERNAL_STATE::WAITING_FOR_COMMAND,
+         {{LandedState::OnGround},
+          {LandedState::Unknown, LandedState::Landing},
+          {LandedState::TakingOff, LandedState::InAir}}},
         {INTERNAL_STATE::FLYING_MISSION, ia_valid},
         {INTERNAL_STATE::LANDING, og_ia_la_valid},
         {INTERNAL_STATE::RETURN_TO_HOME, og_ia_la_valid},
@@ -176,8 +179,6 @@ void FCCBridgeNode::check_telemetry_result(
 
 void FCCBridgeNode::validate_safety_limits() {
     RCLCPP_DEBUG(this->get_safety_logger(), "Validating safety limits");
-    RCLCPP_WARN_ONCE(this->get_safety_logger(),
-                     "Safety limit validation is not fully implemented");
 
     if (!this->safety_limits.has_value()) {
         RCLCPP_ERROR(this->get_safety_logger(),
@@ -339,8 +340,7 @@ void FCCBridgeNode::check_gps_state() {
 }
 
 void FCCBridgeNode::check_flight_state() {
-    RCLCPP_WARN_ONCE(this->get_safety_logger(),
-                     "Flight State check not fully implemented!");
+    RCLCPP_DEBUG(this->get_safety_logger(), "Checking flight state");
 
     if (!this->check_landed_state()) {
         RCLCPP_ERROR(this->get_safety_logger(),
@@ -688,8 +688,6 @@ void FCCBridgeNode::check_uav_health() {
 bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
                                             const double longitude_deg,
                                             const float relative_altitude_m) {
-    RCLCPP_WARN_ONCE(this->get_safety_logger(),
-                     "Geofence check fully not implemented!");
     RCLCPP_DEBUG(this->get_safety_logger(),
                  "Checking whether point (lat: %f°\tlon: %f°\trel alt: %fm) is "
                  "inside the geofence",
