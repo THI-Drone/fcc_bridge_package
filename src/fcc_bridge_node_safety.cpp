@@ -179,6 +179,8 @@ void FCCBridgeNode::check_telemetry_result(
 
 void FCCBridgeNode::validate_safety_limits() {
     RCLCPP_DEBUG(this->get_safety_logger(), "Validating safety limits");
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                     "Safety limit validation is not fully implemented");
 
     if (!this->safety_limits.has_value()) {
         RCLCPP_ERROR(this->get_safety_logger(),
@@ -340,6 +342,9 @@ void FCCBridgeNode::check_gps_state() {
 }
 
 void FCCBridgeNode::check_flight_state() {
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                     "Flight State check not fully implemented!");
+
     if (!this->check_landed_state()) {
         RCLCPP_ERROR(this->get_safety_logger(),
                      "LandedState checking triggered an RTH");
@@ -686,6 +691,8 @@ void FCCBridgeNode::check_uav_health() {
 bool FCCBridgeNode::check_point_in_geofence(const double latitude_deg,
                                             const double longitude_deg,
                                             const float relative_altitude_m) {
+    RCLCPP_WARN_ONCE(this->get_safety_logger(),
+                     "Geofence check fully not implemented!");
     RCLCPP_DEBUG(this->get_safety_logger(),
                  "Checking whether point (lat: %f°\tlon: %f°\trel alt: %fm) is "
                  "inside the geofence",
