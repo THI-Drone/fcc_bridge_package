@@ -44,6 +44,20 @@ void FCCBridgeNode::send_flight_state() {
     // Verify the Flight State depending on the internal state
     this->check_flight_state();
 
+    // In this case retrieving the flight state was successful meaning that it
+    // can be safely accessed.
+    interfaces::msg::FlightState flight_state_msg;
+    flight_state_msg.time_stamp = this->now();
+    flight_state_msg.sender_id = this->get_name();
+    flight_state_msg.mode.mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
+        this->last_fcc_flight_mode.value());
+    flight_state_msg.state.state = FCCBridgeNode::landed_state_mavsdk_to_ros(
+        this->last_fcc_landed_state.value());
+    flight_state_msg.armed = this->last_fcc_armed_state.value();
+
+    // Publish the message
+    this->flight_state_publisher->publish(flight_state_msg);
+
     // If we are in the WAITING_FOR_ARM state and the drone is READY send
     // MissionStart and wait for takeoff
     if (this->get_internal_state() == INTERNAL_STATE::WAITING_FOR_ARM &&
@@ -62,20 +76,6 @@ void FCCBridgeNode::send_flight_state() {
         RCLCPP_DEBUG(this->get_ros_interface_logger(),
                      "MissionStart message send");
     }
-
-    // In this case retrieving the flight state was successful meaning that it
-    // can be safely accessed.
-    interfaces::msg::FlightState flight_state_msg;
-    flight_state_msg.time_stamp = this->now();
-    flight_state_msg.sender_id = this->get_name();
-    flight_state_msg.mode.mode = FCCBridgeNode::flight_mode_mavsdk_to_ros(
-        this->last_fcc_flight_mode.value());
-    flight_state_msg.state.state = FCCBridgeNode::landed_state_mavsdk_to_ros(
-        this->last_fcc_landed_state.value());
-    flight_state_msg.armed = this->last_fcc_armed_state.value();
-
-    // Publish the message
-    this->flight_state_publisher->publish(flight_state_msg);
 
     if (this->get_internal_state() == INTERNAL_STATE::RETURN_TO_HOME &&
         this->last_fcc_landed_state.value() ==
