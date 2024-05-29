@@ -42,6 +42,7 @@
 
 // CommonLib headers
 #include <common_package/common_node.hpp>
+#include <common_package/safety_limits.hpp>
 
 // Geofence header
 #include "geofence.hpp"
@@ -397,22 +398,23 @@ class FCCBridgeNode : public common_lib::CommonNode {
             0.f; /**< The minimum speed allowed when flying to a waypoint.
                   Exclusive */
         constexpr static float HARD_MAX_SPEED_LIMIT_MPS =
-            5.f; /**< The hard speed limit which will cap the soft speed limit!
-                  Inclusive */
+            std::max(common_lib::MAX_HORIZONTAL_SPEED_MPS,
+                     common_lib::MAX_VERTICAL_SPEED_MPS); /**< The hard speed
+limit which will cap the soft speed limit! Inclusive */
         float max_speed_mps;
 
         // State of charge limits
         constexpr static float HARD_MIN_SOC =
-            30.f; /**< The hard minimum state of charge limit in percent. Will
-                     cap the soft minimum SoC limit! */
+            common_lib::MIN_SOC_PERCENT; /**< The hard minimum state of charge
+                     limit in percent. Will cap the soft minimum SoC limit! */
 
         float min_soc; /**< Minimum state of charge in percent allowed before an
                           RTH is triggered */
 
         // Height limits
         constexpr static float HARD_MAX_HEIGHT_M =
-            50; /**< The hard height limit of the UAV. Will cap the soft height
-                   limit! */
+            common_lib::MAX_FLIGHT_HEIGHT_CM / 100.0f; /**< The hard height
+                   limit of the UAV. Will cap the soft height limit! */
 
         float max_height_m; /**< Max height above the launch position the UAV is
                                allowed to climb to. Inclusive */
