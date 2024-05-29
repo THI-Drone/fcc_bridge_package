@@ -383,6 +383,8 @@ class FCCBridgeNode : public common_lib::CommonNode {
 
     std::optional<std::string> active_node; /**< Currently active node */
 
+    rclcpp::Time last_mission_active_time;
+
     /**************************************************************************/
     /*                             Safety members                             */
     /**************************************************************************/
