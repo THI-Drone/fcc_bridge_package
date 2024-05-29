@@ -14,7 +14,7 @@ namespace fcc_bridge {
 namespace {
 
 constexpr char const *const UART_DEVICE_PATH =
-    "/dev/serial0"; /**< Path to uart device on Raspberry PI */
+    "/dev/fcc_uart"; /**< Path to uart device on Raspberry PI */
 
 constexpr int UART_BAUD_RATE =
     115200; /**< Baud rate to use for uart connection */
@@ -58,6 +58,9 @@ constexpr double AUTOPILOT_DISCOVERY_TIMEOUT_S =
 constexpr std::chrono::milliseconds MAVSDK_WAIT_TIME{
     2500}; /**< Time to wait after MAVSDK has been set up and connected to the
               FCC to let the system collect all telemetery values */
+
+constexpr u8 MAX_MISSION_START_RETRY_COUNT =
+    3; /**< Max retry count for mission start if the FCC denies */
 
 }  // namespace
 
@@ -556,21 +559,35 @@ bool FCCBridgeNode::execute_mission_plan(
         return false;
     }
 
-    const mavsdk::Mission::Result mission_start_result =
-        this->mavsdk_mission->start_mission();
+    u8 mission_start_retry_count = 1;
 
-    if (mission_start_result != mavsdk::Mission::Result::Success) {
-        RCLCPP_ERROR(
-            this->get_mavsdk_interface_logger(),
-            "Failed to start mission with result: %s",
-            FCCBridgeNode::mavsdk_mission_result_to_str(mission_start_result));
-        return false;
-    }
+    do {
+        const mavsdk::Mission::Result mission_start_result =
+            this->mavsdk_mission->start_mission();
 
-    RCLCPP_INFO(this->get_mavsdk_interface_logger(),
-                "Successfully executed mission plan");
+        if (mission_start_result == mavsdk::Mission::Result::Success) {
+            RCLCPP_INFO(this->get_mavsdk_interface_logger(),
+                        "Successfully started mission plan");
 
-    return true;
+            return true;
+        } else if (mission_start_result == mavsdk::Mission::Result::Denied) {
+            RCLCPP_WARN(
+                this->get_mavsdk_interface_logger(),
+                "Mission start was denied by FCC try %" PRIu8 " out of %" PRIu8,
+                mission_start_retry_count, MAX_MISSION_START_RETRY_COUNT);
+        } else {
+            RCLCPP_ERROR(this->get_mavsdk_interface_logger(),
+                         "Failed to start mission with result: %s",
+                         FCCBridgeNode::mavsdk_mission_result_to_str(
+                             mission_start_result));
+            return false;
+        }
+        mission_start_retry_count++;
+    } while (mission_start_retry_count <= MAX_MISSION_START_RETRY_COUNT);
+
+    RCLCPP_ERROR(this->get_mavsdk_interface_logger(),
+                 "Starting mission exceeded maximum amount of retries");
+    return false;
 }
 
 void FCCBridgeNode::trigger_rth() {
