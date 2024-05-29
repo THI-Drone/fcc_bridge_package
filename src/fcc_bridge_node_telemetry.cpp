@@ -196,7 +196,7 @@ void FCCBridgeNode::send_mission_progress() {
         (this->now() - this->last_mission_active_time)
             .to_chrono<std::chrono::milliseconds>();
 
-    if (MISSION_PROGRESS_DELAY < time_since_mission_start) {
+    if (time_since_mission_start < MISSION_PROGRESS_DELAY) {
         RCLCPP_INFO(this->get_safety_logger(),
                     "Skipping mission progress because mission start is less "
                     "then %" PRId64 "ms ago. Current time since: %" PRId64 "ms",
