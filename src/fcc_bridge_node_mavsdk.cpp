@@ -14,7 +14,7 @@ namespace fcc_bridge {
 namespace {
 
 constexpr char const *const UART_DEVICE_PATH =
-    "/dev/serial0"; /**< Path to uart device on Raspberry PI */
+    "/dev/fcc_uart"; /**< Path to uart device on Raspberry PI */
 
 constexpr int UART_BAUD_RATE =
     115200; /**< Baud rate to use for uart connection */
