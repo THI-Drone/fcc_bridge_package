@@ -257,6 +257,12 @@ void FCCBridgeNode::uav_command_subscriber_cb(
             }
     }
 
+    this->last_mission_active_time = this->now();
+
+    RCLCPP_DEBUG(this->get_safety_logger(),
+                 "Updated last mission active time to %" PRIi64 "ms",
+                 this->last_mission_active_time.nanoseconds() / 1'000'000);
+
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Finished handling command message");
 }

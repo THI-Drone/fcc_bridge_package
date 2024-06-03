@@ -7,6 +7,12 @@
 
 namespace fcc_bridge {
 
+namespace {
+
+constexpr std::chrono::milliseconds MISSION_PROGRESS_DELAY{1000};
+
+}
+
 void FCCBridgeNode::send_gps_telemetry() {
     RCLCPP_DEBUG(this->get_ros_interface_logger(),
                  "Getting updated GPS telemetry and publishing the update");
@@ -185,6 +191,19 @@ void FCCBridgeNode::send_mission_progress() {
 
     // Update mission progress
     this->get_mission_progress();
+
+    const std::chrono::milliseconds time_since_mission_start =
+        (this->now() - this->last_mission_active_time)
+            .to_chrono<std::chrono::milliseconds>();
+
+    if (time_since_mission_start < MISSION_PROGRESS_DELAY) {
+        RCLCPP_INFO(this->get_safety_logger(),
+                    "Skipping mission progress because mission start is less "
+                    "then %" PRId64 "ms ago. Current time since: %" PRId64 "ms",
+                    MISSION_PROGRESS_DELAY.count(),
+                    time_since_mission_start.count());
+        return;
+    }
 
     // Verify of getting the mission progress was successful
     if (this->last_mission_progress->first !=
