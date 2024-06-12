@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>fcc_bridge</name>
-  <version>0.1.0</version>
+  <version>1.1.0</version>
   <description>Bridge between the FCC and the ROS network. Implements safety checks.</description>
   <maintainer email="job8197@thi.de">Johan</maintainer>
   <license>MIT</license>
