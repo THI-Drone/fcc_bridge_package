@@ -9,7 +9,7 @@ namespace fcc_bridge {
 
 namespace {
 
-constexpr std::chrono::milliseconds MISSION_PROGRESS_DELAY{1000};
+constexpr std::chrono::milliseconds MISSION_PROGRESS_DELAY{5000};
 
 }
 
